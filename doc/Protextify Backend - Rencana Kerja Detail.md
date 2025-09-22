@@ -202,31 +202,89 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 
 ## 🌐 **Milestone 5: Integrasi Layanan Eksternal**
 
-**Tujuan:** Integrasi dengan layanan pihak ketiga.
+**Tujuan:** Integrasi dengan layanan pihak ketiga untuk pembayaran, plagiarisme, file storage, dan background jobs.
+
+---
 
 ### 5.1 **Pembayaran (Midtrans)**
 
-- Modul: `PaymentsModule`.
-- Endpoint: `POST /payments/create-transaction`, `POST /payments/webhook`.
+- **Modul:** `PaymentsModule`
+- **Endpoint:**
+  - `POST /payments/create-transaction` — Instructor membuat transaksi Midtrans untuk pembelian kredit atau pembayaran assignment.
+    - Payload: `{ amount, assignmentId?, credits? }`
+    - Response: `{ transactionId, snapToken, paymentUrl, status }`
+  - `POST /payments/webhook` — Menerima notifikasi status pembayaran dari Midtrans.
+    - Payload: `{ order_id, transaction_status, signature_key, ... }`
+    - Validasi signature, update status transaksi di database.
+    - Jika pembayaran assignment sukses, update assignment menjadi aktif (`active: true`).
+    - Kirim event WebSocket `notification` ke instructor.
+- **Fitur:**
+  - Integrasi Midtrans Snap API untuk pembayaran.
+  - Simpan transaksi di tabel `Transaction`.
+  - Proteksi endpoint dengan guard sesuai role.
+  - Webhook endpoint harus aman dari spoofing (signature verification).
+
+---
 
 ### 5.2 **Setup Antrian (Queue) & Worker**
 
-- Konfigurasi BullMQ dan Redis untuk background jobs.
+- **Modul:** `PlagiarismModule` + BullMQ/Redis
+- **Fitur:**
+  - Konfigurasi BullMQ untuk background jobs.
+  - Worker: `plagiarism.processor.ts` untuk cek plagiarisme.
+  - Job queue: setiap permintaan cek plagiarisme masuk ke Redis queue.
+  - Worker mengambil job, memanggil Winston AI API, simpan hasil ke database.
+  - Kirim event WebSocket `notification` ke user terkait setelah job selesai.
+  - Monitoring job queue (dashboard BullMQ).
+
+---
 
 ### 5.3 **Integrasi Cek Plagiarisme**
 
-- Modul: `PlagiarismModule`.
-- Endpoint: `POST /submissions/:id/check-plagiarism`.
-- Worker: `plagiarism.processor.ts`.
-- Setelah worker selesai cek plagiarisme, backend broadcast event `notification` ke user terkait via WebSocket.
+- **Modul:** `PlagiarismModule`
+- **Endpoint:**
+  - `POST /submissions/:id/check-plagiarism` — Instructor memicu pengecekan plagiarisme.
+    - Payload: `{ submissionId }`
+    - Response: `{ jobId, status }`
+  - `GET /submissions/:id/plagiarism-report` — Download laporan hasil plagiarisme (PDF).
+    - Response: `{ url }`
+- **Fitur:**
+  - Integrasi Winston AI API untuk pengecekan plagiarisme.
+  - Simpan hasil ke tabel `PlagiarismCheck`.
+  - Kirim event WebSocket `notification` ke student/instructor.
+  - Proteksi endpoint dengan guard sesuai role.
 
-### 5.4 **Download Tugas**
+---
 
-- Endpoint: `GET /submissions/:id/download`.
-- Konversi file, simpan ke cloud storage, kirim pre-signed URL.
-- Implementasi modul/folder `storage/` untuk integrasi AWS S3, GCS, atau Cloudinary.
-- Pastikan file tidak disimpan di server lokal, gunakan cloud storage untuk keamanan dan skalabilitas.
-- Gunakan pre-signed URL agar file hanya bisa diakses secara aman dan terbatas waktu.
+### 5.4 **Download Tugas & File Storage**
+
+- **Modul:** `StorageModule`
+- **Endpoint:**
+  - `GET /submissions/:id/download` — Download tugas (PDF/DOCX).
+    - Response: `{ url }`
+- **Fitur:**
+  - Konversi konten submission ke PDF/DOCX (gunakan library seperti `pdfkit`/`docx`).
+  - Simpan file ke cloud storage (AWS S3, GCS, Cloudinary).
+  - Generate pre-signed URL untuk download aman.
+  - Jangan simpan file di server lokal.
+  - Proteksi endpoint dengan guard sesuai role.
+  - Kirim event WebSocket `notification` ke user jika file siap diunduh.
+
+---
+
+### 5.5 **Integrasi Event WebSocket**
+
+- **Fitur:**
+  - Kirim event `notification` ke user saat status pembayaran berubah (assignment aktif, kredit bertambah).
+  - Kirim event `notification` ke user saat hasil plagiarisme tersedia.
+  - Kirim event `submissionUpdated` ke client jika submission dinilai atau dicek plagiarisme.
+  - Kirim event `submissionListUpdated` ke instructor saat ada perubahan submission.
+
+---
+
+> **Catatan:**  
+> Semua endpoint, event, dan payload harus konsisten dengan [doc/Daftar Lengkap Endpoint API Protextify.md](doc/Daftar%20Lengkap%20Endpoint%20API%20Protextify.md) dan [doc/Best Practices Implementasi Backend.md](doc/Best%20Practices%20Implementasi%20Backend.md).  
+> Referensi struktur payload event WebSocket dapat dilihat di file [`src/realtime/events.ts`](src/realtime/events.ts).
 
 ---
 
