@@ -58,14 +58,16 @@ model ClassEnrollment {
 }
 
 model Assignment {
-  id           String       @id @default(uuid())
-  title        String
-  instructions String?
-  deadline     DateTime?
-  classId      String
-  createdAt    DateTime     @default(now())
-  class        Class        @relation(fields: [classId], references: [id])
-  submissions  Submission[]
+  id                   String       @id @default(uuid())
+  title                String
+  instructions         String?
+  deadline             DateTime?
+  classId              String
+  createdAt            DateTime     @default(now())
+  expectedStudentCount Int
+  active               Boolean      @default(false)
+  class                Class        @relation(fields: [classId], references: [id])
+  submissions          Submission[]
 }
 
 model Submission {

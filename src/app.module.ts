@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
 import { UsersModule } from './users/users.module';
 import { ClassesModule } from './classes/classes.module';
+import { AssignmentsModule } from './assignments/assignments.module';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { ClassesModule } from './classes/classes.module';
         POSTGRES_DB: Joi.string().required(),
       }),
     }),
-    // Rate limiting: max 10 requests per 60 seconds per IP
+    // Rate limiting: max 100 requests per 60 seconds per IP
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 60 detik dalam milidetik
@@ -40,6 +41,7 @@ import { ClassesModule } from './classes/classes.module';
     EmailModule,
     UsersModule,
     ClassesModule,
+    AssignmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

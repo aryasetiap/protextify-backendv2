@@ -136,7 +136,7 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 
 ---
 
-### **4.2 API Manajemen Tugas (Assignment)**
+### **4.2 API Manajemen Tugas (Assignment)** ✅
 
 - **Modul:** `AssignmentsModule`
 - **Endpoint:**
@@ -146,7 +146,7 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
   - Validasi input dengan DTO.
   - Proteksi endpoint dengan guard sesuai role (`INSTRUCTOR` untuk create).
   - Relasi Assignment dengan Class.
-  - **Pembayaran dilakukan saat pembuatan assignment, backend menghitung jumlah mahasiswa dan meminta pembayaran sebelum assignment aktif.**
+  - **Pembayaran dilakukan saat pembuatan assignment, backend menghitung harga berdasarkan input jumlah siswa (expectedStudentCount) dari instruktur dan meminta pembayaran sebelum assignment aktif.**
 
 ---
 

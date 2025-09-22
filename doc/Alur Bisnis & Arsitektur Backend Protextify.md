@@ -152,12 +152,13 @@ Dokumen ini merinci **alur bisnis**, **arsitektur**, dan **teknologi** yang dire
 - **Trigger:** Instructor membuat assignment di kelas.
 - **Endpoint:** `POST /classes/:classId/assignments`
 - **Proses:**
-  1. Hitung jumlah mahasiswa yang terdaftar di kelas.
-  2. Hitung harga (studentCount × 2500).
+  1. Instruktur mengisi jumlah siswa yang akan mengerjakan assignment (`expectedStudentCount`) saat membuat assignment.
+  2. Backend menghitung harga (`expectedStudentCount × 2500`).
   3. Request ke Midtrans API.
   4. Simpan transaksi (status: PENDING).
-  5. Kirim snapToken/paymentUrl ke frontend.
+  5. Kirim `snapToken`/`paymentUrl` ke frontend.
   6. Setelah pembayaran sukses, assignment aktif dan mahasiswa bisa mengerjakan.
+  7. Siswa yang join setelah assignment dibuat tetap bisa mengerjakan, selama tidak melebihi jumlah yang diinput instruktur (`expectedStudentCount`). Backend dapat melakukan validasi tambahan jika diperlukan.
 
 #### B. Webhook Notifikasi Pembayaran
 

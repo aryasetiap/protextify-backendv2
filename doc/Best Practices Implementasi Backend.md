@@ -115,6 +115,22 @@ Panduan ini merangkum praktik terbaik agar backend Anda **aman, scalable, dan mu
 
 ---
 
+## 🔑 Pembayaran Assignment
+
+- **Validasi input jumlah siswa (`expectedStudentCount`) pada DTO assignment.**
+  - Field ini wajib diisi instruktur saat membuat assignment.
+  - Validasi agar nilai masuk akal (misal: minimal 1, maksimal sesuai kebijakan platform).
+
+- **Backend menghitung harga assignment dari input instruktur, bukan otomatis dari jumlah siswa yang sudah join kelas.**
+  - Harga assignment = `expectedStudentCount × harga_per_siswa`.
+  - Proses pembayaran dilakukan sebelum assignment aktif.
+
+- **Pastikan assignment tidak bisa dikerjakan oleh lebih banyak siswa dari yang diinput instruktur, atau tambahkan notifikasi/top-up jika ada siswa tambahan.**
+  - Jika ada siswa baru yang ingin mengerjakan assignment melebihi quota, backend harus menolak atau meminta instruktur melakukan top-up pembayaran.
+  - Notifikasi otomatis ke instruktur jika quota assignment hampir habis atau sudah terpakai semua.
+
+---
+
 > 💡 **Dengan mengikuti best practices ini, backend Protextify Anda akan lebih aman, scalable, dan siap untuk pengembangan jangka panjang!**
 
 > ℹ️ Untuk detail request/response schema setiap endpoint dan event, silakan lihat langsung di Swagger API Docs pada aplikasi backend.

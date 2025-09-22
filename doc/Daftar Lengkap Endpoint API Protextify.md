@@ -48,10 +48,10 @@ Pembuatan, pengelolaan, dan keanggotaan kelas.
 
 Mengelola tugas-tugas di dalam kelas.
 
-| Method | Endpoint                        | Deskripsi Singkat                      | Role Akses    |
-| ------ | ------------------------------- | -------------------------------------- | ------------- |
-| POST   | `/classes/:classId/assignments` | Instructor membuat tugas baru di kelas | INSTRUCTOR    |
-| GET    | `/classes/:classId/assignments` | Mendapat daftar semua tugas di kelas   | Terotentikasi |
+| Method | Endpoint                           | Deskripsi Singkat                                                                      | Role Akses    |
+| ------ | ---------------------------------- | -------------------------------------------------------------------------------------- | ------------- |
+| POST   | `/classes/:classId/assignments` ✅ | Instructor membuat tugas baru di kelas, menentukan jumlah siswa (expectedStudentCount) | INSTRUCTOR    |
+| GET    | `/classes/:classId/assignments` ✅ | Mendapat daftar semua tugas di kelas                                                   | Terotentikasi |
 
 ---
 
