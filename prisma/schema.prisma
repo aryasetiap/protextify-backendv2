@@ -1,0 +1,172 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ENUMs for defining roles and status
+enum Role {
+  STUDENT
+  INSTRUCTOR
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  GRADED
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+// Model untuk Pengguna
+model User {
+  id                  String            @id @default(cuid())
+  email               String            @unique
+  fullName            String
+  password            String? // Opsional karena bisa login via Google
+  role                Role
+  institution         String?
+  googleId            String?           @unique // Untuk integrasi Google Auth
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  // Relasi
+  classesAsInstructor Class[]           @relation("InstructorClasses")
+  enrollments         ClassEnrollment[]
+  submissions         Submission[]
+  transactions        Transaction[]
+  creditBalance       CreditBalance?
+}
+
+// Model untuk Saldo Kredit Instructor
+model CreditBalance {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  credits   Int      @default(0) // Jumlah kredit yang dimiliki
+  updatedAt DateTime @updatedAt
+  // Relasi
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+// Model untuk Kelas
+model Class {
+  id           String            @id @default(cuid())
+  name         String
+  description  String?
+  classToken   String            @unique // Token untuk bergabung ke kelas
+  instructorId String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  // Relasi
+  instructor   User              @relation("InstructorClasses", fields: [instructorId], references: [id])
+  enrollments  ClassEnrollment[]
+  assignments  Assignment[]
+}
+
+// Tabel pivot untuk relasi Many-to-Many antara User (Student) dan Class
+model ClassEnrollment {
+  id        String   @id @default(cuid())
+  studentId String
+  classId   String
+  joinedAt  DateTime @default(now())
+  // Relasi
+  student   User     @relation(fields: [studentId], references: [id])
+  class     Class    @relation(fields: [classId], references: [id])
+
+  @@unique([studentId, classId]) // Student hanya bisa join satu kelas sekali
+}
+
+// Model untuk Tugas yang dibuat oleh Instructor
+model Assignment {
+  id           String       @id @default(cuid())
+  title        String
+  instructions String?
+  deadline     DateTime?
+  classId      String
+  createdAt    DateTime     @default(now())
+  // Relasi
+  class        Class        @relation(fields: [classId], references: [id])
+  submissions  Submission[]
+}
+
+// Model untuk pekerjaan yang disubmit oleh Student
+model Submission {
+  id              String           @id @default(cuid())
+  content         String           @default("")
+  status          SubmissionStatus @default(DRAFT)
+  grade           Float?
+  studentId       String
+  assignmentId    String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  // Relasi
+  student         User             @relation(fields: [studentId], references: [id])
+  assignment      Assignment       @relation(fields: [assignmentId], references: [id])
+  plagiarismCheck PlagiarismCheck?
+}
+
+// --- PERUBAHAN DIMULAI DI SINI ---
+
+// Model utama untuk hasil pengecekan plagiarisme
+model PlagiarismCheck {
+  id           String             @id @default(cuid())
+  submissionId String             @unique
+  score        Float // Skor plagiarisme keseluruhan (misal: 0.15 untuk 15%)
+  status       String // Status dari API (misal: "completed")
+  wordCount    Int
+  creditsUsed  Int
+  checkedAt    DateTime           @default(now())
+  // Relasi
+  submission   Submission         @relation(fields: [submissionId], references: [id])
+  sources      PlagiarismSource[] // Daftar sumber yang terdeteksi
+  rawResponse  Json? // Tetap simpan raw response untuk audit/debug
+}
+
+// Model untuk setiap sumber plagiarisme yang ditemukan
+model PlagiarismSource {
+  id                String            @id @default(cuid())
+  plagiarismCheckId String
+  url               String
+  title             String?
+  score             Float // Skor plagiarisme dari sumber ini
+  wordCount         Int
+  // Relasi
+  plagiarismCheck   PlagiarismCheck   @relation(fields: [plagiarismCheckId], references: [id])
+  indexes           PlagiarismIndex[] // Daftar sekuens teks yang cocok dari sumber ini
+}
+
+// Model untuk setiap sekuens/potongan teks yang terdeteksi sebagai plagiat
+model PlagiarismIndex {
+  id         String           @id @default(cuid())
+  sourceId   String
+  startIndex Int // Posisi awal teks di dalam submission.content
+  endIndex   Int // Posisi akhir teks
+  sequence   String // Teks yang terdeteksi
+  // Relasi
+  source     PlagiarismSource @relation(fields: [sourceId], references: [id])
+}
+
+// --- PERUBAHAN SELESAI DI SINI ---
+
+// Model untuk transaksi pembayaran (Midtrans)
+model Transaction {
+  id               String            @id @default(cuid())
+  userId           String
+  amount           Float
+  creditsPurchased Int
+  status           TransactionStatus @default(PENDING)
+  midtransOrderId  String            @unique
+  midtransToken    String? // Snap token
+  createdAt        DateTime          @default(now())
+  // Relasi
+  user             User              @relation(fields: [userId], references: [id])
+}
