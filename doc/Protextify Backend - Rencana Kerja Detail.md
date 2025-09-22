@@ -55,7 +55,7 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 
 **Tujuan:** Memfinalkan arsitektur data dan API.
 
-### 2.1 **Desain Skema Database**
+### 2.1 **Desain Skema Database** ✅
 
 - Definisikan model utama di `schema.prisma`:
   - **User** (role: INSTRUCTOR | STUDENT)
@@ -67,7 +67,7 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 - Relasi many-to-many untuk enrollment.
 - Jalankan migrasi: `npx prisma migrate dev --name init`.
 
-### 2.2 **Desain API Contract (OpenAPI/Swagger)**
+### 2.2 **Desain API Contract (OpenAPI/Swagger)** ✅
 
 - Definisikan endpoint & DTO menggunakan `@nestjs/swagger`.
 - Contoh endpoint:
