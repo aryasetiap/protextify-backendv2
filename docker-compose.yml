@@ -1,0 +1,66 @@
+# Menentukan versi skema Docker Compose yang digunakan.
+version: '3.8'
+
+# Blok utama untuk mendefinisikan semua service (kontainer) yang akan berjalan.
+services:
+  # Ini adalah nama service kita. Anda bisa menggantinya, misal: 'backend', 'app', dll.
+  api-dev:
+    # Konfigurasi untuk membangun image Docker untuk service ini.
+    build:
+      # Tentukan direktori yang berisi Dockerfile. '.' berarti direktori saat ini.
+      context: .
+      # Tentukan nama file Dockerfile yang akan digunakan untuk build.
+      dockerfile: Dockerfile.dev
+    
+    # Memetakan port dari komputer Anda (host) ke dalam kontainer.
+    # Formatnya: "[PORT_DI_KOMPUTER_ANDA]:[PORT_DI_DALAM_KONTAINER]"
+    # Ini memungkinkan Anda mengakses aplikasi via http://localhost:3000.
+    ports:
+      - "3000:3000"
+      
+    # Bagian paling PENTING untuk mengaktifkan hot-reloading.
+    volumes:
+      # 1. Sinkronisasi folder proyek Anda saat ini ('.') dengan folder '/usr/src/app' di dalam kontainer.
+      #    Artinya, setiap perubahan file di komputer Anda akan langsung terlihat di dalam kontainer.
+      - .:/usr/src/app
+      
+      # 2. Ini adalah 'anonymous volume' untuk mencegah folder node_modules di komputer Anda
+      #    menimpa folder node_modules yang sudah di-install di dalam kontainer saat build.
+      #    Ini penting untuk menghindari konflik arsitektur sistem operasi.
+      - /usr/src/app/node_modules
+      
+    # Menambahkan environment variables ke dalam kontainer.
+    # Ini cara yang aman untuk mengelola konfigurasi seperti koneksi database, API keys, dll.
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      # Tambahkan variabel lain di sini jika aplikasi Anda memerlukannya, contoh:
+      - DATABASE_URL=postgresql://postgres:arya19032004A*@postgres:5432/protextifyv2?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=YOUR_RANDOM_JWT_SECRET
+      - JWT_EXPIRATION_TIME=3600s
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: arya19032004A*
+      POSTGRES_DB: protextifyv2
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:
