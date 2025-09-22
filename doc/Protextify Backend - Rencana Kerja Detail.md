@@ -96,7 +96,7 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 - Implementasi `JwtAuthGuard` untuk proteksi endpoint.
 - Implementasi `jwt.strategy.ts` untuk validasi token JWT.
 
-### 3.3 **Google OAuth 2.0**
+### 3.3 **Google OAuth 2.0** ✅
 
 - Integrasi login Google dengan `passport-google-oauth20`.
 - Implementasi `google.strategy.ts` untuk autentikasi Google.

@@ -50,4 +50,9 @@ export class AuthService {
     const accessToken = await this.jwtService.signAsync(payload);
     return { accessToken, user: { ...user, password: undefined } };
   }
+
+  async generateJwtForUser(user: any) {
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    return await this.jwtService.signAsync(payload);
+  }
 }
