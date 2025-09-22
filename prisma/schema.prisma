@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -14,10 +7,108 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ENUMS
+model User {
+  id            String            @id @default(uuid())
+  email         String            @unique
+  fullName      String
+  password      String?
+  role          Role
+  institution   String?
+  googleId      String?           @unique
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  emailVerified Boolean           @default(false)
+  classes       Class[]           @relation("InstructorClasses")
+  enrollments   ClassEnrollment[]
+  creditBalance CreditBalance?
+  submissions   Submission[]
+  transactions  Transaction[]
+}
+
+model CreditBalance {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  credits   Int      @default(0)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Class {
+  id           String            @id @default(uuid())
+  name         String
+  description  String?
+  classToken   String            @unique
+  instructorId String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  assignments  Assignment[]
+  instructor   User              @relation("InstructorClasses", fields: [instructorId], references: [id])
+  enrollments  ClassEnrollment[]
+}
+
+model ClassEnrollment {
+  id        String   @id @default(uuid())
+  studentId String
+  classId   String
+  joinedAt  DateTime @default(now())
+  class     Class    @relation(fields: [classId], references: [id])
+  student   User     @relation(fields: [studentId], references: [id])
+
+  @@unique([studentId, classId])
+}
+
+model Assignment {
+  id           String       @id @default(uuid())
+  title        String
+  instructions String?
+  deadline     DateTime?
+  classId      String
+  createdAt    DateTime     @default(now())
+  class        Class        @relation(fields: [classId], references: [id])
+  submissions  Submission[]
+}
+
+model Submission {
+  id               String           @id @default(uuid())
+  content          String           @default("")
+  status           SubmissionStatus @default(DRAFT)
+  grade            Float?
+  studentId        String
+  assignmentId     String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  plagiarismChecks PlagiarismCheck?
+  assignment       Assignment       @relation(fields: [assignmentId], references: [id])
+  student          User             @relation(fields: [studentId], references: [id])
+}
+
+model PlagiarismCheck {
+  id           String     @id @default(uuid())
+  submissionId String     @unique
+  score        Float
+  status       String
+  wordCount    Int
+  creditsUsed  Int
+  checkedAt    DateTime   @default(now())
+  rawResponse  Json?
+  submission   Submission @relation(fields: [submissionId], references: [id])
+}
+
+model Transaction {
+  id               String            @id @default(uuid())
+  userId           String
+  amount           Float
+  creditsPurchased Int
+  status           TransactionStatus @default(PENDING)
+  midtransOrderId  String            @unique
+  midtransToken    String?
+  createdAt        DateTime          @default(now())
+  user             User              @relation(fields: [userId], references: [id])
+}
+
 enum Role {
-  INSTRUCTOR
   STUDENT
+  INSTRUCTOR
 }
 
 enum SubmissionStatus {
@@ -30,109 +121,4 @@ enum TransactionStatus {
   PENDING
   SUCCESS
   FAILED
-}
-
-// MODELS
-
-model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  fullName     String
-  password     String?
-  role         Role
-  institution  String?
-  googleId     String?  @unique
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relations
-  classes      Class[]        @relation("InstructorClasses")
-  enrollments  ClassEnrollment[]
-  submissions  Submission[]
-  transactions Transaction[]
-  creditBalance CreditBalance?
-}
-
-model CreditBalance {
-  id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String   @unique
-  credits   Int      @default(0)
-  updatedAt DateTime @updatedAt
-}
-
-model Class {
-  id           String   @id @default(uuid())
-  name         String
-  description  String?
-  classToken   String   @unique
-  instructor   User     @relation("InstructorClasses", fields: [instructorId], references: [id])
-  instructorId String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  enrollments  ClassEnrollment[]
-  assignments  Assignment[]
-}
-
-model ClassEnrollment {
-  id        String   @id @default(uuid())
-  student   User     @relation(fields: [studentId], references: [id])
-  studentId String
-  class     Class    @relation(fields: [classId], references: [id])
-  classId   String
-  joinedAt  DateTime @default(now())
-
-  @@unique([studentId, classId])
-}
-
-model Assignment {
-  id          String   @id @default(uuid())
-  title       String
-  instructions String?
-  deadline    DateTime?
-  class       Class     @relation(fields: [classId], references: [id])
-  classId     String
-  createdAt   DateTime @default(now())
-
-  submissions Submission[]
-}
-
-model Submission {
-  id           String   @id @default(uuid())
-  content      String   @default("")
-  status       SubmissionStatus @default(DRAFT)
-  grade        Float?
-  student      User     @relation(fields: [studentId], references: [id])
-  studentId    String
-  assignment   Assignment @relation(fields: [assignmentId], references: [id])
-  assignmentId String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  plagiarismChecks PlagiarismCheck[]
-}
-
-model PlagiarismCheck {
-  id             String   @id @default(uuid())
-  submission     Submission @relation(fields: [submissionId], references: [id])
-  submissionId   String   @unique
-  score          Float
-  status         String
-  wordCount      Int
-  creditsUsed    Int
-  checkedAt      DateTime @default(now())
-  rawResponse    Json?
-}
-
-model Transaction {
-  id                String   @id @default(uuid())
-  user              User     @relation(fields: [userId], references: [id])
-  userId            String
-  amount            Float
-  creditsPurchased  Int
-  status            TransactionStatus @default(PENDING)
-  midtransOrderId   String   @unique
-  midtransToken     String?
-  createdAt         DateTime @default(now())
 }

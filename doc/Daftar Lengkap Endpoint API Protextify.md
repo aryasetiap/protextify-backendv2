@@ -8,14 +8,14 @@ Dokumen ini merinci semua endpoint API yang dibutuhkan oleh backend Protextify, 
 
 Menangani autentikasi dan otorisasi pengguna.
 
-| Method | Endpoint                  | Deskripsi Singkat                                  | Role Akses |
-| ------ | ------------------------- | -------------------------------------------------- | ---------- |
-| POST   | `/auth/register`          | Mendaftarkan user baru (student/instructor)        | Publik     |
-| POST   | `/auth/login`             | Login dengan email dan password, mengembalikan JWT | Publik     |
-| GET    | `/auth/google`            | Mengarahkan ke halaman login Google                | Publik     |
-| GET    | `/auth/google/callback`   | Callback dari Google setelah login berhasil        | Publik     |
-| POST   | `/auth/send-verification` | Mengirim email verifikasi ke user                  | Publik     |
-| POST   | `/auth/verify-email`      | Verifikasi email dengan token                      | Publik     |
+| Method | Endpoint                     | Deskripsi Singkat                                  | Role Akses |
+| ------ | ---------------------------- | -------------------------------------------------- | ---------- |
+| POST   | `/auth/register` ✅          | Mendaftarkan user baru (student/instructor)        | Publik     |
+| POST   | `/auth/login` ✅             | Login dengan email dan password, mengembalikan JWT | Publik     |
+| GET    | `/auth/google`               | Mengarahkan ke halaman login Google                | Publik     |
+| GET    | `/auth/google/callback`      | Callback dari Google setelah login berhasil        | Publik     |
+| POST   | `/auth/send-verification` ✅ | Mengirim email verifikasi ke user                  | Publik     |
+| POST   | `/auth/verify-email` ✅      | Verifikasi email dengan token                      | Publik     |
 
 ---
 

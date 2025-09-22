@@ -84,7 +84,7 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 
 **Tujuan:** Fitur dasar otentikasi dan manajemen profil pengguna.
 
-### 3.1 & 3.2 **Registrasi, Login & JWT**
+### 3.1 & 3.2 **Registrasi, Login & JWT** ✅
 
 - Buat `AuthModule` untuk registrasi/login lokal dan JWT.
 - Validasi input dengan DTO (`login.dto.ts`, `register.dto.ts`) dan class-validator.
