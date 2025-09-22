@@ -35,12 +35,12 @@ Manajemen data pengguna.
 
 Pembuatan, pengelolaan, dan keanggotaan kelas.
 
-| Method | Endpoint        | Deskripsi Singkat                            | Role Akses    |
-| ------ | --------------- | -------------------------------------------- | ------------- |
-| POST   | `/classes`      | Instructor membuat kelas baru                | INSTRUCTOR    |
-| GET    | `/classes`      | Mendapat daftar kelas (student & instructor) | Terotentikasi |
-| GET    | `/classes/:id`  | Mendapat detail sebuah kelas                 | Terotentikasi |
-| POST   | `/classes/join` | Student bergabung ke kelas menggunakan token | STUDENT       |
+| Method | Endpoint           | Deskripsi Singkat                            | Role Akses    |
+| ------ | ------------------ | -------------------------------------------- | ------------- |
+| POST   | `/classes` ✅      | Instructor membuat kelas baru                | INSTRUCTOR    |
+| GET    | `/classes` ✅      | Mendapat daftar kelas (student & instructor) | Terotentikasi |
+| GET    | `/classes/:id` ✅  | Mendapat detail sebuah kelas                 | Terotentikasi |
+| POST   | `/classes/join` ✅ | Student bergabung ke kelas menggunakan token | STUDENT       |
 
 ---
 
