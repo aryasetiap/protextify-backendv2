@@ -124,7 +124,7 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 
 - **Modul:** `ClassesModule`
 - **Endpoint:**
-  - `POST /classes` — Instructor membuat kelas baru (setelah pembayaran).
+  - `POST /classes` — Instructor membuat kelas baru (tanpa pembayaran).
   - `POST /classes/join` — Student bergabung ke kelas menggunakan token.
   - `GET /classes` — Mendapat daftar kelas (student & instructor).
   - `GET /classes/:id` — Mendapat detail sebuah kelas.
@@ -140,12 +140,13 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 
 - **Modul:** `AssignmentsModule`
 - **Endpoint:**
-  - `POST /classes/:classId/assignments` — Instructor membuat tugas baru di kelas.
+  - `POST /classes/:classId/assignments` — Instructor membuat tugas baru di kelas (wajib pembayaran).
   - `GET /classes/:classId/assignments` — Mendapat daftar semua tugas di kelas.
 - **Fitur:**
   - Validasi input dengan DTO.
   - Proteksi endpoint dengan guard sesuai role (`INSTRUCTOR` untuk create).
   - Relasi Assignment dengan Class.
+  - **Pembayaran dilakukan saat pembuatan assignment, backend menghitung jumlah mahasiswa dan meminta pembayaran sebelum assignment aktif.**
 
 ---
 

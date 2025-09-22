@@ -75,13 +75,12 @@ Dokumen ini merinci **alur bisnis**, **arsitektur**, dan **teknologi** yang dire
 
 #### A. Instructor Membuat Kelas
 
-- **Trigger:** Instructor buat kelas baru (setelah pembayaran).
+- **Trigger:** Instructor buat kelas baru (tanpa pembayaran).
 - **Endpoint:** `POST /classes`
 - **Proses:**
-  1. Validasi pembayaran.
-  2. Buat kelas (className, description, paymentTransactionId).
-  3. Generate token kelas unik.
-  4. Respons 201 Created (data kelas, token).
+  1. Buat kelas (className, description).
+  2. Generate token kelas unik.
+  3. Respons 201 Created (data kelas, token).
 
 #### B. Student Bergabung ke Kelas
 
@@ -148,14 +147,17 @@ Dokumen ini merinci **alur bisnis**, **arsitektur**, dan **teknologi** yang dire
 
 ### 2.8. Pembayaran (Subscription Instructor)
 
-#### A. Membuat Transaksi
+#### A. Membuat Transaksi Assignment
 
-- **Endpoint:** `POST /payments/create-transaction`
+- **Trigger:** Instructor membuat assignment di kelas.
+- **Endpoint:** `POST /classes/:classId/assignments`
 - **Proses:**
-  1. Hitung harga (studentCount × 2500).
-  2. Request ke Midtrans API.
-  3. Simpan transaksi (status: PENDING).
-  4. Kirim snapToken/paymentUrl ke frontend.
+  1. Hitung jumlah mahasiswa yang terdaftar di kelas.
+  2. Hitung harga (studentCount × 2500).
+  3. Request ke Midtrans API.
+  4. Simpan transaksi (status: PENDING).
+  5. Kirim snapToken/paymentUrl ke frontend.
+  6. Setelah pembayaran sukses, assignment aktif dan mahasiswa bisa mengerjakan.
 
 #### B. Webhook Notifikasi Pembayaran
 
@@ -163,7 +165,7 @@ Dokumen ini merinci **alur bisnis**, **arsitektur**, dan **teknologi** yang dire
 - **Proses:**
   1. Verifikasi signature key.
   2. Update status transaksi (SUCCESS/FAILED).
-  3. Aktifkan kelas/tambah kuota jika sukses.
+  3. Aktifkan assignment jika sukses.
 
 ---
 
