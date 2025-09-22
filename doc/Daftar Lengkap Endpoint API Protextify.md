@@ -12,8 +12,8 @@ Menangani autentikasi dan otorisasi pengguna.
 | ------ | ---------------------------- | -------------------------------------------------- | ---------- |
 | POST   | `/auth/register` ✅          | Mendaftarkan user baru (student/instructor)        | Publik     |
 | POST   | `/auth/login` ✅             | Login dengan email dan password, mengembalikan JWT | Publik     |
-| GET    | `/auth/google`               | Mengarahkan ke halaman login Google                | Publik     |
-| GET    | `/auth/google/callback`      | Callback dari Google setelah login berhasil        | Publik     |
+| GET    | `/auth/google` ✅            | Mengarahkan ke halaman login Google                | Publik     |
+| GET    | `/auth/google/callback` ✅   | Callback dari Google setelah login berhasil        | Publik     |
 | POST   | `/auth/send-verification` ✅ | Mengirim email verifikasi ke user                  | Publik     |
 | POST   | `/auth/verify-email` ✅      | Verifikasi email dengan token                      | Publik     |
 
@@ -25,8 +25,8 @@ Manajemen data pengguna.
 
 | Method | Endpoint                   | Deskripsi Singkat                              | Role Akses    |
 | ------ | -------------------------- | ---------------------------------------------- | ------------- |
-| GET    | `/users/me`                | Mengambil data profil user yang sedang login   | Terotentikasi |
-| PATCH  | `/users/me`                | Memperbarui data profil user yang sedang login | Terotentikasi |
+| GET    | `/users/me` ✅             | Mengambil data profil user yang sedang login   | Terotentikasi |
+| PATCH  | `/users/me` ✅             | Memperbarui data profil user yang sedang login | Terotentikasi |
 | GET    | `/users/me/credit-balance` | Mengambil saldo kredit instructor yang login   | INSTRUCTOR    |
 
 ---

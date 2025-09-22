@@ -107,57 +107,95 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 - Buat `RolesGuard` (`roles.guard.ts`) dan decorator `@Roles('INSTRUCTOR')`.
 - Batasi akses endpoint sesuai role.
 
-### 3.5 **API Manajemen Profil User**
+### 3.5 **API Manajemen Profil User** ✅
 
 - Endpoint: `GET /users/me`, `PATCH /users/me`.
 - Validasi input dengan DTO (`update-user.dto.ts`), update data user, role tidak bisa diubah sendiri.
-
-### 4.1–4.3 **API Kelas, Tugas, Submission**
-
-- Setiap modul (`classes`, `assignments`, `submissions`) memiliki DTO untuk validasi input dan response.
-- Gunakan guard untuk proteksi endpoint sesuai role.
 
 ---
 
 ## 📚 **Milestone 4: Fitur Utama — Kelas & Tugas**
 
-**Tujuan:** Membangun alur kerja inti platform.
+**Tujuan:** Membangun alur kerja inti platform Protextify untuk manajemen kelas, tugas, submission, dan integrasi realtime.
 
-### 4.1 **API Manajemen Kelas**
+---
 
-- Modul: `ClassesModule`.
-- Endpoint: `POST /classes`, `POST /classes/join`, `GET /classes`, `GET /classes/:id`.
+### **4.1 API Manajemen Kelas**
 
-### 4.2 **API Manajemen Tugas (Assignment)**
+- **Modul:** `ClassesModule`
+- **Endpoint:**
+  - `POST /classes` — Instructor membuat kelas baru (setelah pembayaran).
+  - `POST /classes/join` — Student bergabung ke kelas menggunakan token.
+  - `GET /classes` — Mendapat daftar kelas (student & instructor).
+  - `GET /classes/:id` — Mendapat detail sebuah kelas.
+- **Fitur:**
+  - Validasi input dengan DTO.
+  - Proteksi endpoint dengan guard sesuai role (`INSTRUCTOR` untuk create, `STUDENT` untuk join).
+  - Relasi many-to-many antara User dan Class (enrollment).
+  - Generate token kelas unik saat pembuatan kelas.
 
-- Modul: `AssignmentsModule`.
-- Endpoint: `POST /classes/:classId/assignments`, `GET /classes/:classId/assignments`.
+---
 
-### 4.3 **API Submission Tugas**
+### **4.2 API Manajemen Tugas (Assignment)**
 
-- Modul: `SubmissionsModule`.
-- Endpoint: `POST /assignments/:id/submissions`, `GET /submissions/:id`, `PATCH /submissions/:id`.
+- **Modul:** `AssignmentsModule`
+- **Endpoint:**
+  - `POST /classes/:classId/assignments` — Instructor membuat tugas baru di kelas.
+  - `GET /classes/:classId/assignments` — Mendapat daftar semua tugas di kelas.
+- **Fitur:**
+  - Validasi input dengan DTO.
+  - Proteksi endpoint dengan guard sesuai role (`INSTRUCTOR` untuk create).
+  - Relasi Assignment dengan Class.
 
-### 4.4 **Auto-Save via WebSocket**
+---
 
-- Modul: `RealtimeGateway` dengan Socket.IO.
-- Event utama:
-  - `updateContent`: frontend mengirim konten terbaru, backend auto-save ke database.
+### **4.3 API Submission Tugas**
+
+- **Modul:** `SubmissionsModule`
+- **Endpoint:**
+  - `POST /assignments/:assignmentId/submissions` — Student membuat draf submission untuk tugas.
+  - `GET /submissions/:id` — Mendapat detail submission (termasuk plagiarisme).
+  - `PATCH /submissions/:id/content` — Auto-save konten tulisan student.
+  - `POST /submissions/:id/submit` — Student menyelesaikan dan mengirimkan tugas.
+  - `PATCH /submissions/:id/grade` — Instructor memberikan nilai pada submission.
+  - `GET /classes/:classId/assignments/:assignmentId/submissions` — Monitoring submission oleh instructor.
+  - `GET /submissions/history` — Mendapat riwayat penulisan student.
+  - `GET /classes/:classId/history` — Mendapat riwayat penulisan di kelas (instructor).
+  - `GET /submissions/:id/download` — Download tugas (PDF/DOCX).
+- **Fitur:**
+  - Validasi input dengan DTO.
+  - Proteksi endpoint dengan guard sesuai role.
+  - Integrasi dengan plagiarisme dan file storage.
+
+---
+
+### **4.4 Auto-Save via WebSocket**
+
+- **Modul:** `RealtimeGateway` (Socket.IO)
+- **Event utama:**
+  - `updateContent`: Frontend mengirim konten terbaru, backend auto-save ke database.
     - **Payload:** `{ submissionId, content, updatedAt }`
     - **Response:** `{ status: 'success', updatedAt }`
-  - `submissionUpdated`: backend broadcast ke client jika submission diupdate (misal: dinilai, dicek plagiarisme).
+  - `submissionUpdated`: Backend broadcast ke client jika submission diupdate (misal: dinilai, dicek plagiarisme).
     - **Payload:** `{ submissionId, status, grade?, plagiarismScore?, updatedAt }`
-  - `notification`: backend kirim notifikasi real-time ke user (misal: hasil plagiarisme, status pembayaran).
+  - `notification`: Backend kirim notifikasi real-time ke user (misal: hasil plagiarisme, status pembayaran).
     - **Payload:** `{ type, message, data?, createdAt }`
-- Implementasi throttling/debouncing pada event `updateContent` agar tidak overload.
-- Pastikan autentikasi WebSocket dengan JWT.
+- **Fitur:**
+  - Implementasi throttling/debouncing pada event `updateContent` agar tidak overload.
+  - Pastikan autentikasi WebSocket dengan JWT.
+  - Event monitoring submission dan notifikasi berjalan real-time.
 
-### 4.5 **Monitoring Submission via WebSocket**
+---
 
-- Saat instructor membuka monitoring submission (`GET /classes/:classId/assignments/:assignmentId/submissions`), backend dapat broadcast event:
-  - `submissionListUpdated`: update daftar submission secara real-time.
+### **4.5 Monitoring Submission via WebSocket**
+
+- **Deskripsi:** Saat instructor membuka monitoring submission (`GET /classes/:classId/assignments/:assignmentId/submissions`), backend broadcast event:
+  - `submissionListUpdated`: Update daftar submission secara real-time.
     - **Payload:** `{ assignmentId, submissions: [ { submissionId, studentId, status, plagiarismScore, lastUpdated } ] }`
-  - **Response event:** update otomatis pada tampilan monitoring instructor.
+    - **Response event:** Update otomatis pada tampilan monitoring instructor.
+- **Fitur:**
+  - Integrasi dengan WebSocket untuk live monitoring.
+  - Proteksi endpoint dengan guard sesuai role (`INSTRUCTOR`).
 
 ---
 
