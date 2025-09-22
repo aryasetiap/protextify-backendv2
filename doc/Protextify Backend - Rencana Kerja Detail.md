@@ -188,7 +188,7 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 
 ---
 
-### **4.5 Monitoring Submission via WebSocket**
+### **4.5 Monitoring Submission via WebSocket** ✅
 
 - **Deskripsi:** Saat instructor membuka monitoring submission (`GET /classes/:classId/assignments/:assignmentId/submissions`), backend broadcast event:
   - `submissionListUpdated`: Update daftar submission secara real-time.

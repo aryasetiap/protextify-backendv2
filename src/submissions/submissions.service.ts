@@ -134,10 +134,25 @@ export class SubmissionsService {
     });
     if (!kelas || kelas.instructorId !== instructorId)
       throw new ForbiddenException('Not your class');
-    return this.prisma.submission.findMany({
+    const submissions = await this.prisma.submission.findMany({
       where: { assignmentId },
-      include: { student: true },
+      include: { student: true, plagiarismChecks: true },
+      orderBy: { updatedAt: 'desc' },
     });
+
+    // Prepare payload for WebSocket event
+    const payload = submissions.map((s) => ({
+      submissionId: s.id,
+      studentId: s.studentId,
+      status: s.status,
+      plagiarismScore: s.plagiarismChecks?.score,
+      lastUpdated: s.updatedAt.toISOString(),
+    }));
+
+    // Broadcast to assignment room
+    this.realtimeGateway.broadcastSubmissionListUpdated(assignmentId, payload);
+
+    return submissions;
   }
 
   async getStudentHistory(studentId: string) {

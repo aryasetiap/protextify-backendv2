@@ -199,4 +199,34 @@ export class RealtimeGateway
       .to(`submission_${submissionId}`)
       .emit('notification', notification);
   }
+
+  // Method to broadcast submission list updates (for monitoring instructor)
+  broadcastSubmissionListUpdated(
+    assignmentId: string,
+    submissions: Array<{
+      submissionId: string;
+      studentId: string;
+      status: string;
+      plagiarismScore?: number;
+      lastUpdated: string;
+    }>,
+  ) {
+    this.server.to(`assignment_${assignmentId}`).emit('submissionListUpdated', {
+      assignmentId,
+      submissions,
+    });
+  }
+
+  @SubscribeMessage('joinAssignmentMonitoring')
+  async handleJoinAssignmentMonitoring(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { assignmentId: string },
+  ) {
+    const user = this.connectedUsers.get(client.id);
+    if (!user || user.role !== 'INSTRUCTOR') return;
+    client.join(`assignment_${data.assignmentId}`);
+    this.logger.log(
+      `Instructor ${user.userId} joined monitoring for assignment ${data.assignmentId}`,
+    );
+  }
 }
