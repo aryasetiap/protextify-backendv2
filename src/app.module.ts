@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { ClassesModule } from './classes/classes.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { SubmissionsModule } from './submissions/submissions.module';
+import { RealtimeModule } from './realtime/realtime.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { SubmissionsModule } from './submissions/submissions.module';
     ClassesModule,
     AssignmentsModule,
     SubmissionsModule,
+    RealtimeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

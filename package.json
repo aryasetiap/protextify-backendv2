@@ -28,8 +28,10 @@
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.1.6",
     "@nestjs/swagger": "^11.2.0",
     "@nestjs/throttler": "^6.4.0",
+    "@nestjs/websockets": "^11.1.6",
     "@prisma/client": "^6.16.2",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
@@ -45,6 +47,8 @@
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "winston": "^3.17.0"
   },
   "devDependencies": {
@@ -60,6 +64,7 @@
     "@types/nodemailer": "^7.0.1",
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/passport-jwt": "^4.0.1",
+    "@types/socket.io": "^3.0.1",
     "@types/supertest": "^6.0.2",
     "copyfiles": "^2.4.1",
     "eslint": "^9.18.0",

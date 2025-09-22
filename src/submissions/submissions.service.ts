@@ -6,10 +6,14 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 @Injectable()
 export class SubmissionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private realtimeGateway: RealtimeGateway, // Inject RealtimeGateway
+  ) {}
 
   async createSubmission(
     assignmentId: string,
@@ -96,10 +100,28 @@ export class SubmissionsService {
     if (!submission) throw new NotFoundException('Submission not found');
     if (submission.assignment.class.instructorId !== instructorId)
       throw new ForbiddenException('Not your class');
-    return this.prisma.submission.update({
+
+    const updatedSubmission = await this.prisma.submission.update({
       where: { id: submissionId },
       data: { grade, status: 'GRADED' },
     });
+
+    // Broadcast submission update via WebSocket
+    this.realtimeGateway.broadcastSubmissionUpdate(submissionId, {
+      status: 'GRADED',
+      grade: grade,
+      updatedAt: updatedSubmission.updatedAt.toISOString(),
+    });
+
+    // Send notification to student
+    this.realtimeGateway.sendNotification(submission.studentId, {
+      type: 'grade_received',
+      message: `Your submission has been graded: ${grade}`,
+      data: { submissionId, grade },
+      createdAt: new Date().toISOString(),
+    });
+
+    return updatedSubmission;
   }
 
   async getSubmissionsForAssignment(
