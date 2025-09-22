@@ -59,17 +59,17 @@ Mengelola tugas-tugas di dalam kelas.
 
 Alur kerja pengumpulan tugas oleh siswa.
 
-| Method | Endpoint                                                  | Deskripsi Singkat                                 | Role Akses         |
-| ------ | --------------------------------------------------------- | ------------------------------------------------- | ------------------ |
-| POST   | `/assignments/:assignmentId/submissions`                  | Student membuat draf submission untuk tugas       | STUDENT            |
-| GET    | `/submissions/:id`                                        | Mendapat detail submission (termasuk plagiarisme) | STUDENT/INSTRUCTOR |
-| PATCH  | `/submissions/:id/content`                                | Auto-save konten tulisan student                  | STUDENT            |
-| POST   | `/submissions/:id/submit`                                 | Student menyelesaikan dan mengirimkan tugas       | STUDENT            |
-| PATCH  | `/submissions/:id/grade`                                  | Instructor memberikan nilai pada submission       | INSTRUCTOR         |
-| GET    | `/classes/:classId/assignments/:assignmentId/submissions` | Monitoring submission oleh instructor             | INSTRUCTOR         |
-| GET    | `/submissions/history`                                    | Mendapat riwayat penulisan student                | STUDENT            |
-| GET    | `/classes/:classId/history`                               | Mendapat riwayat penulisan di kelas (instructor)  | INSTRUCTOR         |
-| GET    | `/submissions/:id/download`                               | Download tugas (PDF/DOCX)                         | STUDENT/INSTRUCTOR |
+| Method | Endpoint                                                     | Deskripsi Singkat                                 | Role Akses         |
+| ------ | ------------------------------------------------------------ | ------------------------------------------------- | ------------------ |
+| POST   | `/assignments/:assignmentId/submissions` ✅                  | Student membuat draf submission untuk tugas       | STUDENT            |
+| GET    | `/submissions/:id` ✅                                        | Mendapat detail submission (termasuk plagiarisme) | STUDENT/INSTRUCTOR |
+| PATCH  | `/submissions/:id/content` ✅                                | Auto-save konten tulisan student                  | STUDENT            |
+| POST   | `/submissions/:id/submit` ✅                                 | Student menyelesaikan dan mengirimkan tugas       | STUDENT            |
+| PATCH  | `/submissions/:id/grade` ✅                                  | Instructor memberikan nilai pada submission       | INSTRUCTOR         |
+| GET    | `/classes/:classId/assignments/:assignmentId/submissions` ✅ | Monitoring submission oleh instructor             | INSTRUCTOR         |
+| GET    | `/submissions/history` ✅                                    | Mendapat riwayat penulisan student                | STUDENT            |
+| GET    | `/classes/:classId/history` ✅                               | Mendapat riwayat penulisan di kelas (instructor)  | INSTRUCTOR         |
+| GET    | `/submissions/:id/download` ✅                               | Download tugas (PDF/DOCX)                         | STUDENT/INSTRUCTOR |
 
 ---
 

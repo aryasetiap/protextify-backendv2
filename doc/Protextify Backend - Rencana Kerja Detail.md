@@ -150,7 +150,7 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 
 ---
 
-### **4.3 API Submission Tugas**
+### **4.3 API Submission Tugas** ✅
 
 - **Modul:** `SubmissionsModule`
 - **Endpoint:**

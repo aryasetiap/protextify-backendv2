@@ -9,6 +9,7 @@ import { EmailModule } from './email/email.module';
 import { UsersModule } from './users/users.module';
 import { ClassesModule } from './classes/classes.module';
 import { AssignmentsModule } from './assignments/assignments.module';
+import { SubmissionsModule } from './submissions/submissions.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { AssignmentsModule } from './assignments/assignments.module';
     UsersModule,
     ClassesModule,
     AssignmentsModule,
+    SubmissionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
