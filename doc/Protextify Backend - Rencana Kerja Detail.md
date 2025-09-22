@@ -102,7 +102,7 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 - Implementasi `google.strategy.ts` untuk autentikasi Google.
 - Endpoint: `GET /auth/google`, `GET /auth/google/callback`.
 
-### 3.4 **Role-Based Access Control (RBAC)**
+### 3.4 **Role-Based Access Control (RBAC)** ✅
 
 - Buat `RolesGuard` (`roles.guard.ts`) dan decorator `@Roles('INSTRUCTOR')`.
 - Batasi akses endpoint sesuai role.

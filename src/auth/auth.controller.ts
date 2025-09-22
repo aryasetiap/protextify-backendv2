@@ -15,6 +15,9 @@ import { EmailService } from '../email/email.service';
 import { SendVerificationDto } from './dto/send-verification.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -59,5 +62,12 @@ export class AuthController {
     const accessToken = await this.authService.generateJwtForUser(user);
     // Redirect ke frontend dengan token
     res.redirect(`http://localhost:3000/auth/callback?token=${accessToken}`);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Get('instructor-only')
+  getInstructorData() {
+    return { message: 'Only instructor can access this!' };
   }
 }
