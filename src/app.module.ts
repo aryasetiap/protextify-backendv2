@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config'; // 🔧 Tambahkan ConfigService import
 import { ThrottlerModule } from '@nestjs/throttler';
+import { BullModule } from '@nestjs/bull';
 import * as Joi from 'joi';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -12,6 +13,7 @@ import { AssignmentsModule } from './assignments/assignments.module';
 import { SubmissionsModule } from './submissions/submissions.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { PaymentsModule } from './payments/payments.module';
+import { PlagiarismModule } from './plagiarism/plagiarism.module';
 
 @Module({
   imports: [
@@ -31,7 +33,25 @@ import { PaymentsModule } from './payments/payments.module';
         POSTGRES_USER: Joi.string().required(),
         POSTGRES_PASSWORD: Joi.string().required(),
         POSTGRES_DB: Joi.string().required(),
+        // 🆕 Tambahkan validasi untuk Winston AI
+        WINSTON_AI_API_URL: Joi.string().required(),
+        WINSTON_AI_TOKEN: Joi.string().required(),
       }),
+    }),
+    // 🆕 Tambahkan BullModule configuration
+    BullModule.forRootAsync({
+      useFactory: (configService: ConfigService) => ({
+        redis: {
+          host: configService.get('REDIS_HOST'),
+          port: configService.get('REDIS_PORT'),
+          password: configService.get('REDIS_PASSWORD') || undefined,
+        },
+        defaultJobOptions: {
+          removeOnComplete: 10,
+          removeOnFail: 10,
+        },
+      }),
+      inject: [ConfigService],
     }),
     // Rate limiting: max 100 requests per 60 seconds per IP
     ThrottlerModule.forRoot([
@@ -48,6 +68,7 @@ import { PaymentsModule } from './payments/payments.module';
     SubmissionsModule,
     RealtimeModule,
     PaymentsModule,
+    PlagiarismModule,
   ],
   controllers: [AppController],
   providers: [AppService],

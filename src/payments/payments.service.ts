@@ -3,9 +3,9 @@ import {
   ForbiddenException,
   NotFoundException,
   BadRequestException,
-  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { WebhookDto } from './dto/webhook.dto';
@@ -13,7 +13,7 @@ import { RealtimeGateway } from '../realtime/realtime.gateway';
 import axios from 'axios';
 import * as crypto from 'crypto';
 
-// Interface untuk response Midtrans
+// 🔧 Interface untuk response Midtrans
 interface MidtransSnapResponse {
   token: string;
   redirect_url: string;
@@ -24,8 +24,9 @@ export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
 
   constructor(
-    private prisma: PrismaService,
-    private realtimeGateway: RealtimeGateway,
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+    private readonly realtimeGateway: RealtimeGateway,
   ) {}
 
   async createTransaction(dto: CreateTransactionDto, instructorId: string) {
@@ -44,7 +45,7 @@ export class PaymentsService {
     }
 
     // Validasi assignment jika ada assignmentId
-    let assignment: any = null; // Ubah tipe ke any
+    let assignment: any = null;
     if (dto.assignmentId) {
       assignment = await this.prisma.assignment.findUnique({
         where: { id: dto.assignmentId },
@@ -60,84 +61,104 @@ export class PaymentsService {
       }
     }
 
+    // Generate unique order ID
+    const orderId = `PROTEXTIFY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     // Buat transaksi di database
     const transaction = await this.prisma.transaction.create({
       data: {
-        userId: instructorId,
         amount: dto.amount,
-        creditsPurchased: dto.credits ?? 0,
         status: 'PENDING',
-        midtransOrderId: `TRX-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-        assignmentId: dto.assignmentId,
+        midtransTransactionId: orderId,
+        userId: instructorId,
+        assignmentId: dto.assignmentId || null,
+        creditsPurchased: 0,
       },
     });
 
-    // Konfigurasi Midtrans
-    const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
-    const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
-
-    if (!midtransServerKey) {
-      throw new InternalServerErrorException(
-        'MIDTRANS_SERVER_KEY is not configured',
-      );
-    }
-
-    const midtransUrl = isProduction
-      ? 'https://app.midtrans.com/snap/v1/transactions'
-      : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
-
-    // Siapkan payload sesuai dokumentasi Midtrans
-    const payload = {
-      transaction_details: {
-        order_id: transaction.midtransOrderId,
-        gross_amount: dto.amount,
-      },
-      item_details: [
-        {
-          id: dto.assignmentId ?? 'CREDIT_TOPUP',
-          price: dto.amount,
-          quantity: 1,
-          name: dto.assignmentId
-            ? `Assignment Payment - ${assignment?.title || 'Assignment'}`
-            : 'Credit Topup',
-          category: dto.assignmentId ? 'Assignment' : 'Credit',
-        },
-      ],
-      customer_details: {
-        first_name: instructor.fullName?.split(' ')[0] || 'Instructor',
-        last_name: instructor.fullName?.split(' ').slice(1).join(' ') || '',
-        email: instructor.email,
-        phone: instructor.phone || '+6281234567890',
-      },
-      enabled_payments: [
-        'credit_card',
-        'bca_va',
-        'bni_va',
-        'bri_va',
-        'echannel',
-        'permata_va',
-        'other_va',
-        'gopay',
-        'shopeepay',
-      ],
-      callbacks: {
-        finish: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/payment/finish`,
-        error: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/payment/error`,
-      },
-      expiry: {
-        duration: 1,
-        unit: 'day',
-      },
-    };
-
     try {
+      // 🔧 Validasi Midtrans Configuration
+      const midtransServerKey = this.configService.get<string>(
+        'MIDTRANS_SERVER_KEY',
+      );
+      const isProduction =
+        this.configService.get<string>('MIDTRANS_IS_PRODUCTION') === 'true';
+
+      if (!midtransServerKey) {
+        throw new BadRequestException('Midtrans server key not configured');
+      }
+
+      // 🔧 Perbaikan: Definisikan midtransUrl dengan benar
+      const midtransUrl = isProduction
+        ? 'https://app.midtrans.com/snap/v1/transactions'
+        : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
+
+      this.logger.log(`Using Midtrans URL: ${midtransUrl}`);
+      this.logger.log(`Is Production: ${isProduction}`);
+      this.logger.log(
+        `Server Key Prefix: ${midtransServerKey.substring(0, 15)}...`,
+      );
+
+      // Format payload Midtrans
+      const itemName = assignment
+        ? `Assignment: ${assignment.title.substring(0, 30)}...`
+        : 'Credit Top-up';
+
+      const midtransPayload = {
+        transaction_details: {
+          order_id: orderId,
+          gross_amount: dto.amount,
+        },
+        item_details: [
+          {
+            id: dto.assignmentId || 'CREDIT_TOPUP',
+            price: dto.amount,
+            quantity: 1,
+            name: itemName.substring(0, 50),
+            category: assignment ? 'Assignment Payment' : 'Credit',
+            merchant_name: 'Protextify',
+          },
+        ],
+        customer_details: {
+          first_name: instructor.fullName.split(' ')[0] || 'User',
+          last_name: instructor.fullName.split(' ').slice(1).join(' ') || '',
+          email: instructor.email,
+          phone: instructor.phone || '08123456789',
+        },
+        enabled_payments: [
+          'credit_card',
+          'bca_va',
+          'bni_va',
+          'bri_va',
+          'echannel',
+          'permata_va',
+          'other_va',
+          'gopay',
+          'shopeepay',
+        ],
+        callbacks: {
+          finish: `${this.configService.get('FRONTEND_URL')}/payment/success`,
+          error: `${this.configService.get('FRONTEND_URL')}/payment/error`,
+          pending: `${this.configService.get('FRONTEND_URL')}/payment/pending`,
+        },
+        expiry: {
+          unit: 'minutes',
+          duration: 60,
+        },
+      };
+
+      console.log(
+        'Midtrans Payload:',
+        JSON.stringify(midtransPayload, null, 2),
+      );
+
+      // 🔧 Kirim ke Midtrans dengan proper authorization
       const response = await axios.post<MidtransSnapResponse>(
-        midtransUrl,
-        payload,
+        midtransUrl, // ✅ Sekarang sudah terdefinisi dengan benar
+        midtransPayload,
         {
           headers: {
             'Content-Type': 'application/json',
-            Accept: 'application/json',
             Authorization: `Basic ${Buffer.from(`${midtransServerKey}:`).toString('base64')}`,
           },
           timeout: 30000,
@@ -170,172 +191,144 @@ export class PaymentsService {
           // Ignore delete error
         });
 
-      // Perbaikan error handling tanpa AxiosError
+      // Error handling
       if (error.response) {
-        const errorMessage =
-          error.response?.data?.error_messages?.join(', ') ||
-          error.response?.data?.message ||
-          'Failed to create transaction with Midtrans';
+        const midtransError = error.response.data;
+        console.error('Midtrans Error Details:', midtransError);
 
-        throw new BadRequestException(errorMessage);
+        throw new BadRequestException(
+          `Payment gateway error: ${midtransError.error_messages?.join(', ') || midtransError.message || 'Unknown error'}`,
+        );
+      } else if (error.request) {
+        throw new BadRequestException('Failed to connect to payment gateway');
+      } else {
+        throw new BadRequestException(
+          `Payment processing error: ${error.message}`,
+        );
       }
-
-      throw new InternalServerErrorException('Failed to create transaction');
     }
   }
 
+  // Method untuk validasi webhook signature
+  private validateSignature(
+    orderId: string,
+    statusCode: string,
+    grossAmount: string,
+    serverKey: string,
+  ): string {
+    const input = orderId + statusCode + grossAmount + serverKey;
+    return crypto.createHash('sha512').update(input).digest('hex');
+  }
+
   async handleWebhook(dto: WebhookDto) {
-    this.logger.log(`[WEBHOOK] Received webhook for order: ${dto.order_id}`);
+    try {
+      console.log('Received webhook:', JSON.stringify(dto, null, 2));
 
-    const midtransServerKey = process.env.MIDTRANS_SERVER_KEY;
+      const {
+        order_id,
+        transaction_status,
+        fraud_status,
+        signature_key,
+        status_code,
+        gross_amount,
+      } = dto;
 
-    if (!midtransServerKey) {
-      this.logger.error('[WEBHOOK] MIDTRANS_SERVER_KEY not configured');
-      throw new InternalServerErrorException(
-        'MIDTRANS_SERVER_KEY is not configured',
+      // Validasi signature untuk keamanan dengan null check
+      const serverKey = this.configService.get<string>('MIDTRANS_SERVER_KEY');
+      if (!serverKey || !status_code || !gross_amount) {
+        throw new BadRequestException('Missing required webhook data');
+      }
+
+      const expectedSignature = this.validateSignature(
+        order_id,
+        status_code,
+        gross_amount,
+        serverKey,
       );
-    }
 
-    // Validasi input
-    if (!dto.order_id) {
-      this.logger.error('[WEBHOOK] order_id is missing');
-      throw new BadRequestException('order_id is required');
-    }
+      if (signature_key !== expectedSignature) {
+        throw new BadRequestException('Invalid signature');
+      }
 
-    this.logger.log(
-      `[WEBHOOK] Looking for transaction with order_id: ${dto.order_id}`,
-    );
-
-    // Cari transaksi
-    const transaction = await this.prisma.transaction.findUnique({
-      where: { midtransOrderId: dto.order_id },
-    });
-
-    if (!transaction) {
-      this.logger.error(`[WEBHOOK] Transaction not found: ${dto.order_id}`);
-      throw new NotFoundException('Transaction not found');
-    }
-
-    this.logger.log(`[WEBHOOK] Transaction found: ${transaction.id}`);
-
-    // Validasi signature key sesuai dokumentasi Midtrans
-    const signatureKey = dto.signature_key;
-    const orderId = dto.order_id;
-    const statusCode = dto.status_code || '200';
-
-    // PERBAIKAN: Gunakan gross_amount dari webhook payload, bukan dari database
-    const grossAmount =
-      dto.gross_amount || Math.floor(transaction.amount).toString();
-
-    const signatureString =
-      orderId + statusCode + grossAmount + midtransServerKey;
-    this.logger.log(`[WEBHOOK] Signature string: ${signatureString}`);
-
-    const expectedSignature = crypto
-      .createHash('sha512')
-      .update(signatureString)
-      .digest('hex');
-
-    this.logger.log(`[WEBHOOK] Expected signature: ${expectedSignature}`);
-    this.logger.log(`[WEBHOOK] Received signature: ${signatureKey}`);
-
-    // Untuk signature mismatch - hanya log error, bukan detail signature
-    if (signatureKey !== expectedSignature) {
-      this.logger.error(
-        `[WEBHOOK] Invalid signature for order: ${dto.order_id}`,
-      );
-      throw new ForbiddenException('Invalid signature');
-    }
-
-    // Map status Midtrans ke status aplikasi
-    let newStatus: 'PENDING' | 'SUCCESS' | 'FAILED' = 'PENDING';
-
-    switch (dto.transaction_status) {
-      case 'capture':
-      case 'settlement':
-        newStatus = 'SUCCESS';
-        break;
-      case 'cancel':
-      case 'deny':
-      case 'expire':
-      case 'failure':
-        newStatus = 'FAILED';
-        break;
-      case 'pending':
-      default:
-        newStatus = 'PENDING';
-        break;
-    }
-
-    this.logger.log(`[WEBHOOK] Updating transaction status to: ${newStatus}`);
-
-    // Update status transaksi
-    await this.prisma.transaction.update({
-      where: { id: transaction.id },
-      data: { status: newStatus },
-    });
-
-    // Jika pembayaran sukses dan untuk assignment
-    if (newStatus === 'SUCCESS' && transaction.assignmentId) {
-      this.logger.log(
-        `[WEBHOOK] Activating assignment: ${transaction.assignmentId}`,
-      );
-      await this.prisma.assignment.update({
-        where: { id: transaction.assignmentId },
-        data: { active: true },
+      // Cari transaksi dengan field yang benar dan include assignment
+      const transaction = await this.prisma.transaction.findUnique({
+        where: { midtransTransactionId: order_id },
+        include: {
+          assignment: {
+            include: { class: true },
+          },
+        },
       });
-    }
 
-    // Jika pembayaran sukses dan untuk kredit
-    if (newStatus === 'SUCCESS' && transaction.creditsPurchased > 0) {
-      this.logger.log(
-        `[WEBHOOK] Adding ${transaction.creditsPurchased} credits to user: ${transaction.userId}`,
-      );
-      await this.prisma.$transaction(async (tx) => {
-        const existingBalance = await tx.creditBalance.findUnique({
-          where: { userId: transaction.userId },
+      if (!transaction) {
+        throw new NotFoundException('Transaction not found');
+      }
+
+      let newStatus: 'PENDING' | 'SUCCESS' | 'FAILED' = 'PENDING';
+
+      // Tentukan status berdasarkan response Midtrans
+      if (
+        transaction_status === 'capture' ||
+        transaction_status === 'settlement'
+      ) {
+        if (fraud_status === 'accept' || !fraud_status) {
+          newStatus = 'SUCCESS';
+        }
+      } else if (
+        transaction_status === 'cancel' ||
+        transaction_status === 'deny' ||
+        transaction_status === 'expire' ||
+        transaction_status === 'failure'
+      ) {
+        newStatus = 'FAILED';
+      }
+
+      // Update status transaksi
+      await this.prisma.transaction.update({
+        where: { id: transaction.id },
+        data: { status: newStatus },
+      });
+
+      // Jika pembayaran sukses dan ini untuk assignment
+      if (
+        newStatus === 'SUCCESS' &&
+        transaction.assignment &&
+        transaction.assignmentId
+      ) {
+        // Aktifkan assignment dengan null check
+        await this.prisma.assignment.update({
+          where: { id: transaction.assignmentId },
+          data: { active: true },
         });
 
-        if (existingBalance) {
-          await tx.creditBalance.update({
-            where: { userId: transaction.userId },
-            data: {
-              credits: existingBalance.credits + transaction.creditsPurchased,
-              updatedAt: new Date(),
-            },
-          });
-        } else {
-          await tx.creditBalance.create({
-            data: {
-              userId: transaction.userId,
-              credits: transaction.creditsPurchased,
-            },
-          });
-        }
-      });
-    }
+        // Kirim notifikasi WebSocket dengan data yang benar
+        this.realtimeGateway.sendNotification(transaction.userId, {
+          type: 'payment_success',
+          message: `Payment successful! Assignment "${transaction.assignment.title}" is now active.`,
+          data: {
+            transactionId: transaction.id,
+            assignmentId: transaction.assignmentId,
+            amount: transaction.amount,
+          },
+          createdAt: new Date().toISOString(),
+        });
+      } else if (newStatus === 'FAILED') {
+        // Kirim notifikasi kegagalan
+        this.realtimeGateway.sendNotification(transaction.userId, {
+          type: 'payment_failed',
+          message: 'Payment failed. Please try again.',
+          data: {
+            transactionId: transaction.id,
+            reason: transaction_status,
+          },
+          createdAt: new Date().toISOString(),
+        });
+      }
 
-    // Kirim notifikasi WebSocket
-    this.realtimeGateway.sendNotification(transaction.userId, {
-      type: 'payment_status',
-      message: `Payment ${dto.transaction_status} for order ${dto.order_id}`,
-      data: {
-        transactionId: transaction.id,
-        status: newStatus,
-        assignmentId: transaction.assignmentId,
-        credits: transaction.creditsPurchased,
-      },
-      createdAt: new Date().toISOString(),
-    });
-
-    this.logger.log(
-      `[WEBHOOK] Successfully processed: ${dto.order_id} -> ${newStatus}`,
-    );
-
-    if (newStatus === 'SUCCESS' && transaction.assignmentId) {
-      this.logger.log(
-        `[WEBHOOK] Assignment activated: ${transaction.assignmentId}`,
-      );
+      return { message: 'Webhook processed successfully' };
+    } catch (error) {
+      console.error('Webhook processing error:', error);
+      throw error;
     }
   }
 }

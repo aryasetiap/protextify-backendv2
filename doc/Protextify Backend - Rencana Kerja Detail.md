@@ -226,7 +226,7 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 
 ---
 
-### 5.2 **Setup Antrian (Queue) & Worker**
+### 5.2 **Setup Antrian (Queue) & Worker** ✅
 
 - **Modul:** `PlagiarismModule` + BullMQ/Redis
 - **Fitur:**

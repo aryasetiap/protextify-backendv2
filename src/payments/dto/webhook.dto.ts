@@ -14,10 +14,13 @@ export class WebhookDto {
   @IsString()
   signature_key: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
+  @ApiProperty() // 🔧 Ubah menjadi required
   @IsString()
-  status_code?: string;
+  status_code: string; // 🔧 Hapus optional, buat required
+
+  @ApiProperty() // 🔧 Ubah menjadi required
+  @IsString()
+  gross_amount: string; // 🔧 Hapus optional, buat required
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -38,11 +41,6 @@ export class WebhookDto {
   @IsOptional()
   @IsString()
   transaction_id?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  gross_amount?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
