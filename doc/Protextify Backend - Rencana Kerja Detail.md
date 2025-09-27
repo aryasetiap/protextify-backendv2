@@ -206,11 +206,11 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 
 ---
 
-### 5.1 **Pembayaran (Midtrans)**
+### 5.1 **Pembayaran (Midtrans)** ✅
 
 - **Modul:** `PaymentsModule`
 - **Endpoint:**
-  - `POST /payments/create-transaction` — Instructor membuat transaksi Midtrans untuk pembelian kredit atau pembayaran assignment.
+  - `POST /payments/create-transaction` — Instructor membuat transaksi Midtrans untuk pembayaran assignment.
     - Payload: `{ amount, assignmentId?, credits? }`
     - Response: `{ transactionId, snapToken, paymentUrl, status }`
   - `POST /payments/webhook` — Menerima notifikasi status pembayaran dari Midtrans.

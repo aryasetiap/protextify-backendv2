@@ -14,6 +14,7 @@ model User {
   password      String?
   role          Role
   institution   String?
+  phone         String? // Tambahkan field ini
   googleId      String?           @unique
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
@@ -58,16 +59,17 @@ model ClassEnrollment {
 }
 
 model Assignment {
-  id                   String       @id @default(uuid())
+  id                   String        @id @default(uuid())
   title                String
   instructions         String?
   deadline             DateTime?
   classId              String
-  createdAt            DateTime     @default(now())
+  createdAt            DateTime      @default(now())
   expectedStudentCount Int
-  active               Boolean      @default(false)
-  class                Class        @relation(fields: [classId], references: [id])
+  active               Boolean       @default(false)
+  class                Class         @relation(fields: [classId], references: [id])
   submissions          Submission[]
+  Transaction          Transaction[]
 }
 
 model Submission {
@@ -106,6 +108,8 @@ model Transaction {
   midtransToken    String?
   createdAt        DateTime          @default(now())
   user             User              @relation(fields: [userId], references: [id])
+  assignmentId     String? // Tambahkan field ini
+  assignment       Assignment?       @relation(fields: [assignmentId], references: [id])
 }
 
 enum Role {

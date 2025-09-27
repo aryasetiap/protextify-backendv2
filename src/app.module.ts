@@ -11,6 +11,7 @@ import { ClassesModule } from './classes/classes.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { SubmissionsModule } from './submissions/submissions.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { RealtimeModule } from './realtime/realtime.module';
     AssignmentsModule,
     SubmissionsModule,
     RealtimeModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

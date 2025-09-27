@@ -20,43 +20,39 @@ export class AssignmentsService {
       where: { id: classId },
       include: { enrollments: true },
     });
+
     if (!kelas) throw new NotFoundException('Class not found');
     if (kelas.instructorId !== instructorId)
       throw new ForbiddenException('Not your class');
 
     // Harga assignment berdasarkan input instruktur
-    const price = dto.expectedStudentCount * 2500;
+    const pricePerStudent = 2500;
+    const totalPrice = dto.expectedStudentCount * pricePerStudent;
 
-    // Simpan transaksi pembayaran (status: PENDING)
-    const transaction = await this.prisma.transaction.create({
-      data: {
-        userId: instructorId,
-        amount: price,
-        creditsPurchased: 0,
-        status: 'PENDING',
-        midtransOrderId: `ASSIGN-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-      },
-    });
-
-    // Assignment dibuat dengan status tidak aktif (misal: tambahkan field 'active' jika perlu)
+    // Buat assignment (tidak aktif sampai pembayaran selesai)
     const assignment = await this.prisma.assignment.create({
       data: {
         title: dto.title,
         instructions: dto.instructions,
-        deadline: dto.deadline ? new Date(dto.deadline) : undefined,
+        deadline: dto.deadline ? new Date(dto.deadline) : null,
         classId,
         expectedStudentCount: dto.expectedStudentCount,
-        active: false, // assignment belum aktif sebelum pembayaran
+        active: false, // Akan diaktifkan setelah pembayaran
       },
     });
 
-    // Kirim data transaksi ke frontend untuk proses pembayaran
+    // Return data untuk pembayaran
     return {
       assignment,
-      price,
+      paymentRequired: true,
+      totalPrice,
+      pricePerStudent,
       expectedStudentCount: dto.expectedStudentCount,
-      transaction,
-      message: 'Assignment created, please complete payment to activate.',
+      message: 'Assignment created. Please complete payment to activate.',
+      paymentData: {
+        amount: totalPrice,
+        assignmentId: assignment.id,
+      },
     };
   }
 
@@ -64,13 +60,30 @@ export class AssignmentsService {
     const kelas = await this.prisma.class.findUnique({
       where: { id: classId },
     });
+
     if (!kelas) throw new NotFoundException('Class not found');
+
     if (role === 'INSTRUCTOR' && kelas.instructorId !== userId) {
       throw new ForbiddenException('Not your class');
     }
-    return this.prisma.assignment.findMany({
-      where: { classId },
+
+    const assignments = await this.prisma.assignment.findMany({
+      where: {
+        classId,
+        // Student hanya bisa lihat assignment yang aktif
+        ...(role === 'STUDENT' && { active: true }),
+      },
       orderBy: { createdAt: 'desc' },
+      include: {
+        submissions: {
+          where: role === 'STUDENT' ? { studentId: userId } : undefined,
+        },
+        _count: {
+          select: { submissions: true },
+        },
+      },
     });
+
+    return assignments;
   }
 }

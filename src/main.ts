@@ -9,6 +9,13 @@ async function bootstrap() {
 
   app.use(helmet());
 
+  app.use((req, res, next) => {
+    console.log(
+      `[HTTP] ${req.method} ${req.url} at ${new Date().toISOString()}`,
+    );
+    next();
+  });
+
   // Swagger setup
   const config = new DocumentBuilder()
     .setTitle('Protextify API')
