@@ -8,7 +8,6 @@ import {
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue, Job } from 'bull';
 import { PrismaService } from '../prisma/prisma.service';
-// 🔧 Perbaiki import DTO menggunakan index
 import { CheckPlagiarismDto, PlagiarismResultDto } from './dto';
 import { PlagiarismJobData } from './interfaces/winston-ai.interface';
 
@@ -50,13 +49,20 @@ export class PlagiarismService {
       throw new ForbiddenException('Not your class');
     }
 
+    // 🔧 Add validation for submission status
+    if (submission.status !== 'SUBMITTED') {
+      throw new BadRequestException(
+        'Only submitted submissions can be checked for plagiarism',
+      );
+    }
+
     if (!submission.content || submission.content.trim().length === 0) {
       throw new BadRequestException('Submission content is empty');
     }
 
     if (submission.content.length < 100) {
       throw new BadRequestException(
-        'Submission content must be at least 100 characters',
+        'Submission content must be at least 100 characters for plagiarism check',
       );
     }
 
@@ -83,6 +89,26 @@ export class PlagiarismService {
         jobId: pendingJob.id.toString(),
         status: await this.getJobStatus(pendingJob),
         message: 'Plagiarism check is already in progress',
+      };
+    }
+
+    // Check if already completed
+    if (
+      submission.plagiarismChecks &&
+      submission.plagiarismChecks.status === 'completed'
+    ) {
+      this.logger.log(
+        `[PLAGIARISM SERVICE] Plagiarism already completed for submission: ${submissionId}`,
+      );
+      return {
+        jobId: 'completed',
+        status: 'completed',
+        message:
+          'Plagiarism check already completed. Use /plagiarism-report to get results.',
+        score: submission.plagiarismChecks.score,
+        wordCount: submission.plagiarismChecks.wordCount,
+        creditsUsed: submission.plagiarismChecks.creditsUsed,
+        completedAt: submission.plagiarismChecks.checkedAt.toISOString(),
       };
     }
 
@@ -118,8 +144,8 @@ export class PlagiarismService {
         type: 'exponential',
         delay: 5000,
       },
-      removeOnComplete: 10, // Keep last 10 completed jobs
-      removeOnFail: 10, // Keep last 10 failed jobs
+      removeOnComplete: 10,
+      removeOnFail: 10,
     });
 
     this.logger.log(
@@ -142,7 +168,12 @@ export class PlagiarismService {
     const submission = await this.prismaService.submission.findUnique({
       where: { id: submissionId },
       include: {
-        assignment: { include: { class: true } },
+        assignment: {
+          include: {
+            class: true,
+          },
+        },
+        student: true,
         plagiarismChecks: true,
       },
     });
@@ -166,24 +197,81 @@ export class PlagiarismService {
         submissionId,
         status: 'not_checked',
         message: 'Plagiarism check has not been performed yet',
+        pdfReportUrl: null,
       };
     }
 
     const plagiarismCheck = submission.plagiarismChecks;
 
-    return {
+    // 🔧 Perbaikan: Deklarasikan sebagai string | null dan assign dengan benar
+    let pdfReportUrl: string | null = null;
+    if (plagiarismCheck.status === 'completed') {
+      // For now, we'll return a placeholder URL
+      // In production, this should generate an actual PDF report
+      pdfReportUrl = await this.generatePDFReportUrl(
+        submission,
+        plagiarismCheck,
+        role,
+      );
+    }
+
+    const result = {
       submissionId,
       status: plagiarismCheck.status,
       score: plagiarismCheck.score,
       wordCount: plagiarismCheck.wordCount,
       creditsUsed: plagiarismCheck.creditsUsed,
       checkedAt: plagiarismCheck.checkedAt.toISOString(),
+      pdfReportUrl,
       // Only include detailed results for instructors
       ...(role === 'INSTRUCTOR' &&
         plagiarismCheck.rawResponse && {
           detailedResults: plagiarismCheck.rawResponse,
         }),
     };
+
+    this.logger.log(
+      `[PLAGIARISM SERVICE] Retrieved plagiarism result for submission: ${submissionId}, Status: ${plagiarismCheck.status}`,
+    );
+
+    return result;
+  }
+
+  // 🔧 New method to generate PDF report URL
+  private async generatePDFReportUrl(
+    submission: any,
+    plagiarismCheck: any,
+    role: string,
+  ): Promise<string> {
+    // This is a placeholder implementation
+    // In production, you would:
+    // 1. Generate PDF using libraries like puppeteer, jsPDF, or PDFKit
+    // 2. Store PDF in cloud storage (AWS S3, GCS, etc.)
+    // 3. Return pre-signed URL
+
+    const reportData = {
+      submissionId: submission.id,
+      studentName: submission.student.fullName,
+      assignmentTitle: submission.assignment.title,
+      className: submission.assignment.class.name,
+      plagiarismScore: plagiarismCheck.score,
+      wordCount: plagiarismCheck.wordCount,
+      creditsUsed: plagiarismCheck.creditsUsed,
+      checkedAt: plagiarismCheck.checkedAt,
+      ...(role === 'INSTRUCTOR' && {
+        detailedResults: plagiarismCheck.rawResponse,
+      }),
+    };
+
+    // For now, return a mock URL
+    // TODO: Implement actual PDF generation
+    const mockPDFUrl = `https://storage.protextify.com/reports/plagiarism/${submission.id}-${Date.now()}.pdf`;
+
+    this.logger.log(
+      `[PLAGIARISM SERVICE] Generated PDF report URL for submission: ${submission.id}`,
+    );
+
+    return mockPDFUrl;
   }
 
   async getJobStatus(

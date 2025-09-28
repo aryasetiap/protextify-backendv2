@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PlagiarismController } from './plagiarism.controller';
 import { PlagiarismService } from './plagiarism.service';
 import { PlagiarismProcessor } from './plagiarism.processor';
+import { PDFReportService } from './services/pdf-report.service'; // 🔧 Add PDF service
 import { PrismaModule } from '../prisma/prisma.module';
 import { RealtimeModule } from '../realtime/realtime.module';
 
@@ -25,7 +26,11 @@ import { RealtimeModule } from '../realtime/realtime.module';
     }),
   ],
   controllers: [PlagiarismController],
-  providers: [PlagiarismService, PlagiarismProcessor],
+  providers: [
+    PlagiarismService,
+    PlagiarismProcessor,
+    PDFReportService, // 🔧 Add PDF service
+  ],
   exports: [PlagiarismService],
 })
 export class PlagiarismModule {}

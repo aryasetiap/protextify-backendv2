@@ -21,4 +21,11 @@ export class PlagiarismResultDto {
 
   @ApiProperty({ required: false })
   completedAt?: string;
+
+  // 🔧 Add PDF report URL field
+  @ApiProperty({
+    required: false,
+    description: 'URL to download PDF plagiarism report',
+  })
+  pdfReportUrl?: string;
 }
