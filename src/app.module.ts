@@ -1,10 +1,14 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config'; // 🔧 Tambahkan ConfigService import
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { BullModule } from '@nestjs/bull';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import * as Joi from 'joi';
+import * as path from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { RootController } from './root.controller'; // 🔧 Import RootController
+import { ApiController } from './api.controller'; // 🔧 Import ApiController
 import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
 import { UsersModule } from './users/users.module';
@@ -14,6 +18,7 @@ import { SubmissionsModule } from './submissions/submissions.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PlagiarismModule } from './plagiarism/plagiarism.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -33,12 +38,18 @@ import { PlagiarismModule } from './plagiarism/plagiarism.module';
         POSTGRES_USER: Joi.string().required(),
         POSTGRES_PASSWORD: Joi.string().required(),
         POSTGRES_DB: Joi.string().required(),
-        // 🆕 Tambahkan validasi untuk Winston AI
+        // Winston AI
         WINSTON_AI_API_URL: Joi.string().required(),
         WINSTON_AI_TOKEN: Joi.string().required(),
+        // Base URL
+        BASE_URL: Joi.string().default('http://localhost:3000'),
       }),
     }),
-    // 🆕 Tambahkan BullModule configuration
+    ServeStaticModule.forRoot({
+      rootPath: path.join(__dirname, '..', 'uploads'),
+      serveRoot: '/static/',
+      exclude: ['/api/(.*)'], // Exclude API routes from static serving
+    }),
     BullModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         redis: {
@@ -53,10 +64,9 @@ import { PlagiarismModule } from './plagiarism/plagiarism.module';
       }),
       inject: [ConfigService],
     }),
-    // Rate limiting: max 100 requests per 60 seconds per IP
     ThrottlerModule.forRoot([
       {
-        ttl: 60000, // 60 detik dalam milidetik
+        ttl: 60000,
         limit: 100,
       },
     ]),
@@ -69,8 +79,13 @@ import { PlagiarismModule } from './plagiarism/plagiarism.module';
     RealtimeModule,
     PaymentsModule,
     PlagiarismModule,
+    StorageModule,
   ],
-  controllers: [AppController],
+  controllers: [
+    AppController,
+    RootController, // 🔧 Register RootController for root paths
+    ApiController, // 🔧 Register ApiController for /api root paths
+  ],
   providers: [AppService],
 })
 export class AppModule {}

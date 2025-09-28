@@ -8,6 +8,6 @@ export class AppService {
   getHello(): string {
     // Contoh: Ambil PORT dari environment
     const port = this.configService.get<number>('PORT');
-    return `Hello World! (Running on port ${port})`;
+    return `Backend Protextify! (Running on port ${port})`;
   }
 }

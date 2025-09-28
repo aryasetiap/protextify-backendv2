@@ -2,17 +2,20 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { StorageService } from '../storage/storage.service'; // 🆕 Import StorageService
 
 @Injectable()
 export class SubmissionsService {
   constructor(
     private prisma: PrismaService,
-    private realtimeGateway: RealtimeGateway, // Inject RealtimeGateway
+    private realtimeGateway: RealtimeGateway,
+    private storageService: StorageService, // 🆕 Inject StorageService
   ) {}
 
   async createSubmission(
@@ -73,10 +76,19 @@ export class SubmissionsService {
     if (!submission) throw new NotFoundException('Submission not found');
     if (submission.studentId !== userId)
       throw new ForbiddenException('Not your submission');
-    return this.prisma.submission.update({
+
+    const updatedSubmission = await this.prisma.submission.update({
       where: { id: submissionId },
       data: { content: dto.content },
     });
+
+    // Broadcast content update via WebSocket
+    this.realtimeGateway.broadcastSubmissionUpdate(submissionId, {
+      status: updatedSubmission.status,
+      updatedAt: updatedSubmission.updatedAt.toISOString(),
+    });
+
+    return updatedSubmission;
   }
 
   async submit(submissionId: string, userId: string) {
@@ -116,8 +128,12 @@ export class SubmissionsService {
     // Send notification to student
     this.realtimeGateway.sendNotification(submission.studentId, {
       type: 'grade_received',
-      message: `Your submission has been graded: ${grade}`,
-      data: { submissionId, grade },
+      message: `You received a grade of ${grade} for your submission.`,
+      data: {
+        submissionId,
+        grade,
+        assignmentTitle: submission.assignment.title,
+      },
       createdAt: new Date().toISOString(),
     });
 
@@ -176,22 +192,41 @@ export class SubmissionsService {
     });
   }
 
-  async downloadSubmission(submissionId: string, userId: string, role: string) {
-    // TODO: Integrasi file storage, generate PDF/DOCX, return download URL
-    const submission = await this.prisma.submission.findUnique({
-      where: { id: submissionId },
-      include: { student: true, assignment: { include: { class: true } } },
-    });
-    if (!submission) throw new NotFoundException('Submission not found');
-    if (
-      (role === 'STUDENT' && submission.studentId !== userId) ||
-      (role === 'INSTRUCTOR' &&
-        submission.assignment.class.instructorId !== userId)
-    )
-      throw new ForbiddenException('No access');
-    // Return dummy URL for now
-    return {
-      url: `https://storage.example.com/submissions/${submissionId}.pdf`,
-    };
+  // 🆕 Updated download method with storage integration
+  async downloadSubmission(
+    submissionId: string,
+    userId: string,
+    role: string,
+    format: 'pdf' | 'docx' = 'pdf',
+  ) {
+    // Validate format
+    if (!['pdf', 'docx'].includes(format)) {
+      throw new BadRequestException(
+        'Invalid format. Supported formats: pdf, docx',
+      );
+    }
+
+    try {
+      // Generate file using StorageService
+      const result =
+        format === 'pdf'
+          ? await this.storageService.generatePDF(submissionId, userId, role)
+          : await this.storageService.generateDOCX(submissionId, userId, role);
+
+      return {
+        ...result,
+        generatedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      throw new BadRequestException('Failed to generate file');
+    }
   }
 }

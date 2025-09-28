@@ -6,12 +6,14 @@ import {
   Patch,
   Param,
   Req,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { SubmissionsService } from './submissions.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
+import { DownloadResponseDto } from '../storage/dto/download-file.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -36,7 +38,7 @@ export class SubmissionsController {
     );
   }
 
-  // Route yang lebih spesifik HARUS ditempatkan SEBELUM route yang lebih umum
+  // 🔧 PENTING: Route yang lebih SPESIFIK harus diletakkan di ATAS
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('STUDENT')
   @Get('/submissions/history')
@@ -51,17 +53,50 @@ export class SubmissionsController {
     return this.submissionsService.getClassHistory(classId, req.user.userId);
   }
 
+  // 🔧 Move download endpoint BEFORE generic :id endpoint
   @UseGuards(JwtAuthGuard)
   @Get('/submissions/:id/download')
-  async downloadSubmission(@Param('id') id: string, @Req() req) {
+  @ApiOperation({
+    summary: 'Download submission as PDF or DOCX',
+    description: 'Generate and download submission file in specified format',
+  })
+  @ApiQuery({
+    name: 'format',
+    enum: ['pdf', 'docx'],
+    required: false,
+    description: 'File format (default: pdf)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'File generated successfully',
+    type: DownloadResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Submission not found',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'No access to this submission',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid format or generation failed',
+  })
+  async downloadSubmission(
+    @Param('id') id: string,
+    @Req() req,
+    @Query('format') format?: 'pdf' | 'docx',
+  ): Promise<DownloadResponseDto> {
     return this.submissionsService.downloadSubmission(
       id,
       req.user.userId,
       req.user.role,
+      format || 'pdf',
     );
   }
 
-  // Route dengan parameter :id ditempatkan di AKHIR
+  // 🔧 Generic :id routes MUST be placed LAST
   @UseGuards(JwtAuthGuard)
   @Get('/submissions/:id')
   async getSubmissionDetail(@Param('id') id: string, @Req() req) {
