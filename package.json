@@ -24,6 +24,8 @@
     "queue:clean": "node -e \"require('./dist/src/plagiarism/plagiarism.service.js').cleanupOldJobs()\""
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.896.0",
+    "@aws-sdk/s3-request-presigner": "^3.896.0",
     "@bull-board/api": "^6.13.0",
     "@bull-board/express": "^6.13.0",
     "@nestjs/bull": "^11.0.3",

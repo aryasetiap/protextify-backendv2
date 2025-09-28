@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
-import * as fs from 'fs/promises';
+import { CloudStorageProvider } from './providers/cloud-storage.provider';
 import * as path from 'path';
 import PDFDocument from 'pdfkit';
 import * as DOCX from 'docx';
@@ -19,35 +19,20 @@ export interface GeneratedFileResult {
   url: string;
   size: number;
   format: 'pdf' | 'docx';
+  cloudKey?: string;
 }
 
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
-  private readonly uploadPath: string;
-  private readonly baseUrl: string;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly prismaService: PrismaService,
     private readonly realtimeGateway: RealtimeGateway,
+    private readonly cloudStorageProvider: CloudStorageProvider,
   ) {
-    // Setup storage directory path
-    this.uploadPath = path.join(process.cwd(), 'uploads', 'submissions');
-    this.baseUrl =
-      this.configService.get<string>('BASE_URL') || 'http://localhost:3000';
-
-    // Ensure upload directory exists
-    this.ensureUploadDirectory();
-  }
-
-  private async ensureUploadDirectory(): Promise<void> {
-    try {
-      await fs.mkdir(this.uploadPath, { recursive: true });
-      this.logger.log(`Storage directory ensured: ${this.uploadPath}`);
-    } catch (error) {
-      this.logger.error('Failed to create upload directory:', error);
-    }
+    this.logger.log('[STORAGE] Service initialized with cloud storage');
   }
 
   /**
@@ -70,118 +55,70 @@ export class StorageService {
     return new Promise((resolve, reject) => {
       try {
         const filename = `submission-${submissionId}-${nanoid(8)}.pdf`;
-        const filePath = path.join(this.uploadPath, filename);
         const doc = new PDFDocument();
-        const stream = require('fs').createWriteStream(filePath);
+        const chunks: Buffer[] = [];
 
-        doc.pipe(stream);
+        // Collect PDF data in memory
+        doc.on('data', (chunk) => chunks.push(chunk));
+        doc.on('end', async () => {
+          try {
+            const pdfBuffer = Buffer.concat(chunks);
 
-        // Header
-        doc.fontSize(20).text('Submission Report', 50, 50);
-        doc.moveDown();
-
-        // Submission Info
-        doc.fontSize(14).text('Submission Details', 50, doc.y + 20);
-        doc
-          .fontSize(12)
-          .text(`Student: ${submission.student.fullName}`, 50, doc.y + 20)
-          .text(`Assignment: ${submission.assignment.title}`, 50, doc.y + 15)
-          .text(`Class: ${submission.assignment.class.name}`, 50, doc.y + 15)
-          .text(`Status: ${submission.status}`, 50, doc.y + 15)
-          .text(
-            `Last Updated: ${submission.updatedAt.toLocaleString()}`,
-            50,
-            doc.y + 15,
-          );
-
-        if (submission.grade !== null) {
-          doc.text(`Grade: ${submission.grade}`, 50, doc.y + 15);
-        }
-
-        doc.moveDown();
-
-        // Plagiarism info (if available and user has permission)
-        if (
-          submission.plagiarismChecks &&
-          submission.plagiarismChecks.status === 'completed'
-        ) {
-          doc.fontSize(14).text('Plagiarism Check Results', 50, doc.y + 20);
-          doc
-            .fontSize(12)
-            .text(
-              `Plagiarism Score: ${submission.plagiarismChecks.score}%`,
-              50,
-              doc.y + 20,
-            )
-            .text(
-              `Word Count: ${submission.plagiarismChecks.wordCount}`,
-              50,
-              doc.y + 15,
-            )
-            .text(
-              `Checked At: ${submission.plagiarismChecks.checkedAt.toLocaleString()}`,
-              50,
-              doc.y + 15,
+            // Upload to cloud storage
+            const cloudKey = this.cloudStorageProvider.generateFileKey(
+              'submissions',
+              filename,
+            );
+            const uploadResult = await this.cloudStorageProvider.uploadFile(
+              pdfBuffer,
+              cloudKey,
+              'application/pdf',
+              {
+                submissionId,
+                userId,
+                role,
+                generatedAt: new Date().toISOString(),
+              },
             );
 
-          doc.moveDown();
-        }
+            // Generate pre-signed URL for secure download
+            const presignedUrl =
+              await this.cloudStorageProvider.generatePresignedUrl(cloudKey, {
+                expiresIn: 86400, // 24 hours
+                filename,
+              });
 
-        // Content
-        doc.fontSize(14).text('Submission Content', 50, doc.y + 20);
-        doc.fontSize(11).text(submission.content, 50, doc.y + 15, {
-          width: 500,
-          align: 'justify',
-        });
-
-        // Footer
-        doc
-          .fontSize(8)
-          .text('Generated by Protextify Platform', 50, doc.page.height - 50)
-          .text(
-            `Generated at: ${new Date().toLocaleString()}`,
-            50,
-            doc.page.height - 35,
-          );
-
-        doc.end();
-
-        stream.on('finish', async () => {
-          try {
-            const stats = await fs.stat(filePath);
             const result: GeneratedFileResult = {
               filename,
-              // 🔧 Fix: Update URL with correct path
-              url: `${this.baseUrl}/api/storage/download/${filename}`,
-              size: stats.size,
+              url: presignedUrl,
+              size: uploadResult.size,
               format: 'pdf',
+              cloudKey,
             };
 
             this.logger.log(
-              `[STORAGE] PDF generated successfully: ${filename}`,
+              `[STORAGE] PDF generated and uploaded successfully: ${filename}`,
             );
-            this.logger.log(`[STORAGE] PDF URL: ${result.url}`);
 
             // Send notification
             await this.sendDownloadNotification(
               userId,
               role,
               'pdf',
-              result.url,
+              presignedUrl,
               submission,
             );
 
             resolve(result);
           } catch (error) {
-            this.logger.error('PDF finish handler error:', error);
+            this.logger.error('PDF upload failed:', error);
             reject(error);
           }
         });
 
-        stream.on('error', (error) => {
-          this.logger.error('PDF generation stream error:', error);
-          reject(error);
-        });
+        // Generate PDF content
+        this.generatePDFContent(doc, submission);
+        doc.end();
       } catch (error) {
         this.logger.error('PDF generation failed:', error);
         reject(error);
@@ -210,103 +147,57 @@ export class StorageService {
 
     try {
       const filename = `submission-${submissionId}-${nanoid(8)}.docx`;
-      const filePath = path.join(this.uploadPath, filename);
 
       // Create DOCX document
-      const doc = new DOCX.Document({
-        sections: [
-          {
-            properties: {},
-            children: [
-              // Title
-              new DOCX.Paragraph({
-                text: 'Submission Report',
-                heading: DOCX.HeadingLevel.TITLE,
-              }),
+      const doc = this.createDOCXDocument(submission);
 
-              // Submission details
-              new DOCX.Paragraph({
-                text: 'Submission Details',
-                heading: DOCX.HeadingLevel.HEADING_1,
-              }),
-              new DOCX.Paragraph({
-                text: `Student: ${submission.student.fullName}`,
-              }),
-              new DOCX.Paragraph({
-                text: `Assignment: ${submission.assignment.title}`,
-              }),
-              new DOCX.Paragraph({
-                text: `Class: ${submission.assignment.class.name}`,
-              }),
-              new DOCX.Paragraph({ text: `Status: ${submission.status}` }),
-              new DOCX.Paragraph({
-                text: `Last Updated: ${submission.updatedAt.toLocaleString()}`,
-              }),
+      // Convert to buffer
+      const docxBuffer = await DOCX.Packer.toBuffer(doc);
 
-              ...(submission.grade !== null
-                ? [new DOCX.Paragraph({ text: `Grade: ${submission.grade}` })]
-                : []),
+      // Upload to cloud storage
+      const cloudKey = this.cloudStorageProvider.generateFileKey(
+        'submissions',
+        filename,
+      );
+      const uploadResult = await this.cloudStorageProvider.uploadFile(
+        docxBuffer,
+        cloudKey,
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        {
+          submissionId,
+          userId,
+          role,
+          generatedAt: new Date().toISOString(),
+        },
+      );
 
-              // Plagiarism results (if available)
-              ...(submission.plagiarismChecks &&
-              submission.plagiarismChecks.status === 'completed'
-                ? [
-                    new DOCX.Paragraph({
-                      text: 'Plagiarism Check Results',
-                      heading: DOCX.HeadingLevel.HEADING_1,
-                    }),
-                    new DOCX.Paragraph({
-                      text: `Plagiarism Score: ${submission.plagiarismChecks.score}%`,
-                    }),
-                    new DOCX.Paragraph({
-                      text: `Word Count: ${submission.plagiarismChecks.wordCount}`,
-                    }),
-                    new DOCX.Paragraph({
-                      text: `Checked At: ${submission.plagiarismChecks.checkedAt.toLocaleString()}`,
-                    }),
-                  ]
-                : []),
+      // Generate pre-signed URL for secure download
+      const presignedUrl = await this.cloudStorageProvider.generatePresignedUrl(
+        cloudKey,
+        {
+          expiresIn: 86400, // 24 hours
+          filename,
+        },
+      );
 
-              // Content
-              new DOCX.Paragraph({
-                text: 'Submission Content',
-                heading: DOCX.HeadingLevel.HEADING_1,
-              }),
-              new DOCX.Paragraph({ text: submission.content }),
-
-              // Footer
-              new DOCX.Paragraph({ text: '' }), // Space
-              new DOCX.Paragraph({
-                text: `Generated by Protextify Platform at ${new Date().toLocaleString()}`,
-                style: 'footer',
-              }),
-            ],
-          },
-        ],
-      });
-
-      // Save file
-      const buffer = await DOCX.Packer.toBuffer(doc);
-      await fs.writeFile(filePath, buffer);
-
-      const stats = await fs.stat(filePath);
       const result: GeneratedFileResult = {
         filename,
-        // 🔧 Fix: Update URL with correct path
-        url: `${this.baseUrl}/api/storage/download/${filename}`,
-        size: stats.size,
+        url: presignedUrl,
+        size: uploadResult.size,
         format: 'docx',
+        cloudKey,
       };
 
-      this.logger.log(`[STORAGE] DOCX generated successfully: ${filename}`);
-      this.logger.log(`[STORAGE] DOCX URL: ${result.url}`);
+      this.logger.log(
+        `[STORAGE] DOCX generated and uploaded successfully: ${filename}`,
+      );
 
       // Send notification
       await this.sendDownloadNotification(
         userId,
         role,
         'docx',
-        result.url,
+        presignedUrl,
         submission,
       );
 
@@ -318,68 +209,241 @@ export class StorageService {
   }
 
   /**
-   * Get file for download (serve static file)
+   * Generate new pre-signed URL for existing file
    */
-  async downloadFile(
+  async refreshDownloadUrl(
+    cloudKey: string,
     filename: string,
-  ): Promise<{ filePath: string; mimeType: string }> {
-    const filePath = path.join(this.uploadPath, filename);
-
+    expiresIn: number = 3600,
+  ): Promise<string> {
     try {
-      await fs.access(filePath);
-
-      const ext = path.extname(filename).toLowerCase();
-      const mimeType =
-        ext === '.pdf'
-          ? 'application/pdf'
-          : ext === '.docx'
-            ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-            : 'application/octet-stream';
-
-      this.logger.log(`[STORAGE] File found: ${filename}, path: ${filePath}`);
-      return { filePath, mimeType };
+      return await this.cloudStorageProvider.generatePresignedUrl(cloudKey, {
+        expiresIn,
+        filename,
+      });
     } catch (error) {
       this.logger.error(
-        `[STORAGE] File not found: ${filename}, path: ${filePath}`,
+        `Failed to refresh download URL for: ${cloudKey}`,
+        error,
       );
-      throw new NotFoundException('File not found');
+      throw new BadRequestException('Failed to generate download URL');
+    }
+  }
+
+  /**
+   * Delete file from cloud storage
+   */
+  async deleteFile(cloudKey: string): Promise<void> {
+    try {
+      await this.cloudStorageProvider.deleteFile(cloudKey);
+      this.logger.log(`[STORAGE] File deleted from cloud: ${cloudKey}`);
+    } catch (error) {
+      this.logger.error(`Failed to delete file: ${cloudKey}`, error);
+      throw new InternalServerErrorException('Failed to delete file');
     }
   }
 
   /**
    * Clean up old files (run periodically)
    */
-  async cleanupOldFiles(maxAgeHours: number = 24): Promise<number> {
+  async cleanupOldFiles(maxAgeDays: number = 7): Promise<number> {
+    // Note: This would require listing objects in R2 and checking their metadata
+    // For now, we'll implement a simple log message
+    this.logger.log(
+      `[STORAGE] Cleanup would delete files older than ${maxAgeDays} days`,
+    );
+
+    // TODO: Implement actual cleanup logic by:
+    // 1. List objects in R2 bucket
+    // 2. Check object metadata or last modified date
+    // 3. Delete objects older than maxAgeDays
+    // 4. Return count of deleted files
+
+    return 0;
+  }
+
+  /**
+   * Health check for storage service
+   */
+  async healthCheck(): Promise<any> {
     try {
-      const files = await fs.readdir(this.uploadPath);
-      const now = Date.now();
-      let deletedCount = 0;
+      const cloudHealth = await this.cloudStorageProvider.healthCheck();
 
-      for (const filename of files) {
-        const filePath = path.join(this.uploadPath, filename);
-        const stats = await fs.stat(filePath);
-
-        const ageHours = (now - stats.mtime.getTime()) / (1000 * 60 * 60);
-
-        if (ageHours > maxAgeHours) {
-          await fs.unlink(filePath);
-          deletedCount++;
-          this.logger.log(`[STORAGE] Deleted old file: ${filename}`);
-        }
-      }
-
-      this.logger.log(
-        `[STORAGE] Cleanup completed, deleted ${deletedCount} files`,
-      );
-      return deletedCount;
+      return {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        service: 'storage',
+        cloudStorage: cloudHealth,
+        features: {
+          pdfGeneration: 'enabled',
+          docxGeneration: 'enabled',
+          cloudUpload: 'enabled',
+          presignedUrls: 'enabled',
+        },
+      };
     } catch (error) {
-      this.logger.error('File cleanup failed:', error);
-      return 0;
+      this.logger.error('[STORAGE] Health check failed:', error);
+      return {
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        service: 'storage',
+        error: error.message,
+      };
     }
   }
 
   /**
-   * Get submission with permission validation
+   * Generate PDF content (private helper)
+   */
+  private generatePDFContent(doc: PDFKit.PDFDocument, submission: any): void {
+    // Header
+    doc.fontSize(20).text('Submission Report', 50, 50);
+    doc.moveDown();
+
+    // Submission Info
+    doc.fontSize(14).text('Submission Details', 50, doc.y + 20);
+    doc
+      .fontSize(12)
+      .text(`Student: ${submission.student.fullName}`, 50, doc.y + 20)
+      .text(`Assignment: ${submission.assignment.title}`, 50, doc.y + 15)
+      .text(`Class: ${submission.assignment.class.name}`, 50, doc.y + 15)
+      .text(`Status: ${submission.status}`, 50, doc.y + 15)
+      .text(
+        `Last Updated: ${submission.updatedAt.toLocaleString()}`,
+        50,
+        doc.y + 15,
+      );
+
+    if (submission.grade !== null) {
+      doc.text(`Grade: ${submission.grade}`, 50, doc.y + 15);
+    }
+
+    doc.moveDown();
+
+    // Plagiarism info (if available and user has permission)
+    if (
+      submission.plagiarismChecks &&
+      submission.plagiarismChecks.status === 'completed'
+    ) {
+      doc.fontSize(14).text('Plagiarism Check Results', 50, doc.y + 20);
+      doc
+        .fontSize(12)
+        .text(
+          `Plagiarism Score: ${submission.plagiarismChecks.score}%`,
+          50,
+          doc.y + 20,
+        )
+        .text(
+          `Word Count: ${submission.plagiarismChecks.wordCount}`,
+          50,
+          doc.y + 15,
+        )
+        .text(
+          `Checked At: ${submission.plagiarismChecks.checkedAt.toLocaleString()}`,
+          50,
+          doc.y + 15,
+        );
+
+      doc.moveDown();
+    }
+
+    // Content
+    doc.fontSize(14).text('Submission Content', 50, doc.y + 20);
+    doc.fontSize(11).text(submission.content, 50, doc.y + 15, {
+      width: 500,
+      align: 'justify',
+    });
+
+    // Footer
+    doc
+      .fontSize(8)
+      .text('Generated by Protextify Platform', 50, doc.page.height - 50)
+      .text(
+        `Generated at: ${new Date().toLocaleString()}`,
+        50,
+        doc.page.height - 35,
+      );
+  }
+
+  /**
+   * Create DOCX document (private helper)
+   */
+  private createDOCXDocument(submission: any): DOCX.Document {
+    return new DOCX.Document({
+      sections: [
+        {
+          properties: {},
+          children: [
+            // Title
+            new DOCX.Paragraph({
+              text: 'Submission Report',
+              heading: DOCX.HeadingLevel.TITLE,
+            }),
+
+            // Submission details
+            new DOCX.Paragraph({
+              text: 'Submission Details',
+              heading: DOCX.HeadingLevel.HEADING_1,
+            }),
+            new DOCX.Paragraph({
+              text: `Student: ${submission.student.fullName}`,
+            }),
+            new DOCX.Paragraph({
+              text: `Assignment: ${submission.assignment.title}`,
+            }),
+            new DOCX.Paragraph({
+              text: `Class: ${submission.assignment.class.name}`,
+            }),
+            new DOCX.Paragraph({ text: `Status: ${submission.status}` }),
+            new DOCX.Paragraph({
+              text: `Last Updated: ${submission.updatedAt.toLocaleString()}`,
+            }),
+
+            ...(submission.grade !== null
+              ? [new DOCX.Paragraph({ text: `Grade: ${submission.grade}` })]
+              : []),
+
+            // Plagiarism results (if available)
+            ...(submission.plagiarismChecks &&
+            submission.plagiarismChecks.status === 'completed'
+              ? [
+                  new DOCX.Paragraph({
+                    text: 'Plagiarism Check Results',
+                    heading: DOCX.HeadingLevel.HEADING_1,
+                  }),
+                  new DOCX.Paragraph({
+                    text: `Plagiarism Score: ${submission.plagiarismChecks.score}%`,
+                  }),
+                  new DOCX.Paragraph({
+                    text: `Word Count: ${submission.plagiarismChecks.wordCount}`,
+                  }),
+                  new DOCX.Paragraph({
+                    text: `Checked At: ${submission.plagiarismChecks.checkedAt.toLocaleString()}`,
+                  }),
+                ]
+              : []),
+
+            // Content
+            new DOCX.Paragraph({
+              text: 'Submission Content',
+              heading: DOCX.HeadingLevel.HEADING_1,
+            }),
+            new DOCX.Paragraph({ text: submission.content }),
+
+            // Footer
+            new DOCX.Paragraph({ text: '' }), // Space
+            new DOCX.Paragraph({
+              text: `Generated by Protextify Platform at ${new Date().toLocaleString()}`,
+              style: 'footer',
+            }),
+          ],
+        },
+      ],
+    });
+  }
+
+  /**
+   * Get submission with permission validation (private helper)
    */
   private async getSubmissionWithPermissions(
     submissionId: string,
@@ -415,7 +479,7 @@ export class StorageService {
   }
 
   /**
-   * Send download notification via WebSocket
+   * Send download notification via WebSocket (private helper)
    */
   private async sendDownloadNotification(
     userId: string,
@@ -433,6 +497,7 @@ export class StorageService {
           format,
           downloadUrl,
           filename: path.basename(downloadUrl),
+          expiresAt: new Date(Date.now() + 86400 * 1000).toISOString(), // 24 hours from now
         },
         createdAt: new Date().toISOString(),
       });

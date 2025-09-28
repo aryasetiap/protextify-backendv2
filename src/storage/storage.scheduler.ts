@@ -10,13 +10,15 @@ export class StorageScheduler {
 
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async handleFileCleanup() {
-    this.logger.log('Starting scheduled file cleanup...');
+    this.logger.log('Starting scheduled cloud file cleanup...');
 
     try {
-      const deletedCount = await this.storageService.cleanupOldFiles(24);
-      this.logger.log(`Cleanup completed: ${deletedCount} files deleted`);
+      const deletedCount = await this.storageService.cleanupOldFiles(7); // 7 days
+      this.logger.log(
+        `Cleanup completed: ${deletedCount} files deleted from cloud storage`,
+      );
     } catch (error) {
-      this.logger.error('File cleanup failed:', error);
+      this.logger.error('Cloud file cleanup failed:', error);
     }
   }
 }

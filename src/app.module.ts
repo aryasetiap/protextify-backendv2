@@ -19,6 +19,7 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PlagiarismModule } from './plagiarism/plagiarism.module';
 import { StorageModule } from './storage/storage.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -43,6 +44,13 @@ import { StorageModule } from './storage/storage.module';
         WINSTON_AI_TOKEN: Joi.string().required(),
         // Base URL
         BASE_URL: Joi.string().default('http://localhost:3000'),
+        // Cloudflare R2
+        CLOUDFLARE_R2_ENDPOINT: Joi.string().required(),
+        CLOUDFLARE_R2_REGION: Joi.string().default('auto'),
+        CLOUDFLARE_R2_BUCKET: Joi.string().required(),
+        CLOUDFLARE_R2_ACCESS_KEY_ID: Joi.string().required(),
+        CLOUDFLARE_R2_SECRET_ACCESS_KEY: Joi.string().required(),
+        CLOUDFLARE_R2_PUBLIC_URL: Joi.string().required(),
       }),
     }),
     ServeStaticModule.forRoot({
@@ -80,6 +88,7 @@ import { StorageModule } from './storage/storage.module';
     PaymentsModule,
     PlagiarismModule,
     StorageModule,
+    ScheduleModule.forRoot(), // Add this for cron jobs
   ],
   controllers: [
     AppController,

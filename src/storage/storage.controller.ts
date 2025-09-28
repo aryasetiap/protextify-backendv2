@@ -2,94 +2,94 @@ import {
   Controller,
   Get,
   Param,
-  Res,
-  NotFoundException,
+  Query,
   BadRequestException,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
-import type { Response } from 'express';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { StorageService } from './storage.service';
-import * as path from 'path';
+import { CloudStorageProvider } from './providers/cloud-storage.provider';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 
 @ApiTags('storage')
 @Controller('storage') // This becomes /api/storage due to global prefix
 export class StorageController {
   private readonly logger = new Logger(StorageController.name);
 
-  constructor(private readonly storageService: StorageService) {}
+  constructor(
+    private readonly storageService: StorageService,
+    private readonly cloudStorageProvider: CloudStorageProvider,
+  ) {}
 
   @Get('health')
   @ApiOperation({ summary: 'Storage service health check' })
   @ApiResponse({ status: 200, description: 'Storage service is healthy' })
   async healthCheck() {
-    const uploadsPath = path.join(process.cwd(), 'uploads', 'submissions');
-
-    return {
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      service: 'storage',
-      uploadsPath,
-      endpoints: {
-        health: '/api/storage/health',
-        download: '/api/storage/download/:filename',
-      },
-    };
+    return this.storageService.healthCheck();
   }
 
-  @Get('download/:filename')
+  @Get('refresh-url/:cloudKey')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
-    summary: 'Download generated file',
-    description: 'Download PDF or DOCX file that was previously generated',
+    summary: 'Refresh pre-signed URL for existing file',
+    description: 'Generate new pre-signed URL for cloud storage file',
+  })
+  @ApiQuery({
+    name: 'filename',
+    required: true,
+    description: 'Original filename for download',
+  })
+  @ApiQuery({
+    name: 'expires',
+    required: false,
+    description: 'URL expiration time in seconds (default: 3600)',
   })
   @ApiResponse({
     status: 200,
-    description: 'File downloaded successfully',
+    description: 'New pre-signed URL generated',
+    schema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string' },
+        expiresIn: { type: 'number' },
+        expiresAt: { type: 'string' },
+      },
+    },
   })
-  @ApiResponse({
-    status: 404,
-    description: 'File not found',
-  })
-  async downloadFile(
-    @Param('filename') filename: string,
-    @Res() res: Response,
-  ): Promise<void> {
-    this.logger.log(`[STORAGE] Download request for: ${filename}`);
+  async refreshDownloadUrl(
+    @Param('cloudKey') cloudKey: string,
+    @Query('filename') filename: string,
+    @Query('expires') expires?: string,
+  ) {
+    // Basic security: validate cloudKey
+    if (!cloudKey || cloudKey.includes('..')) {
+      throw new BadRequestException('Invalid cloud key');
+    }
 
-    // Basic security: validate filename
-    if (
-      !filename ||
-      filename.includes('..') ||
-      filename.includes('/') ||
-      filename.includes('\\')
-    ) {
-      this.logger.error(`[STORAGE] Invalid filename: ${filename}`);
-      throw new BadRequestException('Invalid filename');
+    const expiresIn = expires ? parseInt(expires, 10) : 3600;
+
+    if (isNaN(expiresIn) || expiresIn < 60 || expiresIn > 86400) {
+      throw new BadRequestException(
+        'Expires time must be between 60 and 86400 seconds',
+      );
     }
 
     try {
-      const { filePath, mimeType } =
-        await this.storageService.downloadFile(filename);
-
-      this.logger.log(`[STORAGE] Serving file: ${filePath}`);
-
-      // Set appropriate headers
-      res.setHeader('Content-Type', mimeType);
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${filename}"`,
+      const url = await this.storageService.refreshDownloadUrl(
+        decodeURIComponent(cloudKey),
+        filename,
+        expiresIn,
       );
-      res.setHeader('Cache-Control', 'private, no-cache');
 
-      // Send file
-      res.sendFile(path.resolve(filePath));
+      return {
+        url,
+        expiresIn,
+        expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+      };
     } catch (error) {
-      this.logger.error(`[STORAGE] Download error:`, error);
-
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new BadRequestException('Unable to download file');
+      this.logger.error(`[STORAGE] Refresh URL error:`, error);
+      throw new BadRequestException('Unable to refresh download URL');
     }
   }
 }
