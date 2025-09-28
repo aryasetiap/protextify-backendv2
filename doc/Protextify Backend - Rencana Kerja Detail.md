@@ -290,24 +290,77 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 
 ## 🧪 **Milestone 6: Kualitas & Pengujian (Quality Assurance)**
 
-**Tujuan:** Memastikan aplikasi berjalan sesuai ekspektasi.
+**Tujuan:** Memastikan seluruh fitur backend Protextify berjalan sesuai ekspektasi, aman, dan siap digunakan di lingkungan produksi.
 
-### 6.1–6.3 **Tes Otomatis**
+### 6.1 **Unit Test (Jest)**
 
-- Unit Test (Jest), Integration Test, E2E Test (Supertest).
+- **Scope:** Pengujian fungsi-fungsi utama di setiap service dan utilitas.
+- **Tools:** Jest (default NestJS).
+- **Contoh:**
+  - Service: Validasi logika pembayaran, auto-save submission, pengecekan plagiarisme.
+  - Util: Helper untuk format tanggal, validasi signature webhook.
+- **Lokasi:** test dan file `*.spec.ts` di masing-masing modul.
+- **Best Practice:**
+  - Mock dependency (misal: PrismaService, external API).
+  - Pastikan coverage minimal 80% untuk service logic.
+
+### 6.2 **Integration Test**
+
+- **Scope:** Pengujian alur kerja antar modul (controller-service-database).
+- **Tools:** Jest + Supertest.
+- **Contoh:**
+  - Endpoint: `POST /payments/create-transaction`, `POST /submissions/:id/check-plagiarism`, `GET /submissions/:id/download`.
+  - Validasi: Data tersimpan di database, event WebSocket terkirim.
+- **Best Practice:**
+  - Gunakan database test (isolasi dari data produksi).
+  - Setup dan teardown data sebelum/selesai test.
+
+### 6.3 **End-to-End (E2E) Test**
+
+- **Scope:** Simulasi skenario nyata dari sisi pengguna (student/instructor).
+- **Tools:** Supertest, manual scenario, atau Cypress (untuk frontend).
+- **Contoh:**
+  - Registrasi → Login → Buat kelas → Buat assignment → Pembayaran → Submission → Cek plagiarisme → Download file.
+  - Validasi: Semua endpoint dan event berjalan sesuai flow bisnis.
+- **Best Practice:**
+  - Test seluruh flow utama (happy path dan error path).
+  - Pastikan proteksi endpoint (JWT, RBAC) berjalan.
 
 ### 6.4 **Testing Keamanan**
 
-- Audit keamanan, validasi DTO, rate limiting.
+- **Scope:** Audit keamanan aplikasi dan validasi input.
+- **Tools:** Manual review, automated security scanner (misal: npm audit, Snyk).
+- **Checklist:**
+  - Validasi DTO di semua endpoint (whitelist, transform, forbidNonWhitelisted).
+  - Rate limiting pada endpoint sensitif (login, webhook).
+  - Signature verification pada webhook (`/payments/webhook`).
+  - Proteksi JWT dan role guard (`@Roles`, `JwtAuthGuard`).
+  - Cek potensi SQL Injection, XSS, CSRF (gunakan helmet, Prisma).
+- **Referensi:** Best Practices Implementasi Backend.md
 
 ### 6.5 **Pengujian Manual Skenario Kunci**
 
-- Simulasi pembayaran dan cek plagiarisme di sandbox.
+- **Scope:** Simulasi manual untuk alur bisnis utama.
+- **Skenario:**
+  - Instructor membuat assignment dan melakukan pembayaran.
+  - Student membuat submission, auto-save via WebSocket.
+  - Instructor melakukan cek plagiarisme.
+  - Download file PDF/DOCX dari cloud storage.
+  - Monitoring submission via WebSocket.
+- **Checklist:**
+  - Semua event WebSocket (`notification`, `submissionUpdated`, `submissionListUpdated`) terkirim sesuai payload di Daftar Lengkap Endpoint API Protextify.md.
+  - Validasi proteksi endpoint dan error handling.
 
 ### 6.6 **Audit Logging & Monitoring**
 
-- Implementasi logging terstruktur di seluruh modul (gunakan Winston/Pino).
-- Pastikan semua error dan event penting tercatat.
+- **Scope:** Pastikan semua aktivitas penting tercatat dan dapat dimonitor.
+- **Tools:** Winston (logging), BullMQ dashboard (queue), custom monitoring.
+- **Checklist:**
+  - Logging terstruktur untuk request, error, dan event penting.
+  - Monitoring job queue (BullMQ) untuk plagiarisme.
+  - Audit log untuk transaksi pembayaran dan perubahan submission.
+  - Alerting untuk error kritis (integrasi Sentry/Slack opsional).
+- **Referensi:** Best Practices Implementasi Backend.md
 
 ---
 
