@@ -7,7 +7,14 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { ClassesService } from './classes.service';
 import { CreateClassDto } from './dto/create-class.dto';
 import { JoinClassDto } from './dto/join-class.dto';
@@ -16,6 +23,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('classes')
+@ApiBearerAuth()
 @Controller('classes')
 export class ClassesController {
   constructor(private readonly classesService: ClassesService) {}
@@ -23,6 +31,42 @@ export class ClassesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('INSTRUCTOR')
   @Post()
+  @ApiOperation({
+    summary: 'Create new class',
+    description:
+      'Instructor creates a new class. Generates unique class token.',
+  })
+  @ApiBody({
+    type: CreateClassDto,
+    examples: {
+      default: {
+        summary: 'Create class',
+        value: {
+          name: 'Kelas Kalkulus',
+          description: 'Kelas untuk mata kuliah Kalkulus',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Class created successfully',
+    schema: {
+      example: {
+        id: 'class-abc',
+        name: 'Kelas Kalkulus',
+        description: 'Kelas untuk mata kuliah Kalkulus',
+        instructorId: 'instructor-123',
+        classToken: '8charToken',
+        createdAt: '2025-06-01T12:00:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    schema: { example: { statusCode: 401, message: 'Unauthorized' } },
+  })
   async createClass(@Req() req, @Body() dto: CreateClassDto) {
     return this.classesService.createClass(dto, req.user.userId);
   }
@@ -30,18 +74,122 @@ export class ClassesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('STUDENT')
   @Post('join')
+  @ApiOperation({
+    summary: 'Join class using token',
+    description: 'Student joins a class using a unique class token.',
+  })
+  @ApiBody({
+    type: JoinClassDto,
+    examples: {
+      default: {
+        summary: 'Join class',
+        value: {
+          classToken: '8charToken',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully joined class',
+    schema: {
+      example: {
+        message: 'Successfully joined class',
+        class: {
+          id: 'class-abc',
+          name: 'Kelas Kalkulus',
+          instructorId: 'instructor-123',
+          classToken: '8charToken',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Class not found',
+    schema: { example: { statusCode: 404, message: 'Class not found' } },
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Already joined this class',
+    schema: {
+      example: { statusCode: 409, message: 'Already joined this class' },
+    },
+  })
   async joinClass(@Req() req, @Body() dto: JoinClassDto) {
     return this.classesService.joinClass(dto, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get()
+  @ApiOperation({
+    summary: 'Get classes for user',
+    description:
+      'Returns list of classes. Instructors get classes they created, students get classes they joined.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of classes for user',
+    schema: {
+      example: [
+        {
+          id: 'class-abc',
+          name: 'Kelas Kalkulus',
+          instructorId: 'instructor-123',
+          classToken: '8charToken',
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    schema: { example: { statusCode: 401, message: 'Unauthorized' } },
+  })
   async getClasses(@Req() req) {
     return this.classesService.getClasses(req.user.userId, req.user.role);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
+  @ApiOperation({
+    summary: 'Get class detail',
+    description: 'Returns detailed information about a class.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID of the class',
+    example: 'class-abc',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Class detail',
+    schema: {
+      example: {
+        id: 'class-abc',
+        name: 'Kelas Kalkulus',
+        description: 'Kelas untuk mata kuliah Kalkulus',
+        instructor: {
+          id: 'instructor-123',
+          fullName: 'Nama Instruktur',
+        },
+        enrollments: [
+          { student: { id: 'student-1', fullName: 'Siswa 1' } },
+          { student: { id: 'student-2', fullName: 'Siswa 2' } },
+        ],
+        assignments: [
+          { id: 'assignment-1', title: 'Tugas 1' },
+          { id: 'assignment-2', title: 'Tugas 2' },
+        ],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Class not found',
+    schema: { example: { statusCode: 404, message: 'Class not found' } },
+  })
   async getClassDetail(@Param('id') id: string) {
     return this.classesService.getClassDetail(id);
   }
