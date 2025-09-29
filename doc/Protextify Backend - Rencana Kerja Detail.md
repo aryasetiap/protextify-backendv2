@@ -272,7 +272,7 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 
 ---
 
-### 5.5 **Integrasi Event WebSocket**
+### 5.5 **Integrasi Event WebSocket** ✅
 
 - **Fitur:**
   - Kirim event `notification` ke user saat status pembayaran berubah (assignment aktif, kredit bertambah).
@@ -292,7 +292,7 @@ Dokumen ini adalah checklist komprehensif untuk membangun backend Protextify. Se
 
 **Tujuan:** Memastikan seluruh fitur backend Protextify berjalan sesuai ekspektasi, aman, dan siap digunakan di lingkungan produksi.
 
-### 6.1 **Unit Test (Jest)**
+### 6.1 **Unit Test (Jest)** ✅
 
 - **Scope:** Pengujian fungsi-fungsi utama di setiap service dan utilitas.
 - **Tools:** Jest (default NestJS).

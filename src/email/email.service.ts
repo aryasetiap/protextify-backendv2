@@ -44,9 +44,12 @@ export class EmailService {
   }
 
   async verifyEmailToken(token: string) {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET is not defined');
+    }
+
     try {
-      const jwtSecret = process.env.JWT_SECRET;
-      if (!jwtSecret) throw new Error('JWT_SECRET is not defined');
       const payload = jwt.verify(token, jwtSecret) as unknown as {
         email: string;
       };

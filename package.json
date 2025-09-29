@@ -114,9 +114,26 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.service.ts",
+      "**/*.processor.ts",
+      "**/*.provider.ts",
+      "**/plagiarism/*.ts",
+      "!**/*.controller.ts",
+      "!**/*.module.ts",
+      "!**/dto/**",
+      "!**/main.ts",
+      "!**/app.service.ts",
+      "!**/app.controller.ts",
+      "!**/logger.ts",
+      "!**/events.ts"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "transformIgnorePatterns": [
+      "node_modules/(?!(nanoid)/)"
+    ],
+    "moduleNameMapper": {
+      "^nanoid$": "<rootDir>/../__mocks__/nanoid.js"
+    }
   }
 }
