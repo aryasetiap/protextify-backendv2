@@ -22,7 +22,9 @@
     "postbuild": "npm run copy:templates",
     "copy:templates": "copyfiles -u 3 src/email/templates/* dist/email/templates",
     "queue:dashboard": "bull-board",
-    "queue:clean": "node -e \"require('./dist/src/plagiarism/plagiarism.service.js').cleanupOldJobs()\""
+    "queue:clean": "node -e \"require('./dist/src/plagiarism/plagiarism.service.js').cleanupOldJobs()\"",
+    "db:seed": "npx prisma db seed",
+    "db:reset": "npx prisma migrate reset && npx prisma db seed"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.896.0",
@@ -103,5 +105,8 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }
