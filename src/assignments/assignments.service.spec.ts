@@ -1,97 +1,211 @@
+import { Test, TestingModule } from '@nestjs/testing';
 import { AssignmentsService } from './assignments.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { CreateAssignmentDto } from './dto/create-assignment.dto';
+
+// Mockup untuk PrismaService
+const mockPrismaService = {
+  class: {
+    findUnique: jest.fn(),
+  },
+  assignment: {
+    create: jest.fn(),
+    findMany: jest.fn(),
+  },
+};
 
 describe('AssignmentsService', () => {
   let service: AssignmentsService;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: typeof mockPrismaService;
 
-  beforeEach(() => {
-    prisma = {
-      class: { findUnique: jest.fn() },
-      assignment: { create: jest.fn(), findMany: jest.fn() },
-    } as any;
-    service = new AssignmentsService(prisma);
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        AssignmentsService,
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
+        },
+      ],
+    }).compile();
+
+    service = module.get<AssignmentsService>(AssignmentsService);
+    prisma = module.get(PrismaService);
+
+    // Reset semua mock sebelum setiap test
+    jest.clearAllMocks();
   });
 
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  // Pengujian untuk method createAssignment
   describe('createAssignment', () => {
-    it('should throw NotFoundException if class not found', async () => {
+    const classId = 'class-123';
+    const instructorId = 'instructor-abc';
+    const dto: CreateAssignmentDto = {
+      title: 'Tugas Kalkulus',
+      instructions: 'Kerjakan soal halaman 50.',
+      expectedStudentCount: 10,
+      deadline: '2025-12-31T23:59:59Z',
+    };
+    const mockClass = { id: classId, instructorId: instructorId };
+    const mockAssignment = {
+      id: 'assignment-xyz',
+      ...dto,
+      classId,
+      active: false,
+      deadline: new Date(dto.deadline),
+    };
+
+    // Kasus normal: berhasil membuat assignment
+    it('should create and return an assignment with payment details', async () => {
+      // Arrange: siapkan mock data
+      prisma.class.findUnique.mockResolvedValue(mockClass);
+      prisma.assignment.create.mockResolvedValue(mockAssignment);
+
+      const pricePerStudent = 2500;
+      const totalPrice = dto.expectedStudentCount * pricePerStudent;
+
+      // Act: panggil method yang akan diuji
+      const result = await service.createAssignment(classId, dto, instructorId);
+
+      // Assert: pastikan hasilnya sesuai ekspektasi
+      expect(prisma.class.findUnique).toHaveBeenCalledWith({
+        where: { id: classId },
+        include: { enrollments: true },
+      });
+      expect(prisma.assignment.create).toHaveBeenCalledWith({
+        data: {
+          title: dto.title,
+          instructions: dto.instructions,
+          deadline: new Date(dto.deadline),
+          classId,
+          expectedStudentCount: dto.expectedStudentCount,
+          active: false,
+        },
+      });
+      expect(result).toEqual({
+        assignment: mockAssignment,
+        paymentRequired: true,
+        totalPrice,
+        pricePerStudent,
+        expectedStudentCount: dto.expectedStudentCount,
+        message: 'Assignment created. Please complete payment to activate.',
+        paymentData: {
+          amount: totalPrice,
+          assignmentId: mockAssignment.id,
+        },
+      });
+    });
+
+    // Error handling: kelas tidak ditemukan
+    it('should throw NotFoundException if class is not found', async () => {
+      // Arrange
       prisma.class.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
       await expect(
-        service.createAssignment(
-          'classId',
-          { expectedStudentCount: 1, title: 'A' },
-          'instructorId',
-        ),
+        service.createAssignment(classId, dto, instructorId),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException if not instructor class', async () => {
-      prisma.class.findUnique.mockResolvedValue({ instructorId: 'other' });
-      await expect(
-        service.createAssignment(
-          'classId',
-          { expectedStudentCount: 1, title: 'A' },
-          'instructorId',
-        ),
-      ).rejects.toThrow(ForbiddenException);
-    });
-
-    it('should create assignment and return payment data', async () => {
+    // Error handling: instruktur mencoba membuat assignment di kelas orang lain
+    it('should throw ForbiddenException if instructor does not own the class', async () => {
+      // Arrange
       prisma.class.findUnique.mockResolvedValue({
-        instructorId: 'instructorId',
+        ...mockClass,
+        instructorId: 'another-instructor',
       });
-      prisma.assignment.create.mockResolvedValue({ id: 'assignId' });
-      const dto = { expectedStudentCount: 2, title: 'A' };
-      const result = await service.createAssignment(
-        'classId',
-        dto as any,
-        'instructorId',
-      );
-      expect(result.assignment).toBeDefined();
-      expect(result.paymentRequired).toBe(true);
-      expect(result.totalPrice).toBe(5000);
-      expect(result.paymentData.assignmentId).toBe('assignId');
+
+      // Act & Assert
+      await expect(
+        service.createAssignment(classId, dto, instructorId),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
+  // Pengujian untuk method getAssignments
   describe('getAssignments', () => {
-    it('should throw NotFoundException if class not found', async () => {
-      prisma.class.findUnique.mockResolvedValue(null);
-      await expect(
-        service.getAssignments('classId', 'userId', 'INSTRUCTOR'),
-      ).rejects.toThrow(NotFoundException);
-    });
+    const classId = 'class-123';
+    const mockClass = { id: classId, instructorId: 'instructor-abc' };
+    const mockAssignments = [
+      { id: 'asg-1', title: 'Tugas 1', active: true, submissions: [] },
+      { id: 'asg-2', title: 'Tugas 2', active: false, submissions: [] },
+    ];
 
-    it('should throw ForbiddenException if instructor not owner', async () => {
-      prisma.class.findUnique.mockResolvedValue({ instructorId: 'other' });
-      await expect(
-        service.getAssignments('classId', 'userId', 'INSTRUCTOR'),
-      ).rejects.toThrow(ForbiddenException);
-    });
+    // Kasus normal: instruktur mengambil semua assignment di kelasnya
+    it('should return all assignments for the class instructor', async () => {
+      // Arrange
+      const instructorId = 'instructor-abc';
+      prisma.class.findUnique.mockResolvedValue(mockClass);
+      prisma.assignment.findMany.mockResolvedValue(mockAssignments);
 
-    it('should return assignments for instructor', async () => {
-      prisma.class.findUnique.mockResolvedValue({ instructorId: 'userId' });
-      prisma.assignment.findMany.mockResolvedValue([{ id: 'a1' }]);
+      // Act
       const result = await service.getAssignments(
-        'classId',
-        'userId',
+        classId,
+        instructorId,
         'INSTRUCTOR',
       );
-      expect(result).toEqual([{ id: 'a1' }]);
+
+      // Assert
+      expect(prisma.assignment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { classId },
+        }),
+      );
+      expect(result).toEqual(mockAssignments);
     });
 
-    it('should return only active assignments for student', async () => {
-      prisma.class.findUnique.mockResolvedValue({});
-      prisma.assignment.findMany.mockResolvedValue([
-        { id: 'a2', active: true },
-      ]);
+    // Kasus normal: siswa hanya mengambil assignment yang aktif
+    it('should return only active assignments for a student', async () => {
+      // Arrange
+      const studentId = 'student-xyz';
+      const activeAssignments = mockAssignments.filter((a) => a.active);
+      prisma.class.findUnique.mockResolvedValue(mockClass);
+      prisma.assignment.findMany.mockResolvedValue(activeAssignments);
+
+      // Act
       const result = await service.getAssignments(
-        'classId',
-        'studentId',
+        classId,
+        studentId,
         'STUDENT',
       );
-      expect(result).toEqual([{ id: 'a2', active: true }]);
+
+      // Assert
+      expect(prisma.assignment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { classId, active: true },
+          include: expect.objectContaining({
+            submissions: { where: { studentId } },
+          }),
+        }),
+      );
+      expect(result).toEqual(activeAssignments);
+    });
+
+    // Error handling: kelas tidak ditemukan
+    it('should throw NotFoundException if class is not found', async () => {
+      // Arrange
+      prisma.class.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        service.getAssignments(classId, 'any-user', 'STUDENT'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    // Error handling: instruktur mencoba mengakses assignment di kelas orang lain
+    it('should throw ForbiddenException if an instructor tries to access another instructor class', async () => {
+      // Arrange
+      prisma.class.findUnique.mockResolvedValue(mockClass);
+
+      // Act & Assert
+      await expect(
+        service.getAssignments(classId, 'another-instructor', 'INSTRUCTOR'),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

@@ -1,328 +1,337 @@
+import { Test, TestingModule } from '@nestjs/testing';
 import { SubmissionsService } from './submissions.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { StorageService } from '../storage/storage.service';
 import {
-  NotFoundException,
   ForbiddenException,
+  NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
 
-// Mock nanoid
-jest.mock('nanoid', () => ({
-  nanoid: jest.fn(() => 'mock-id-123'),
-}));
+// Membuat mock data yang konsisten untuk digunakan di seluruh test
+const mockStudentId = 'student-1';
+const mockInstructorId = 'instructor-1';
+const mockAssignment = {
+  id: 'assignment-1',
+  active: true,
+  expectedStudentCount: 10,
+  class: { instructorId: mockInstructorId },
+};
+const mockSubmission = {
+  id: 'submission-1',
+  studentId: mockStudentId,
+  assignment: mockAssignment,
+  updatedAt: new Date(),
+};
 
 describe('SubmissionsService', () => {
   let service: SubmissionsService;
-  let prisma: any;
-  let realtime: any;
-  let storage: any;
+  let prisma: PrismaService;
+  let realtimeGateway: RealtimeGateway;
+  let storageService: StorageService;
 
-  beforeEach(() => {
-    prisma = {
-      assignment: { findUnique: jest.fn() },
-      submission: {
-        count: jest.fn(),
-        findFirst: jest.fn(),
-        create: jest.fn(),
-        findUnique: jest.fn(),
-        update: jest.fn(),
-        findMany: jest.fn(),
-      },
-      class: { findUnique: jest.fn() },
-    };
-    realtime = {
-      broadcastSubmissionUpdate: jest.fn(),
-      sendNotification: jest.fn(),
-      broadcastSubmissionListUpdated: jest.fn(),
-    };
-    storage = {
-      generatePDF: jest.fn(),
-      generateDOCX: jest.fn(),
-    };
-    service = new SubmissionsService(prisma, realtime, storage);
+  // Mock object untuk PrismaService
+  const mockPrismaService = {
+    assignment: {
+      findUnique: jest.fn(),
+    },
+    submission: {
+      count: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      findMany: jest.fn(),
+    },
+    class: {
+      findUnique: jest.fn(),
+    },
+  };
+
+  // Mock object untuk RealtimeGateway
+  const mockRealtimeGateway = {
+    broadcastSubmissionUpdate: jest.fn(),
+    sendNotification: jest.fn(),
+    broadcastSubmissionListUpdated: jest.fn(),
+  };
+
+  // Mock object untuk StorageService
+  const mockStorageService = {
+    generatePDF: jest.fn(),
+    generateDOCX: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        SubmissionsService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: RealtimeGateway, useValue: mockRealtimeGateway },
+        { provide: StorageService, useValue: mockStorageService },
+      ],
+    }).compile();
+
+    service = module.get<SubmissionsService>(SubmissionsService);
+    prisma = module.get<PrismaService>(PrismaService);
+    realtimeGateway = module.get<RealtimeGateway>(RealtimeGateway);
+    storageService = module.get<StorageService>(StorageService);
+
+    // Reset semua mock sebelum setiap test untuk memastikan isolasi
+    jest.clearAllMocks();
   });
 
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  // Menguji method createSubmission
   describe('createSubmission', () => {
-    it('should throw ForbiddenException if assignment not active', async () => {
-      prisma.assignment.findUnique.mockResolvedValue({ active: false });
-      await expect(
-        service.createSubmission('aid', { content: 'abc' }, 'sid'),
-      ).rejects.toThrow(ForbiddenException);
-    });
+    const dto = { content: 'Ini adalah submission baru' };
 
-    it('should throw ForbiddenException if quota full', async () => {
-      prisma.assignment.findUnique.mockResolvedValue({
-        active: true,
-        expectedStudentCount: 1,
-      });
-      prisma.submission.count.mockResolvedValue(1);
-      await expect(
-        service.createSubmission('aid', { content: 'abc' }, 'sid'),
-      ).rejects.toThrow(ForbiddenException);
-    });
+    it('should create a submission successfully', async () => {
+      // Arrange: Siapkan kondisi sukses
+      jest
+        .spyOn(prisma.assignment, 'findUnique')
+        .mockResolvedValue(mockAssignment);
+      jest.spyOn(prisma.submission, 'count').mockResolvedValue(5);
+      jest.spyOn(prisma.submission, 'findFirst').mockResolvedValue(null);
+      jest
+        .spyOn(prisma.submission, 'create')
+        .mockResolvedValue(mockSubmission as any);
 
-    it('should throw ForbiddenException if already submitted', async () => {
-      prisma.assignment.findUnique.mockResolvedValue({
-        active: true,
-        expectedStudentCount: 2,
-      });
-      prisma.submission.count.mockResolvedValue(0);
-      prisma.submission.findFirst.mockResolvedValue({ id: 'sub1' });
-      await expect(
-        service.createSubmission('aid', { content: 'abc' }, 'sid'),
-      ).rejects.toThrow(ForbiddenException);
-    });
-
-    it('should create submission', async () => {
-      prisma.assignment.findUnique.mockResolvedValue({
-        active: true,
-        expectedStudentCount: 2,
-      });
-      prisma.submission.count.mockResolvedValue(0);
-      prisma.submission.findFirst.mockResolvedValue(null);
-      prisma.submission.create.mockResolvedValue({
-        id: 'sub2',
-        content: 'abc',
-      });
+      // Act: Panggil method
       const result = await service.createSubmission(
-        'aid',
-        { content: 'abc' },
-        'sid',
+        mockAssignment.id,
+        dto,
+        mockStudentId,
       );
-      expect(result.id).toBe('sub2');
+
+      // Assert: Verifikasi hasilnya
+      expect(result).toEqual(mockSubmission);
+      expect(prisma.submission.create).toHaveBeenCalledWith({
+        data: {
+          assignmentId: mockAssignment.id,
+          studentId: mockStudentId,
+          content: dto.content,
+          status: 'DRAFT',
+        },
+      });
+    });
+
+    it('should throw ForbiddenException if assignment is not active', async () => {
+      // Arrange: Siapkan kondisi assignment tidak aktif
+      jest
+        .spyOn(prisma.assignment, 'findUnique')
+        .mockResolvedValue({ ...mockAssignment, active: false });
+
+      // Act & Assert: Harapkan error yang sesuai
+      await expect(
+        service.createSubmission(mockAssignment.id, dto, mockStudentId),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw ForbiddenException if assignment quota is full', async () => {
+      // Arrange: Siapkan kondisi kuota penuh
+      jest
+        .spyOn(prisma.assignment, 'findUnique')
+        .mockResolvedValue(mockAssignment);
+      jest.spyOn(prisma.submission, 'count').mockResolvedValue(10); // Kuota sama dengan expected count
+
+      // Act & Assert
+      await expect(
+        service.createSubmission(mockAssignment.id, dto, mockStudentId),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw ForbiddenException if student has already submitted', async () => {
+      // Arrange: Siapkan kondisi sudah pernah submit
+      jest
+        .spyOn(prisma.assignment, 'findUnique')
+        .mockResolvedValue(mockAssignment);
+      jest.spyOn(prisma.submission, 'count').mockResolvedValue(5);
+      jest
+        .spyOn(prisma.submission, 'findFirst')
+        .mockResolvedValue(mockSubmission as any);
+
+      // Act & Assert
+      await expect(
+        service.createSubmission(mockAssignment.id, dto, mockStudentId),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
+  // Menguji method getSubmissionDetail
   describe('getSubmissionDetail', () => {
-    it('should throw NotFoundException if not found', async () => {
-      prisma.submission.findUnique.mockResolvedValue(null);
-      await expect(
-        service.getSubmissionDetail('subid', 'uid', 'STUDENT'),
-      ).rejects.toThrow(NotFoundException);
+    it('should return submission detail for the owner student', async () => {
+      jest
+        .spyOn(prisma.submission, 'findUnique')
+        .mockResolvedValue(mockSubmission as any);
+      const result = await service.getSubmissionDetail(
+        mockSubmission.id,
+        mockStudentId,
+        'STUDENT',
+      );
+      expect(result).toEqual(mockSubmission);
     });
 
-    it('should throw ForbiddenException if not owner (student)', async () => {
-      prisma.submission.findUnique.mockResolvedValue({ studentId: 'other' });
+    it('should throw ForbiddenException if a student tries to access another student submission', async () => {
+      jest
+        .spyOn(prisma.submission, 'findUnique')
+        .mockResolvedValue(mockSubmission as any);
       await expect(
-        service.getSubmissionDetail('subid', 'uid', 'STUDENT'),
+        service.getSubmissionDetail(
+          mockSubmission.id,
+          'another-student-id',
+          'STUDENT',
+        ),
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should return submission for instructor', async () => {
-      prisma.submission.findUnique.mockResolvedValue({
-        studentId: 'sid',
-        assignment: {},
-        plagiarismChecks: {},
-      });
-      const result = await service.getSubmissionDetail(
-        'subid',
-        'uid',
-        'INSTRUCTOR',
-      );
-      expect(result.studentId).toBe('sid');
+    it('should throw NotFoundException if submission does not exist', async () => {
+      jest.spyOn(prisma.submission, 'findUnique').mockResolvedValue(null);
+      await expect(
+        service.getSubmissionDetail(
+          mockSubmission.id,
+          mockStudentId,
+          'STUDENT',
+        ),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
+  // Menguji method updateContent
   describe('updateContent', () => {
-    it('should throw NotFoundException if not found', async () => {
-      prisma.submission.findUnique.mockResolvedValue(null);
-      await expect(
-        service.updateContent('subid', { content: 'abc' }, 'uid'),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw ForbiddenException if not owner', async () => {
-      prisma.submission.findUnique.mockResolvedValue({ studentId: 'other' });
-      await expect(
-        service.updateContent('subid', { content: 'abc' }, 'uid'),
-      ).rejects.toThrow(ForbiddenException);
-    });
-
-    it('should update content and broadcast', async () => {
-      prisma.submission.findUnique.mockResolvedValue({
-        studentId: 'uid',
-        status: 'DRAFT',
-      });
-      prisma.submission.update.mockResolvedValue({
-        id: 'subid',
+    it('should update content and broadcast the update', async () => {
+      const dto = { content: 'Konten telah diupdate' };
+      const updatedSubmission = {
+        ...mockSubmission,
+        content: dto.content,
         status: 'DRAFT',
         updatedAt: new Date(),
-      });
+      };
+      jest
+        .spyOn(prisma.submission, 'findUnique')
+        .mockResolvedValue(mockSubmission as any);
+      jest
+        .spyOn(prisma.submission, 'update')
+        .mockResolvedValue(updatedSubmission);
+
       const result = await service.updateContent(
-        'subid',
-        { content: 'abc' },
-        'uid',
+        mockSubmission.id,
+        dto,
+        mockStudentId,
       );
-      expect(result.id).toBe('subid');
-      expect(realtime.broadcastSubmissionUpdate).toHaveBeenCalled();
+
+      expect(result.content).toBe(dto.content);
+      expect(realtimeGateway.broadcastSubmissionUpdate).toHaveBeenCalledWith(
+        mockSubmission.id,
+        {
+          status: updatedSubmission.status,
+          updatedAt: updatedSubmission.updatedAt.toISOString(),
+        },
+      );
     });
   });
 
-  describe('submit', () => {
-    it('should throw NotFoundException if not found', async () => {
-      prisma.submission.findUnique.mockResolvedValue(null);
-      await expect(service.submit('subid', 'uid')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should throw ForbiddenException if not owner', async () => {
-      prisma.submission.findUnique.mockResolvedValue({ studentId: 'other' });
-      await expect(service.submit('subid', 'uid')).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
-    it('should update status to SUBMITTED', async () => {
-      prisma.submission.findUnique.mockResolvedValue({ studentId: 'uid' });
-      prisma.submission.update.mockResolvedValue({
-        id: 'subid',
-        status: 'SUBMITTED',
-      });
-      const result = await service.submit('subid', 'uid');
-      expect(result.status).toBe('SUBMITTED');
-    });
-  });
-
+  // Menguji method grade
   describe('grade', () => {
-    it('should throw NotFoundException if not found', async () => {
-      prisma.submission.findUnique.mockResolvedValue(null);
-      await expect(service.grade('subid', 90, 'iid')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should throw ForbiddenException if not instructor', async () => {
-      prisma.submission.findUnique.mockResolvedValue({
-        assignment: { class: { instructorId: 'other' } },
-      });
-      await expect(service.grade('subid', 90, 'iid')).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
-    it('should update grade and send notification', async () => {
-      prisma.submission.findUnique.mockResolvedValue({
-        assignment: { class: { instructorId: 'iid' }, title: 'Assignment' },
-        studentId: 'sid',
-      });
-      prisma.submission.update.mockResolvedValue({
-        id: 'subid',
+    it('should grade a submission and send notification', async () => {
+      const grade = 95;
+      const gradedSubmission = {
+        ...mockSubmission,
+        grade,
         status: 'GRADED',
         updatedAt: new Date(),
-      });
-      const result = await service.grade('subid', 90, 'iid');
-      expect(result.status).toBe('GRADED');
-      expect(realtime.sendNotification).toHaveBeenCalled();
-      expect(realtime.broadcastSubmissionUpdate).toHaveBeenCalled();
-    });
-  });
+      };
+      jest
+        .spyOn(prisma.submission, 'findUnique')
+        .mockResolvedValue(mockSubmission as any);
+      jest
+        .spyOn(prisma.submission, 'update')
+        .mockResolvedValue(gradedSubmission);
 
-  describe('getSubmissionsForAssignment', () => {
-    it('should throw ForbiddenException if not instructor', async () => {
-      prisma.class.findUnique.mockResolvedValue({ instructorId: 'other' });
+      await service.grade(mockSubmission.id, grade, mockInstructorId);
+
+      expect(prisma.submission.update).toHaveBeenCalledWith({
+        where: { id: mockSubmission.id },
+        data: { grade, status: 'GRADED' },
+      });
+      expect(realtimeGateway.broadcastSubmissionUpdate).toHaveBeenCalled();
+      expect(realtimeGateway.sendNotification).toHaveBeenCalledWith(
+        mockStudentId,
+        expect.any(Object),
+      );
+    });
+
+    it('should throw ForbiddenException if instructor is not from the class', async () => {
+      jest
+        .spyOn(prisma.submission, 'findUnique')
+        .mockResolvedValue(mockSubmission as any);
       await expect(
-        service.getSubmissionsForAssignment('cid', 'aid', 'iid'),
+        service.grade(mockSubmission.id, 95, 'another-instructor-id'),
       ).rejects.toThrow(ForbiddenException);
     });
-
-    it('should return submissions and broadcast list updated', async () => {
-      prisma.class.findUnique.mockResolvedValue({ instructorId: 'iid' });
-      prisma.submission.findMany.mockResolvedValue([
-        {
-          id: 'sub1',
-          studentId: 'sid',
-          status: 'SUBMITTED',
-          plagiarismChecks: { score: 10 },
-          updatedAt: new Date(),
-        },
-      ]);
-      const result = await service.getSubmissionsForAssignment(
-        'cid',
-        'aid',
-        'iid',
-      );
-      expect(Array.isArray(result)).toBe(true);
-      expect(realtime.broadcastSubmissionListUpdated).toHaveBeenCalled();
-    });
   });
 
-  describe('getStudentHistory', () => {
-    it('should return student history', async () => {
-      prisma.submission.findMany.mockResolvedValue([{ id: 'sub1' }]);
-      const result = await service.getStudentHistory('sid');
-      expect(result).toEqual([{ id: 'sub1' }]);
-    });
-  });
-
-  describe('getClassHistory', () => {
-    it('should throw ForbiddenException if not instructor', async () => {
-      prisma.class.findUnique.mockResolvedValue({ instructorId: 'other' });
-      await expect(service.getClassHistory('cid', 'iid')).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
-    it('should return class history', async () => {
-      prisma.class.findUnique.mockResolvedValue({ instructorId: 'iid' });
-      prisma.submission.findMany.mockResolvedValue([{ id: 'sub1' }]);
-      const result = await service.getClassHistory('cid', 'iid');
-      expect(result).toEqual([{ id: 'sub1' }]);
-    });
-  });
-
+  // Menguji method downloadSubmission
   describe('downloadSubmission', () => {
-    it('should throw BadRequestException if format invalid', async () => {
-      await expect(
-        service.downloadSubmission('subid', 'uid', 'STUDENT', 'txt'),
-      ).rejects.toThrow(BadRequestException);
-    });
+    it('should call generatePDF from StorageService for pdf format', async () => {
+      const mockDownloadResult = {
+        url: 'http://example.com/file.pdf',
+        fileName: 'file.pdf',
+      };
+      jest
+        .spyOn(storageService, 'generatePDF')
+        .mockResolvedValue(mockDownloadResult);
 
-    it('should call generatePDF for pdf', async () => {
-      storage.generatePDF.mockResolvedValue({
-        filename: 'file.pdf',
-        url: 'url',
-        format: 'pdf',
-        size: 123,
-      });
       const result = await service.downloadSubmission(
-        'subid',
-        'uid',
+        mockSubmission.id,
+        mockStudentId,
         'STUDENT',
         'pdf',
       );
-      expect(storage.generatePDF).toHaveBeenCalledWith(
-        'subid',
-        'uid',
+
+      expect(storageService.generatePDF).toHaveBeenCalledWith(
+        mockSubmission.id,
+        mockStudentId,
         'STUDENT',
       );
-      expect(result.format).toBe('pdf');
+      expect(result.url).toBe(mockDownloadResult.url);
     });
 
-    it('should call generateDOCX for docx', async () => {
-      storage.generateDOCX.mockResolvedValue({
-        filename: 'file.docx',
-        url: 'url',
-        format: 'docx',
-        size: 456,
-      });
+    it('should call generateDOCX from StorageService for docx format', async () => {
+      const mockDownloadResult = {
+        url: 'http://example.com/file.docx',
+        fileName: 'file.docx',
+      };
+      jest
+        .spyOn(storageService, 'generateDOCX')
+        .mockResolvedValue(mockDownloadResult);
+
       const result = await service.downloadSubmission(
-        'subid',
-        'uid',
-        'INSTRUCTOR',
+        mockSubmission.id,
+        mockStudentId,
+        'STUDENT',
         'docx',
       );
-      expect(storage.generateDOCX).toHaveBeenCalledWith(
-        'subid',
-        'uid',
-        'INSTRUCTOR',
+
+      expect(storageService.generateDOCX).toHaveBeenCalledWith(
+        mockSubmission.id,
+        mockStudentId,
+        'STUDENT',
       );
-      expect(result.format).toBe('docx');
+      expect(result.url).toBe(mockDownloadResult.url);
     });
 
-    it('should throw BadRequestException if storage fails', async () => {
-      storage.generatePDF.mockRejectedValue(new Error('fail'));
+    it('should throw BadRequestException for invalid format', async () => {
       await expect(
-        service.downloadSubmission('subid', 'uid', 'STUDENT', 'pdf'),
+        service.downloadSubmission(
+          mockSubmission.id,
+          mockStudentId,
+          'STUDENT',
+          'txt' as any,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });

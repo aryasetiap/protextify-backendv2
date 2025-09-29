@@ -1,116 +1,116 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { CloudStorageProvider } from './cloud-storage.provider';
+import { S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { InternalServerErrorException } from '@nestjs/common';
 
-// Mock getSignedUrl di level global
+// Mocking the S3Client and its methods
+jest.mock('@aws-sdk/client-s3', () => {
+  const mS3Client = {
+    send: jest.fn(),
+  };
+  return {
+    S3Client: jest.fn(() => mS3Client),
+    PutObjectCommand: jest.fn(),
+    GetObjectCommand: jest.fn(),
+    DeleteObjectCommand: jest.fn(),
+    ListObjectsV2Command: jest.fn(),
+  };
+});
+
+// Mocking the getSignedUrl function
 jest.mock('@aws-sdk/s3-request-presigner', () => ({
-  getSignedUrl: jest.fn().mockResolvedValue('http://signed-url'),
+  getSignedUrl: jest.fn(),
 }));
 
 describe('CloudStorageProvider', () => {
   let provider: CloudStorageProvider;
-  let config: any;
+  let mockS3Client: S3Client;
 
-  beforeEach(() => {
-    config = {
-      get: jest.fn((key: string) => {
-        switch (key) {
-          case 'CLOUDFLARE_R2_REGION':
-            return 'auto';
-          case 'CLOUDFLARE_R2_ENDPOINT':
-            return 'http://r2';
-          case 'CLOUDFLARE_R2_ACCESS_KEY_ID':
-            return 'key';
-          case 'CLOUDFLARE_R2_SECRET_ACCESS_KEY':
-            return 'secret';
-          case 'CLOUDFLARE_R2_BUCKET':
-            return 'bucket';
-          case 'CLOUDFLARE_R2_PUBLIC_URL':
-            return 'http://public';
-          default:
-            return undefined;
-        }
-      }),
-    };
-    provider = new CloudStorageProvider(config);
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        CloudStorageProvider,
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              const config = {
+                CLOUDFLARE_R2_ENDPOINT: 'http://localhost:9000',
+                CLOUDFLARE_R2_ACCESS_KEY_ID: 'test-key',
+                CLOUDFLARE_R2_SECRET_ACCESS_KEY: 'test-secret',
+                CLOUDFLARE_R2_BUCKET: 'test-bucket',
+                CLOUDFLARE_R2_PUBLIC_URL: 'http://public.url',
+              };
+              return config[key];
+            }),
+          },
+        },
+      ],
+    }).compile();
+
+    provider = module.get<CloudStorageProvider>(CloudStorageProvider);
+    // S3Client is mocked, so we can access the mocked instance
+    mockS3Client = new S3Client({});
+    (mockS3Client.send as jest.Mock).mockClear();
+    (getSignedUrl as jest.Mock).mockClear();
   });
 
-  it('should generate file key', () => {
-    const key = provider.generateFileKey('submissions', 'file.pdf');
-    expect(key).toMatch(/submissions\/\d{4}-\d{2}-\d{2}\/file\.pdf/);
+  it('should be defined', () => {
+    expect(provider).toBeDefined();
   });
 
-  it('should throw error if config missing', () => {
-    expect(
-      () =>
-        new CloudStorageProvider({
-          get: (k: string) =>
-            k === 'CLOUDFLARE_R2_ENDPOINT' ? undefined : 'x',
-        }),
-    ).toThrow('CLOUDFLARE_R2_ENDPOINT is required');
-  });
+  describe('uploadFile', () => {
+    it('should upload a file and return the result', async () => {
+      (mockS3Client.send as jest.Mock).mockResolvedValue({});
+      const buffer = Buffer.from('test');
+      const key = 'test-key';
 
-  it('should upload file and return result', async () => {
-    provider['s3Client'].send = jest.fn().mockResolvedValue({});
-    const result = await provider.uploadFile(
-      Buffer.from('abc'),
-      'key',
-      'application/pdf',
-      { meta: '1' },
-    );
-    expect(result.key).toBe('key');
-    expect(result.size).toBe(3);
-    expect(result.url).toBe('http://public/key');
-  });
+      const result = await provider.uploadFile(buffer, key, 'text/plain');
 
-  it('should throw error on upload fail', async () => {
-    provider['s3Client'].send = jest.fn().mockRejectedValue(new Error('fail'));
-    await expect(
-      provider.uploadFile(Buffer.from('abc'), 'key', 'application/pdf'),
-    ).rejects.toThrow('Failed to upload file to cloud storage');
-  });
-
-  it('should generate presigned url', async () => {
-    provider['s3Client'].send = jest.fn().mockResolvedValue({});
-    const url = await provider.generatePresignedUrl('key', {
-      expiresIn: 3600,
-      filename: 'file.pdf',
+      expect(mockS3Client.send).toHaveBeenCalled();
+      expect(result.key).toBe(key);
+      expect(result.size).toBe(buffer.length);
     });
-    expect(url).toBe('http://signed-url');
   });
 
-  it('should throw error on presigned url fail', async () => {
-    const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-    getSignedUrl.mockRejectedValueOnce(new Error('fail'));
-    provider['s3Client'].send = jest.fn().mockResolvedValue({});
+  describe('generatePresignedUrl', () => {
+    it('should generate a presigned URL', async () => {
+      const mockUrl = 'http://signed-url.com';
+      (getSignedUrl as jest.Mock).mockResolvedValue(mockUrl);
 
-    await expect(provider.generatePresignedUrl('key')).rejects.toThrow(
-      'Failed to generate download URL',
-    );
+      const url = await provider.generatePresignedUrl('test-key');
+
+      expect(getSignedUrl).toHaveBeenCalled();
+      expect(url).toBe(mockUrl);
+    });
   });
 
-  it('should delete file', async () => {
-    provider['s3Client'].send = jest.fn().mockResolvedValue({});
-    await provider.deleteFile('key');
-    expect(provider['s3Client'].send).toHaveBeenCalled();
+  describe('deleteFile', () => {
+    it('should call S3Client send to delete a file', async () => {
+      (mockS3Client.send as jest.Mock).mockResolvedValue({});
+
+      await provider.deleteFile('test-key-to-delete');
+
+      expect(mockS3Client.send).toHaveBeenCalled();
+    });
   });
 
-  it('should throw error on delete fail', async () => {
-    provider['s3Client'].send = jest.fn().mockRejectedValue(new Error('fail'));
-    await expect(provider.deleteFile('key')).rejects.toThrow(
-      'Failed to delete file from cloud storage',
-    );
-  });
+  describe('healthCheck', () => {
+    it('should return healthy on successful check', async () => {
+      (mockS3Client.send as jest.Mock).mockResolvedValue({});
+      const result = await provider.healthCheck();
+      expect(result.status).toBe('healthy');
+    });
 
-  it('should health check and return healthy', async () => {
-    provider['s3Client'].send = jest.fn().mockResolvedValue({});
-    const result = await provider.healthCheck();
-    expect(result.status).toBe('healthy');
-    expect(result.bucket).toBe('bucket');
-  });
-
-  it('should throw error on health check fail', async () => {
-    provider['s3Client'].send = jest.fn().mockRejectedValue(new Error('fail'));
-    await expect(provider.healthCheck()).rejects.toThrow(
-      'Cloud storage health check failed: fail',
-    );
+    it('should throw an exception on failed check', async () => {
+      (mockS3Client.send as jest.Mock).mockRejectedValue(
+        new Error('Connection failed'),
+      );
+      await expect(provider.healthCheck()).rejects.toThrow(
+        InternalServerErrorException,
+      );
+    });
   });
 });

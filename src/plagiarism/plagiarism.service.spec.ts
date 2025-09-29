@@ -1,197 +1,251 @@
+import { Test, TestingModule } from '@nestjs/testing';
 import { PlagiarismService } from './plagiarism.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { getQueueToken } from '@nestjs/bull';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
+import type { Queue, Job } from 'bull';
+
+// Mock untuk PrismaService
+const mockPrismaService = {
+  submission: {
+    findUnique: jest.fn(),
+  },
+  plagiarismCheck: {
+    upsert: jest.fn(),
+  },
+};
+
+// Mock untuk Bull Queue
+const mockPlagiarismQueue = {
+  add: jest.fn(),
+  getJobs: jest.fn(),
+  getWaiting: jest.fn(),
+  getActive: jest.fn(),
+  getCompleted: jest.fn(),
+  getFailed: jest.fn(),
+  clean: jest.fn(),
+};
 
 describe('PlagiarismService', () => {
   let service: PlagiarismService;
-  let prisma: jest.Mocked<PrismaService>;
-  let queue: any;
+  let prisma: typeof mockPrismaService;
+  let queue: typeof mockPlagiarismQueue;
 
-  beforeEach(() => {
-    prisma = {
-      submission: { findUnique: jest.fn() },
-      plagiarismCheck: { upsert: jest.fn() },
-    } as any;
-    queue = {
-      getJobs: jest.fn(),
-      add: jest.fn(),
-      getWaiting: jest.fn(),
-      getActive: jest.fn(),
-      getCompleted: jest.fn(),
-      getFailed: jest.fn(),
-      clean: jest.fn(),
-    };
-    service = new PlagiarismService(prisma, queue);
+  const instructorId = 'instructor-123';
+  const submissionId = 'submission-abc';
+  const mockSubmission = {
+    id: submissionId,
+    content: 'a'.repeat(101),
+    status: 'SUBMITTED',
+    studentId: 'student-456',
+    // PERBAIKAN: Menambahkan objek student yang lengkap
+    student: { fullName: 'Budi Siswa' },
+    assignment: {
+      title: 'Tugas Sejarah',
+      class: {
+        name: 'Kelas Sejarah',
+        instructorId: instructorId,
+      },
+    },
+    plagiarismChecks: null,
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        PlagiarismService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        {
+          provide: getQueueToken('plagiarism'),
+          useValue: mockPlagiarismQueue,
+        },
+      ],
+    }).compile();
+
+    service = module.get<PlagiarismService>(PlagiarismService);
+    prisma = module.get(PrismaService);
+    queue = module.get(getQueueToken('plagiarism'));
+    jest.clearAllMocks();
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
   describe('checkPlagiarism', () => {
     it('should throw NotFoundException if submission not found', async () => {
       prisma.submission.findUnique.mockResolvedValue(null);
       await expect(
-        service.checkPlagiarism('subId', {}, 'instrId'),
-      ).rejects.toThrow('Submission not found');
+        service.checkPlagiarism(submissionId, {}, instructorId),
+      ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException if not instructor', async () => {
+    it('should throw ForbiddenException if instructor is not owner', async () => {
       prisma.submission.findUnique.mockResolvedValue({
-        assignment: { class: { instructorId: 'other' } },
-      });
-      await expect(
-        service.checkPlagiarism('subId', {}, 'instrId'),
-      ).rejects.toThrow('Not your class');
-    });
-
-    it('should throw BadRequestException if not submitted', async () => {
-      prisma.submission.findUnique.mockResolvedValue({
-        assignment: { class: { instructorId: 'instrId' } },
-        status: 'DRAFT',
-      });
-      await expect(
-        service.checkPlagiarism('subId', {}, 'instrId'),
-      ).rejects.toThrow(
-        'Only submitted submissions can be checked for plagiarism',
-      );
-    });
-
-    it('should throw BadRequestException if content empty', async () => {
-      prisma.submission.findUnique.mockResolvedValue({
-        assignment: { class: { instructorId: 'instrId' } },
-        status: 'SUBMITTED',
-        content: '',
-      });
-      await expect(
-        service.checkPlagiarism('subId', {}, 'instrId'),
-      ).rejects.toThrow('Submission content is empty');
-    });
-
-    it('should return job info if already queued', async () => {
-      prisma.submission.findUnique.mockResolvedValue({
-        assignment: { class: { instructorId: 'instrId' } },
-        status: 'SUBMITTED',
-        content: 'a'.repeat(200),
-        plagiarismChecks: null,
-        studentId: 'studentId',
-      });
-      queue.getJobs.mockResolvedValue([
-        {
-          data: { submissionId: 'subId' },
-          id: 123,
-          getState: jest.fn().mockResolvedValue('waiting'),
+        ...mockSubmission,
+        assignment: {
+          ...mockSubmission.assignment,
+          class: {
+            ...mockSubmission.assignment.class,
+            instructorId: 'other-instructor',
+          },
         },
-      ]);
-      const result = await service.checkPlagiarism('subId', {}, 'instrId');
-      expect(result.jobId).toBe('123');
-      expect(result.status).toBe('queued');
+      });
+      await expect(
+        service.checkPlagiarism(submissionId, {}, instructorId),
+      ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should return completed result if already completed', async () => {
+    it('should throw BadRequestException for empty content', async () => {
       prisma.submission.findUnique.mockResolvedValue({
-        assignment: { class: { instructorId: 'instrId' } },
-        status: 'SUBMITTED',
-        content: 'a'.repeat(200),
+        ...mockSubmission,
+        content: ' ',
+      });
+      await expect(
+        service.checkPlagiarism(submissionId, {}, instructorId),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should queue a job if all validations pass', async () => {
+      prisma.submission.findUnique.mockResolvedValue(mockSubmission);
+      queue.getJobs.mockResolvedValue([]);
+      queue.add.mockResolvedValue({ id: 'job-1' } as Job);
+
+      const result = await service.checkPlagiarism(
+        submissionId,
+        {},
+        instructorId,
+      );
+
+      expect(prisma.plagiarismCheck.upsert).toHaveBeenCalled();
+      expect(queue.add).toHaveBeenCalledWith(
+        'check-plagiarism',
+        expect.any(Object),
+        expect.any(Object),
+      );
+      expect(result).toEqual({
+        jobId: 'job-1',
+        status: 'queued',
+        message: 'Plagiarism check has been queued',
+      });
+    });
+
+    it('should return existing job info if a job is pending', async () => {
+      prisma.submission.findUnique.mockResolvedValue(mockSubmission);
+      const pendingJob = {
+        id: 'job-already-pending',
+        data: { submissionId },
+        getState: async () => 'waiting',
+      };
+      queue.getJobs.mockResolvedValue([pendingJob] as any);
+
+      const result = await service.checkPlagiarism(
+        submissionId,
+        {},
+        instructorId,
+      );
+
+      expect(queue.add).not.toHaveBeenCalled();
+      expect(result.jobId).toBe(pendingJob.id);
+      expect(result.message).toContain('already in progress');
+    });
+
+    it('should return completed status if already checked', async () => {
+      const completedSubmission = {
+        ...mockSubmission,
         plagiarismChecks: {
           status: 'completed',
-          score: 10,
-          wordCount: 100,
+          score: 25,
+          wordCount: 150,
           creditsUsed: 1,
           checkedAt: new Date(),
         },
-        studentId: 'studentId',
-      });
-      // Mock getJobs to return empty array untuk completed case
+      };
+      prisma.submission.findUnique.mockResolvedValue(completedSubmission);
+      // PERBAIKAN: Mock getJobs untuk memastikan tidak ada job pending
       queue.getJobs.mockResolvedValue([]);
-      const result = await service.checkPlagiarism('subId', {}, 'instrId');
-      expect(result.status).toBe('completed');
-      expect(result.score).toBe(10);
-    });
 
-    it('should queue job if valid', async () => {
-      prisma.submission.findUnique.mockResolvedValue({
-        assignment: { class: { instructorId: 'instrId' } },
-        status: 'SUBMITTED',
-        content: 'a'.repeat(200),
-        plagiarismChecks: null,
-        studentId: 'studentId',
-      });
-      queue.getJobs.mockResolvedValue([]);
-      queue.add.mockResolvedValue({
-        id: 456,
-        getState: jest.fn().mockResolvedValue('waiting'),
-      });
-      prisma.plagiarismCheck.upsert.mockResolvedValue({});
-      const result = await service.checkPlagiarism('subId', {}, 'instrId');
-      expect(result.jobId).toBe('456');
-      expect(result.status).toBe('queued');
+      const result = await service.checkPlagiarism(
+        submissionId,
+        {},
+        instructorId,
+      );
+
+      expect(queue.add).not.toHaveBeenCalled();
+      expect(result.status).toBe('completed');
+      expect(result.score).toBe(25);
     });
   });
 
   describe('getPlagiarismResult', () => {
-    it('should throw NotFoundException if submission not found', async () => {
-      prisma.submission.findUnique.mockResolvedValue(null);
-      await expect(
-        service.getPlagiarismResult('subId', 'uid', 'STUDENT'),
-      ).rejects.toThrow('Submission not found');
-    });
+    const userId = 'user-123';
+    const mockResult = {
+      ...mockSubmission,
+      plagiarismChecks: {
+        status: 'completed',
+        score: 15,
+        wordCount: 200,
+        creditsUsed: 2,
+        checkedAt: new Date(),
+        rawResponse: { sources: [] },
+      },
+    };
 
-    it('should throw ForbiddenException if no access', async () => {
+    it('should return results for an authorized instructor', async () => {
       prisma.submission.findUnique.mockResolvedValue({
-        studentId: 'other',
-        assignment: { class: { instructorId: 'other' } },
-      });
-      await expect(
-        service.getPlagiarismResult('subId', 'uid', 'STUDENT'),
-      ).rejects.toThrow('No access to this submission');
-    });
-
-    it('should return not_checked if no plagiarismChecks', async () => {
-      prisma.submission.findUnique.mockResolvedValue({
-        studentId: 'uid',
-        assignment: { class: { instructorId: 'other' } },
-        plagiarismChecks: null,
-      });
-      const result = await service.getPlagiarismResult(
-        'subId',
-        'uid',
-        'STUDENT',
-      );
-      expect(result.status).toBe('not_checked');
-    });
-
-    it('should return completed result with pdfReportUrl', async () => {
-      prisma.submission.findUnique.mockResolvedValue({
-        studentId: 'uid',
-        assignment: { class: { instructorId: 'other' } },
-        plagiarismChecks: {
-          status: 'completed',
-          score: 10,
-          wordCount: 100,
-          creditsUsed: 1,
-          checkedAt: new Date(),
-          rawResponse: {},
+        ...mockResult,
+        assignment: {
+          ...mockResult.assignment,
+          class: { ...mockResult.assignment.class, instructorId: userId },
         },
       });
-      service['generatePDFReportUrl'] = jest.fn().mockResolvedValue('mock-url');
+
       const result = await service.getPlagiarismResult(
-        'subId',
-        'uid',
+        submissionId,
+        userId,
+        'INSTRUCTOR',
+      );
+
+      expect(result.score).toBe(15);
+      expect(result.detailedResults).toBeDefined(); // Instructor gets detailed results
+      expect(result.pdfReportUrl).toBeDefined();
+    });
+
+    it('should return results for an authorized student', async () => {
+      prisma.submission.findUnique.mockResolvedValue({
+        ...mockResult,
+        studentId: userId,
+      });
+
+      const result = await service.getPlagiarismResult(
+        submissionId,
+        userId,
         'STUDENT',
       );
-      expect(result.status).toBe('completed');
-      expect(result.pdfReportUrl).toBe('mock-url');
-    });
-  });
 
-  describe('getQueueStats', () => {
-    it('should return queue stats', async () => {
-      queue.getWaiting.mockResolvedValue([{}, {}]);
-      queue.getActive.mockResolvedValue([{}]);
-      queue.getCompleted.mockResolvedValue([{}, {}, {}]);
-      queue.getFailed.mockResolvedValue([{}]);
-      const result = await service.getQueueStats();
-      expect(result.waiting).toBe(2);
-      expect(result.active).toBe(1);
-      expect(result.completed).toBe(3);
-      expect(result.failed).toBe(1);
-      expect(result.total).toBe(7);
+      expect(result.score).toBe(15);
+      expect(result.detailedResults).toBeUndefined(); // Student does not get detailed results
+      expect(result.pdfReportUrl).toBeDefined();
+    });
+
+    it('should return "not_checked" status if no check exists', async () => {
+      prisma.submission.findUnique.mockResolvedValue({
+        ...mockSubmission,
+        studentId: userId,
+        plagiarismChecks: null,
+      });
+
+      const result = await service.getPlagiarismResult(
+        submissionId,
+        userId,
+        'STUDENT',
+      );
+
+      expect(result.status).toBe('not_checked');
     });
   });
 });

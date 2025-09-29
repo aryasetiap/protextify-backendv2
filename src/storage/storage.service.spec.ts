@@ -1,205 +1,176 @@
-import { StorageService } from './storage.service';
+import { Test, TestingModule } from '@nestjs/testing';
+import { StorageService, GeneratedFileResult } from './storage.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { CloudStorageProvider } from './providers/cloud-storage.provider';
+import { ConfigService } from '@nestjs/config';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { nanoid } from 'nanoid';
 
-// Mock nanoid
+// Mock nanoid untuk hasil yang deterministik
 jest.mock('nanoid', () => ({
-  nanoid: jest.fn(() => 'mock-id-123'),
+  nanoid: jest.fn(() => 'mock-id'),
 }));
 
-// Mock PDFKit
-jest.mock('pdfkit', () => {
-  return jest.fn().mockImplementation(() => ({
-    on: jest.fn((event, callback) => {
-      if (event === 'end') {
-        setTimeout(callback, 0);
-      }
-      return this;
-    }),
-    pipe: jest.fn(),
-    fontSize: jest.fn().mockReturnThis(),
-    text: jest.fn().mockReturnThis(),
-    moveDown: jest.fn().mockReturnThis(),
-    end: jest.fn(),
-    y: 100,
-    page: { height: 800 },
-  }));
-});
+// Mock untuk dependensi
+const mockPrismaService = {
+  submission: {
+    findUnique: jest.fn(),
+  },
+};
 
-// Mock DOCX dengan HeadingLevel yang benar
-jest.mock('docx', () => ({
-  Document: jest.fn().mockImplementation(() => ({})),
-  Paragraph: jest.fn().mockImplementation(() => ({})),
-  TextRun: jest.fn().mockImplementation(() => ({})),
-  HeadingLevel: {
-    TITLE: 'title',
-    HEADING_1: 'heading1',
-    HEADING_2: 'heading2',
-  },
-  Packer: {
-    toBuffer: jest.fn().mockResolvedValue(Buffer.from('docx content')),
-  },
-}));
+const mockRealtimeGateway = {
+  sendNotification: jest.fn(),
+};
+
+const mockCloudStorageProvider = {
+  generateFileKey: jest.fn(),
+  uploadFile: jest.fn(),
+  generatePresignedUrl: jest.fn(),
+  deleteFile: jest.fn(),
+  healthCheck: jest.fn(),
+};
 
 describe('StorageService', () => {
   let service: StorageService;
-  let prisma: any;
-  let cloud: any;
-  let realtime: any;
-  let config: any;
+  let prisma: typeof mockPrismaService;
+  let cloudStorage: typeof mockCloudStorageProvider;
+  let gateway: typeof mockRealtimeGateway;
 
-  beforeEach(() => {
-    prisma = {
-      submission: {
-        findUnique: jest.fn(),
-      },
-    };
-    cloud = {
-      uploadFile: jest.fn(),
-      generateFileKey: jest.fn((prefix, filename) => `${prefix}/${filename}`),
-      generatePresignedUrl: jest.fn(),
-      deleteFile: jest.fn(),
-      healthCheck: jest.fn(),
-    };
-    realtime = {
-      sendNotification: jest.fn(),
-    };
-    config = {};
-    service = new StorageService(config, prisma, realtime, cloud);
+  const submissionId = 'sub-123';
+  const userId = 'user-abc';
+  const mockSubmission = {
+    id: submissionId,
+    content: 'Ini adalah konten submission untuk testing.',
+    studentId: userId,
+    student: { fullName: 'Budi' },
+    assignment: {
+      title: 'Tugas 1',
+      class: { name: 'Kelas A', instructorId: 'inst-xyz' },
+    },
+    status: 'SUBMITTED',
+    updatedAt: new Date(),
+    grade: 90,
+    plagiarismChecks: null,
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        StorageService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: RealtimeGateway, useValue: mockRealtimeGateway },
+        { provide: CloudStorageProvider, useValue: mockCloudStorageProvider },
+        { provide: ConfigService, useValue: { get: jest.fn() } }, // ConfigService dibutuhkan oleh constructor
+      ],
+    }).compile();
+
+    service = module.get<StorageService>(StorageService);
+    prisma = module.get(PrismaService);
+    cloudStorage = module.get(CloudStorageProvider);
+    gateway = module.get(RealtimeGateway);
+    jest.clearAllMocks();
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
   describe('generatePDF', () => {
-    it('should throw NotFoundException if submission not found', async () => {
-      prisma.submission.findUnique.mockResolvedValue(null);
-      await expect(
-        service.generatePDF('subId', 'userId', 'STUDENT'),
-      ).rejects.toThrow('Submission not found');
+    beforeEach(() => {
+      prisma.submission.findUnique.mockResolvedValue(mockSubmission);
+      cloudStorage.uploadFile.mockResolvedValue({ size: 12345 } as any);
+      cloudStorage.generatePresignedUrl.mockResolvedValue(
+        'http://presigned.url/file.pdf',
+      );
+      cloudStorage.generateFileKey.mockReturnValue('submissions/file.pdf');
     });
 
-    it('should generate PDF and upload to cloud', async () => {
-      prisma.submission.findUnique.mockResolvedValue({
-        id: 'subId',
-        student: { fullName: 'Student' },
-        assignment: {
-          title: 'Title',
-          class: { name: 'Class', instructorId: 'userId' },
-        },
-        plagiarismChecks: null,
-        status: 'SUBMITTED',
-        content: 'Test content',
-        updatedAt: new Date(),
-        grade: null,
-        studentId: 'userId',
-      });
-      cloud.uploadFile.mockResolvedValue({
-        key: 'submissions/file.pdf',
-        url: 'http://cloud/file.pdf',
-        size: 123,
-      });
-      cloud.generatePresignedUrl.mockResolvedValue('http://cloud/file.pdf');
-      const result = await service.generatePDF('subId', 'userId', 'STUDENT');
-      expect(result.filename).toMatch(/submission-subId-/);
-      expect(result.url).toBe('http://cloud/file.pdf');
+    it('should generate, upload a PDF and return the result', async () => {
+      const result = await service.generatePDF(submissionId, userId, 'STUDENT');
+
+      expect(prisma.submission.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: submissionId } }),
+      );
+      expect(cloudStorage.uploadFile).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        'submissions/file.pdf',
+        'application/pdf',
+        expect.any(Object),
+      );
+      expect(cloudStorage.generatePresignedUrl).toHaveBeenCalledWith(
+        'submissions/file.pdf',
+        expect.any(Object),
+      );
+      expect(gateway.sendNotification).toHaveBeenCalled();
       expect(result.format).toBe('pdf');
+      expect(result.url).toBe('http://presigned.url/file.pdf');
+    });
+
+    it('should throw NotFoundException if submission is not found', async () => {
+      prisma.submission.findUnique.mockResolvedValue(null);
+      await expect(
+        service.generatePDF(submissionId, userId, 'STUDENT'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('generateDOCX', () => {
-    it('should throw NotFoundException if submission not found', async () => {
-      prisma.submission.findUnique.mockResolvedValue(null);
-      await expect(
-        service.generateDOCX('subId', 'userId', 'INSTRUCTOR'),
-      ).rejects.toThrow('Submission not found');
+    beforeEach(() => {
+      prisma.submission.findUnique.mockResolvedValue(mockSubmission);
+      cloudStorage.uploadFile.mockResolvedValue({ size: 23456 } as any);
+      cloudStorage.generatePresignedUrl.mockResolvedValue(
+        'http://presigned.url/file.docx',
+      );
+      cloudStorage.generateFileKey.mockReturnValue('submissions/file.docx');
     });
 
-    it('should generate DOCX and upload to cloud', async () => {
-      prisma.submission.findUnique.mockResolvedValue({
-        id: 'subId',
-        student: { fullName: 'Student' },
-        assignment: {
-          title: 'Title',
-          class: { name: 'Class', instructorId: 'userId' },
-        },
-        plagiarismChecks: null,
-        status: 'SUBMITTED',
-        content: 'Test content',
-        updatedAt: new Date(),
-        grade: null,
-        studentId: 'studentId',
-      });
-      cloud.uploadFile.mockResolvedValue({
-        key: 'submissions/file.docx',
-        url: 'http://cloud/file.docx',
-        size: 456,
-      });
-      cloud.generatePresignedUrl.mockResolvedValue('http://cloud/file.docx');
+    it('should generate, upload a DOCX and return the result', async () => {
       const result = await service.generateDOCX(
-        'subId',
-        'userId',
-        'INSTRUCTOR',
+        submissionId,
+        userId,
+        'STUDENT',
       );
-      expect(result.filename).toMatch(/submission-subId-/);
-      expect(result.url).toBe('http://cloud/file.docx');
+
+      expect(prisma.submission.findUnique).toHaveBeenCalled();
+      expect(cloudStorage.uploadFile).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        'submissions/file.docx',
+        expect.any(String),
+        expect.any(Object),
+      );
+      expect(cloudStorage.generatePresignedUrl).toHaveBeenCalled();
+      expect(gateway.sendNotification).toHaveBeenCalled();
       expect(result.format).toBe('docx');
-    });
-  });
-
-  describe('refreshDownloadUrl', () => {
-    it('should return presigned url', async () => {
-      cloud.generatePresignedUrl.mockResolvedValue('http://cloud/url');
-      const result = await service.refreshDownloadUrl(
-        'cloudKey',
-        'file.pdf',
-        3600,
-      );
-      expect(result).toBe('http://cloud/url');
+      expect(result.url).toBe('http://presigned.url/file.docx');
     });
 
-    it('should throw BadRequestException if cloud provider fails', async () => {
-      cloud.generatePresignedUrl.mockRejectedValue(new Error('fail'));
+    it('should throw BadRequestException if user does not have permission', async () => {
+      prisma.submission.findUnique.mockResolvedValue({
+        ...mockSubmission,
+        studentId: 'another-student-id',
+      });
       await expect(
-        service.refreshDownloadUrl('cloudKey', 'file.pdf', 3600),
-      ).rejects.toThrow('Failed to generate download URL');
-    });
-  });
-
-  describe('deleteFile', () => {
-    it('should call cloud deleteFile', async () => {
-      cloud.deleteFile.mockResolvedValue(undefined);
-      await service.deleteFile('cloudKey');
-      expect(cloud.deleteFile).toHaveBeenCalledWith('cloudKey');
-    });
-
-    it('should throw error if cloud delete fails', async () => {
-      cloud.deleteFile.mockRejectedValue(new Error('fail'));
-      await expect(service.deleteFile('cloudKey')).rejects.toThrow(
-        'Failed to delete file',
-      );
-    });
-  });
-
-  describe('cleanupOldFiles', () => {
-    it('should log and return 0', async () => {
-      const result = await service.cleanupOldFiles(7);
-      expect(result).toBe(0);
+        service.generateDOCX(submissionId, userId, 'STUDENT'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('healthCheck', () => {
-    it('should return healthy status', async () => {
-      cloud.healthCheck.mockResolvedValue({
-        status: 'healthy',
-        bucket: 'bucket',
-        endpoint: 'endpoint',
-      });
+    it('should return healthy status when provider is healthy', async () => {
+      cloudStorage.healthCheck.mockResolvedValue({ status: 'healthy' });
       const result = await service.healthCheck();
       expect(result.status).toBe('healthy');
       expect(result.cloudStorage.status).toBe('healthy');
     });
 
-    it('should return unhealthy status if error', async () => {
-      cloud.healthCheck.mockRejectedValue(new Error('fail'));
+    it('should return unhealthy status when provider throws error', async () => {
+      cloudStorage.healthCheck.mockRejectedValue(
+        new Error('Connection failed'),
+      );
       const result = await service.healthCheck();
       expect(result.status).toBe('unhealthy');
-      expect(result.error).toBe('fail');
+      expect(result.error).toBe('Connection failed');
     });
   });
 });

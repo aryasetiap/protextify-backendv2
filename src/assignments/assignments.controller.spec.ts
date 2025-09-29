@@ -1,10 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AssignmentsController } from './assignments.controller';
 import { AssignmentsService } from './assignments.service';
+import { CreateAssignmentDto } from './dto/create-assignment.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+
+// Mockup untuk AssignmentsService
+const mockAssignmentsService = {
+  createAssignment: jest.fn(),
+  getAssignments: jest.fn(),
+};
 
 describe('AssignmentsController', () => {
   let controller: AssignmentsController;
-  let service: AssignmentsService;
+  let service: typeof mockAssignmentsService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -12,50 +21,85 @@ describe('AssignmentsController', () => {
       providers: [
         {
           provide: AssignmentsService,
-          useValue: {
-            createAssignment: jest.fn(),
-            getAssignments: jest.fn(),
-          },
+          useValue: mockAssignmentsService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard) // Mengabaikan guard untuk unit test
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard) // Mengabaikan guard untuk unit test
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AssignmentsController>(AssignmentsController);
-    service = module.get<AssignmentsService>(AssignmentsService);
+    service = module.get(AssignmentsService);
+
+    // Reset semua mock sebelum setiap test
+    jest.clearAllMocks();
   });
 
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  // Pengujian untuk endpoint POST /classes/:classId/assignments
   describe('createAssignment', () => {
-    it('should call service and return result', async () => {
-      const dto = { expectedStudentCount: 1, title: 'A' };
-      const req = { user: { userId: 'instructorId' } };
-      (service.createAssignment as jest.Mock).mockResolvedValue({
-        assignment: { id: 'a1' },
-      });
+    it('should call service.createAssignment with correct parameters and return the result', async () => {
+      // Arrange: siapkan data input dan mock
+      const classId = 'class-123';
+      const dto: CreateAssignmentDto = {
+        title: 'New Assignment',
+        expectedStudentCount: 15,
+      };
+      const mockRequest = {
+        user: {
+          userId: 'instructor-abc',
+        },
+      };
+      const mockResult = { id: 'new-assignment-id', ...dto };
+      service.createAssignment.mockResolvedValue(mockResult);
+
+      // Act: panggil method controller
       const result = await controller.createAssignment(
-        'classId',
-        req,
-        dto as any,
-      );
-      expect(service.createAssignment).toHaveBeenCalledWith(
-        'classId',
+        classId,
+        mockRequest,
         dto,
-        'instructorId',
       );
-      expect(result.assignment.id).toBe('a1');
+
+      // Assert: pastikan service dipanggil dengan benar dan hasilnya dikembalikan
+      expect(service.createAssignment).toHaveBeenCalledWith(
+        classId,
+        dto,
+        mockRequest.user.userId,
+      );
+      expect(result).toEqual(mockResult);
     });
   });
 
+  // Pengujian untuk endpoint GET /classes/:classId/assignments
   describe('getAssignments', () => {
-    it('should call service and return assignments', async () => {
-      const req = { user: { userId: 'userId', role: 'INSTRUCTOR' } };
-      (service.getAssignments as jest.Mock).mockResolvedValue([{ id: 'a2' }]);
-      const result = await controller.getAssignments('classId', req);
+    it('should call service.getAssignments with correct parameters and return the result', async () => {
+      // Arrange
+      const classId = 'class-123';
+      const mockRequest = {
+        user: {
+          userId: 'user-xyz',
+          role: 'STUDENT',
+        },
+      };
+      const mockResult = [{ id: 'asg-1', title: 'Tugas 1' }];
+      service.getAssignments.mockResolvedValue(mockResult);
+
+      // Act
+      const result = await controller.getAssignments(classId, mockRequest);
+
+      // Assert
       expect(service.getAssignments).toHaveBeenCalledWith(
-        'classId',
-        'userId',
-        'INSTRUCTOR',
+        classId,
+        mockRequest.user.userId,
+        mockRequest.user.role,
       );
-      expect(result).toEqual([{ id: 'a2' }]);
+      expect(result).toEqual(mockResult);
     });
   });
 });
