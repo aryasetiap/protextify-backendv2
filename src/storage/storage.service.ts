@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { CloudStorageProvider } from './providers/cloud-storage.provider';
+import { UploadFileDto, UploadResponseDto } from './dto/upload-file.dto';
 import * as path from 'path';
 import PDFDocument from 'pdfkit';
 import * as DOCX from 'docx';
@@ -25,6 +26,23 @@ export interface GeneratedFileResult {
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
+
+  // Allowed file types and their MIME types
+  private readonly ALLOWED_FILE_TYPES = {
+    // Documents
+    'application/pdf': { ext: 'pdf', maxSize: 10 * 1024 * 1024 }, // 10MB
+    'application/msword': { ext: 'doc', maxSize: 10 * 1024 * 1024 },
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
+      ext: 'docx',
+      maxSize: 10 * 1024 * 1024,
+    },
+    // Images
+    'image/jpeg': { ext: 'jpg', maxSize: 5 * 1024 * 1024 }, // 5MB
+    'image/png': { ext: 'png', maxSize: 5 * 1024 * 1024 },
+    // Archives
+    'application/zip': { ext: 'zip', maxSize: 20 * 1024 * 1024 }, // 20MB
+    'application/x-zip-compressed': { ext: 'zip', maxSize: 20 * 1024 * 1024 },
+  };
 
   constructor(
     private readonly configService: ConfigService,
@@ -507,6 +525,160 @@ export class StorageService {
       );
     } catch (error) {
       this.logger.error('Failed to send download notification:', error);
+    }
+  }
+
+  /**
+   * Upload file attachment
+   */
+  async uploadFileAttachment(
+    file: Express.Multer.File,
+    userId: string,
+    dto: UploadFileDto,
+  ): Promise<UploadResponseDto> {
+    this.logger.log(`[STORAGE] Uploading file: ${file.originalname}`);
+
+    // Validate file
+    this.validateUploadedFile(file);
+
+    try {
+      // Generate unique filename
+      const fileExtension = this.getFileExtension(file.originalname);
+      const uniqueFilename = `${nanoid(12)}-${Date.now()}${fileExtension}`;
+
+      // Generate cloud storage key
+      const cloudKey = this.cloudStorageProvider.generateFileKey(
+        'attachments',
+        uniqueFilename,
+      );
+
+      // Upload to cloud storage
+      const uploadResult = await this.cloudStorageProvider.uploadFile(
+        file.buffer,
+        cloudKey,
+        file.mimetype,
+        {
+          userId,
+          originalName: file.originalname,
+          uploadedAt: new Date().toISOString(),
+          ...dto,
+        },
+      );
+
+      // Save file metadata to database (optional - create FileAttachment model)
+      const fileRecord = await this.saveFileMetadata({
+        id: nanoid(),
+        filename: file.originalname,
+        uniqueFilename,
+        size: file.size,
+        mimeType: file.mimetype,
+        cloudKey,
+        userId,
+        assignmentId: dto.assignmentId,
+        submissionId: dto.submissionId,
+        description: dto.description,
+      });
+
+      this.logger.log(
+        `[STORAGE] File uploaded successfully: ${file.originalname}`,
+      );
+
+      // Send notification
+      await this.sendUploadNotification(userId, file.originalname);
+
+      return {
+        id: fileRecord.id,
+        filename: file.originalname,
+        size: file.size,
+        mimeType: file.mimetype,
+        cloudKey,
+        uploadedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      this.logger.error('[STORAGE] File upload failed:', error);
+      throw new InternalServerErrorException('Failed to upload file');
+    }
+  }
+
+  /**
+   * Validate uploaded file
+   */
+  private validateUploadedFile(file: Express.Multer.File): void {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    // Check file type
+    const allowedType = this.ALLOWED_FILE_TYPES[file.mimetype];
+    if (!allowedType) {
+      const allowedTypes = Object.keys(this.ALLOWED_FILE_TYPES)
+        .map((mime) => this.ALLOWED_FILE_TYPES[mime].ext.toUpperCase())
+        .join(', ');
+
+      throw new BadRequestException(
+        `Tipe file tidak didukung. Hanya ${allowedTypes} yang diperbolehkan.`,
+      );
+    }
+
+    // Check file size
+    if (file.size > allowedType.maxSize) {
+      const maxSizeMB = Math.round(allowedType.maxSize / (1024 * 1024));
+      throw new BadRequestException(
+        `Ukuran file terlalu besar. Maksimal ${maxSizeMB}MB.`,
+      );
+    }
+
+    // Check filename length
+    if (file.originalname.length > 255) {
+      throw new BadRequestException(
+        'Nama file terlalu panjang. Maksimal 255 karakter.',
+      );
+    }
+
+    // Check for potentially dangerous files
+    const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.com'];
+    const fileExtension = this.getFileExtension(
+      file.originalname,
+    ).toLowerCase();
+    if (dangerousExtensions.includes(fileExtension)) {
+      throw new BadRequestException('Tipe file berbahaya tidak diperbolehkan.');
+    }
+  }
+
+  /**
+   * Get file extension from filename
+   */
+  private getFileExtension(filename: string): string {
+    const lastDotIndex = filename.lastIndexOf('.');
+    return lastDotIndex !== -1 ? filename.substring(lastDotIndex) : '';
+  }
+
+  /**
+   * Save file metadata to database
+   */
+  private async saveFileMetadata(metadata: any) {
+    // Implementation depends on your database schema
+    // For now, return mock data
+    return {
+      id: metadata.id,
+      filename: metadata.filename,
+      // ... other fields
+    };
+  }
+
+  /**
+   * Send upload notification
+   */
+  private async sendUploadNotification(userId: string, filename: string) {
+    try {
+      this.realtimeGateway.sendNotification(userId, {
+        type: 'file_uploaded',
+        message: `File "${filename}" berhasil diunggah`,
+        data: { filename },
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      this.logger.warn('[STORAGE] Failed to send upload notification:', error);
     }
   }
 }

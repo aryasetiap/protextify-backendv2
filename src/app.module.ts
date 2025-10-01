@@ -44,6 +44,11 @@ import { ScheduleModule } from '@nestjs/schedule';
         WINSTON_AI_TOKEN: Joi.string().required(),
         // Base URL
         BASE_URL: Joi.string().default('http://localhost:3000'),
+        // 🔧 Frontend & CORS URLs
+        FRONTEND_URL: Joi.string().default('http://localhost:5173'),
+        CORS_ORIGINS: Joi.string().default(
+          'http://localhost:5173,http://localhost:3000,http://localhost:4173',
+        ),
         // Cloudflare R2
         CLOUDFLARE_R2_ENDPOINT: Joi.string().required(),
         CLOUDFLARE_R2_REGION: Joi.string().default('auto'),
@@ -51,6 +56,14 @@ import { ScheduleModule } from '@nestjs/schedule';
         CLOUDFLARE_R2_ACCESS_KEY_ID: Joi.string().required(),
         CLOUDFLARE_R2_SECRET_ACCESS_KEY: Joi.string().required(),
         CLOUDFLARE_R2_PUBLIC_URL: Joi.string().required(),
+        // Google OAuth
+        GOOGLE_CLIENT_ID: Joi.string().optional(),
+        GOOGLE_CLIENT_SECRET: Joi.string().optional(),
+        GOOGLE_CALLBACK_URL: Joi.string().optional(),
+        // Midtrans
+        MIDTRANS_SERVER_KEY: Joi.string().optional(),
+        MIDTRANS_CLIENT_KEY: Joi.string().optional(),
+        MIDTRANS_IS_PRODUCTION: Joi.boolean().default(false),
       }),
     }),
     ServeStaticModule.forRoot({

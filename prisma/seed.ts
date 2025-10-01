@@ -4,6 +4,15 @@ import { nanoid } from 'nanoid';
 
 const prisma = new PrismaClient();
 
+// 🔧 Define interface untuk version data
+interface VersionData {
+  id: string;
+  submissionId: string;
+  version: number;
+  content: string;
+  updatedAt: Date;
+}
+
 async function main() {
   console.log('🌱 Starting database seeding...');
 
@@ -30,6 +39,9 @@ async function main() {
 
   // 8. Seed Plagiarism Checks
   await seedPlagiarismChecks();
+
+  // 9. Seed Submission Versions (🆕 New)
+  await seedSubmissionVersions();
 
   console.log('✅ Database seeding completed successfully!');
 }
@@ -1084,6 +1096,70 @@ async function seedPlagiarismChecks() {
   }
 
   console.log(`   ✅ Created/updated ${validChecks.length} plagiarism checks`);
+}
+
+/**
+ * Seed Submission Versions
+ */
+async function seedSubmissionVersions() {
+  console.log('📝 Seeding submission versions...');
+
+  const submissions = await prisma.submission.findMany({
+    take: 3, // Sample untuk 3 submission pertama
+  });
+
+  // 🔧 Explicitly type the array
+  const versions: VersionData[] = [];
+
+  for (const submission of submissions) {
+    // Version 1 (initial)
+    versions.push({
+      id: `version-${submission.id}-1`,
+      submissionId: submission.id,
+      version: 1,
+      content: submission.content,
+      updatedAt: new Date(submission.createdAt.getTime() + 1000), // 1 second later
+    });
+
+    // Version 2 (revised)
+    versions.push({
+      id: `version-${submission.id}-2`,
+      submissionId: submission.id,
+      version: 2,
+      content:
+        submission.content +
+        '\n\n## Revision 1\nAdded more details and examples.',
+      updatedAt: new Date(submission.createdAt.getTime() + 60000), // 1 minute later
+    });
+
+    // Version 3 (final)
+    if (submission.status === 'SUBMITTED' || submission.status === 'GRADED') {
+      versions.push({
+        id: `version-${submission.id}-3`,
+        submissionId: submission.id,
+        version: 3,
+        content:
+          submission.content +
+          '\n\n## Revision 1\nAdded more details and examples.\n\n## Final Review\nCompleted all requirements.',
+        updatedAt: new Date(submission.updatedAt.getTime()),
+      });
+    }
+  }
+
+  for (const version of versions) {
+    await prisma.submissionVersion.upsert({
+      where: {
+        submissionId_version: {
+          submissionId: version.submissionId,
+          version: version.version,
+        },
+      },
+      update: {},
+      create: version,
+    });
+  }
+
+  console.log(`   ✅ Created/updated ${versions.length} submission versions`);
 }
 
 main()

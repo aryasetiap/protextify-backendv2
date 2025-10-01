@@ -452,4 +452,99 @@ export class SubmissionsController {
       req.user.userId,
     );
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/submissions/:id/versions')
+  @ApiOperation({
+    summary: 'Get submission versions',
+    description: 'Returns all versions of a submission content.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Submission ID',
+    example: 'submission-1',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of submission versions',
+    schema: {
+      example: [
+        {
+          version: 1,
+          content: 'Isi tugas versi 1',
+          updatedAt: '2025-06-01T12:00:00.000Z',
+        },
+        {
+          version: 2,
+          content: 'Isi tugas versi 2',
+          updatedAt: '2025-06-01T13:00:00.000Z',
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Submission not found',
+    schema: { example: { statusCode: 404, message: 'Submission not found' } },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Not your submission',
+    schema: { example: { statusCode: 403, message: 'Not your submission' } },
+  })
+  async getSubmissionVersions(@Param('id') id: string, @Req() req) {
+    return this.submissionsService.getSubmissionVersions(
+      id,
+      req.user.userId,
+      req.user.role,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/submissions/:id/versions/:version')
+  @ApiOperation({
+    summary: 'Get specific submission version',
+    description: 'Returns a specific version of submission content.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Submission ID',
+    example: 'submission-1',
+  })
+  @ApiParam({
+    name: 'version',
+    type: Number,
+    description: 'Version number',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Submission version detail',
+    schema: {
+      example: {
+        version: 1,
+        content: 'Isi tugas versi 1',
+        updatedAt: '2025-06-01T12:00:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Submission or version not found',
+    schema: { example: { statusCode: 404, message: 'Version not found' } },
+  })
+  async getSubmissionVersion(
+    @Param('id') id: string,
+    @Param('version') version: string,
+    @Req() req,
+  ) {
+    return this.submissionsService.getSubmissionVersion(
+      id,
+      parseInt(version, 10),
+      req.user.userId,
+      req.user.role,
+    );
+  }
 }

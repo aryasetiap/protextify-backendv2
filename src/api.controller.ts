@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('api')
-@Controller() // This will be under /api due to global prefix
+@Controller()
 export class ApiController {
   @Get()
   @ApiOperation({ summary: 'API Root endpoint' })
@@ -42,6 +42,8 @@ export class ApiController {
           submit: 'POST /api/submissions/:id/submit',
           download: 'GET /api/submissions/:id/download',
           history: 'GET /api/submissions/history',
+          versions: 'GET /api/submissions/:id/versions', // 🆕 New endpoint
+          versionDetail: 'GET /api/submissions/:id/versions/:version', // 🆕 New endpoint
         },
         plagiarism: {
           check: 'POST /api/submissions/:id/check-plagiarism',
@@ -53,6 +55,8 @@ export class ApiController {
         },
         storage: {
           health: 'GET /api/storage/health',
+          upload: 'POST /api/storage/upload',
+          refreshUrl: 'GET /api/storage/refresh-url/:cloudKey',
           download: 'GET /api/storage/download/:filename',
         },
       },

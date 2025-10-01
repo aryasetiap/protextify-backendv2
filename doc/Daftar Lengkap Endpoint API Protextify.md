@@ -47,6 +47,7 @@ Dokumentasi lengkap API backend Protextify - Platform deteksi plagiarisme dan ma
   - [💾 Modul Storage](#-modul-storage)
     - [GET /storage/health](#get-storagehealth)
     - [GET /storage/refresh-url/:cloudKey](#get-storagerefresh-urlcloudkey)
+    - [POST /storage/upload](#post-storageupload)
   - [📡 Event WebSocket (Realtime)](#-event-websocket-realtime)
   - [🚨 Error Handling](#-error-handling)
 
@@ -999,6 +1000,50 @@ Refresh pre-signed URL untuk file yang ada.
   "url": "https://r2.cloudflare.com/presigned-url",
   "expiresIn": 7200,
   "expiresAt": "2025-06-01T14:00:00.000Z"
+}
+```
+
+### POST /storage/upload
+
+Upload file attachment untuk assignment atau submission.
+
+**Authentication:** Required
+
+**Content-Type:** `multipart/form-data`
+
+**Parameters:**
+
+- File: `file` (required) - File to upload
+- Body: `assignmentId` (optional) - Assignment ID
+- Body: `submissionId` (optional) - Submission ID
+- Body: `description` (optional) - File description
+
+**Supported File Types:**
+
+- Documents: PDF, DOC, DOCX (max 10MB)
+- Images: JPG, PNG (max 5MB)
+- Archives: ZIP (max 20MB)
+
+**Response Success (201):**
+
+```json
+{
+  "id": "file-abc123",
+  "filename": "document.pdf",
+  "size": 1234567,
+  "mimeType": "application/pdf",
+  "cloudKey": "attachments/file-abc123.pdf",
+  "uploadedAt": "2025-06-01T12:00:00.000Z"
+}
+```
+
+**Response Error (400):**
+
+```json
+{
+  "statusCode": 400,
+  "message": "Tipe file tidak didukung. Hanya PDF, DOC, DOCX, JPG, PNG, ZIP yang diperbolehkan.",
+  "error": "Bad Request"
 }
 ```
 

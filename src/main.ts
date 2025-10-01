@@ -28,19 +28,53 @@ async function bootstrap() {
     }),
   );
 
-  // Security middleware
+  // 🔧 Updated Security middleware - More permissive for development
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+        },
+      },
     }),
   );
 
-  // CORS configuration
+  // 🔧 Updated CORS configuration - Support frontend development
   app.enableCors({
-    origin: ['http://localhost:3001', 'http://localhost:3000'],
+    origin: [
+      'http://localhost:5173', // Vite dev server (primary)
+      'http://localhost:3000', // Backend same-origin
+      'http://localhost:3001', // Alternative frontend port
+      'http://localhost:4173', // Vite preview
+      'http://localhost:5174', // Vite dev server backup
+      'http://127.0.0.1:5173', // IP variant
+      'http://127.0.0.1:3000', // IP variant
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+      'Access-Control-Allow-Origin',
+      'Access-Control-Allow-Headers',
+      'Access-Control-Allow-Methods',
+      'Cache-Control',
+      'Pragma',
+    ],
+    exposedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Access-Control-Allow-Origin',
+    ],
+    optionsSuccessStatus: 200, // Support legacy browsers
+    preflightContinue: false,
   });
 
   // Swagger configuration
@@ -80,5 +114,8 @@ async function bootstrap() {
     `📁 File Downloads: http://localhost:${port}/api/storage/download/`,
   );
   console.log(`💚 Health Check: http://localhost:${port}/health`);
+  console.log(
+    '✅ CORS enabled for frontend development on ports: 5173, 3000, 4173',
+  );
 }
 void bootstrap();

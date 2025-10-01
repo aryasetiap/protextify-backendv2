@@ -1,12 +1,18 @@
 import {
   Controller,
+  Post,
   Get,
   Param,
   Query,
+  Body,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  Req,
   BadRequestException,
   Logger,
-  UseGuards,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -14,10 +20,13 @@ import {
   ApiQuery,
   ApiParam,
   ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { StorageService } from './storage.service';
 import { CloudStorageProvider } from './providers/cloud-storage.provider';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
+import { UploadFileDto, UploadResponseDto } from './dto/upload-file.dto';
 
 @ApiTags('storage')
 @ApiBearerAuth()
@@ -165,5 +174,109 @@ export class StorageController {
       this.logger.error(`[STORAGE] Refresh URL error:`, error);
       throw new BadRequestException('Unable to refresh download URL');
     }
+  }
+
+  @Post('upload')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 20 * 1024 * 1024, // 20MB max
+      },
+    }),
+  )
+  @ApiOperation({
+    summary: 'Upload file attachment',
+    description: 'Upload file attachment for assignments or submissions',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'File upload',
+    type: 'multipart/form-data',
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'File to upload (PDF, DOC, DOCX, JPG, PNG, ZIP)',
+        },
+        assignmentId: {
+          type: 'string',
+          description: 'Assignment ID (optional)',
+        },
+        submissionId: {
+          type: 'string',
+          description: 'Submission ID (optional)',
+        },
+        description: {
+          type: 'string',
+          description: 'File description (optional)',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'File uploaded successfully',
+    type: UploadResponseDto,
+    schema: {
+      example: {
+        id: 'file-abc123',
+        filename: 'document.pdf',
+        size: 1234567,
+        mimeType: 'application/pdf',
+        cloudKey: 'attachments/file-abc123.pdf',
+        uploadedAt: '2025-06-01T12:00:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - File validation failed',
+    schema: {
+      examples: {
+        unsupportedType: {
+          value: {
+            statusCode: 400,
+            message:
+              'Tipe file tidak didukung. Hanya PDF, DOC, DOCX, JPG, PNG, ZIP yang diperbolehkan.',
+            error: 'Bad Request',
+          },
+        },
+        fileTooLarge: {
+          value: {
+            statusCode: 400,
+            message: 'Ukuran file terlalu besar. Maksimal 10MB.',
+            error: 'Bad Request',
+          },
+        },
+        noFile: {
+          value: {
+            statusCode: 400,
+            message: 'No file provided',
+            error: 'Bad Request',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    schema: {
+      example: { statusCode: 401, message: 'Unauthorized' },
+    },
+  })
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: UploadFileDto,
+    @Req() req,
+  ): Promise<UploadResponseDto> {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    return this.storageService.uploadFileAttachment(file, req.user.userId, dto);
   }
 }

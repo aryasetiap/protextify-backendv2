@@ -18,6 +18,94 @@ export class SubmissionsService {
     private storageService: StorageService, // 🆕 Inject StorageService
   ) {}
 
+  /**
+   * Create a new version when content is updated
+   */
+  private async createVersion(
+    submissionId: string,
+    content: string,
+  ): Promise<void> {
+    // Get current version count
+    const versionCount = await this.prisma.submissionVersion.count({
+      where: { submissionId },
+    });
+
+    // Create new version
+    await this.prisma.submissionVersion.create({
+      data: {
+        submissionId,
+        version: versionCount + 1,
+        content,
+      },
+    });
+  }
+
+  /**
+   * Get all versions of a submission
+   */
+  async getSubmissionVersions(
+    submissionId: string,
+    userId: string,
+    role: string,
+  ) {
+    // Verify submission access
+    const submission = await this.getSubmissionDetail(
+      submissionId,
+      userId,
+      role,
+    );
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
+
+    const versions = await this.prisma.submissionVersion.findMany({
+      where: { submissionId },
+      orderBy: { version: 'asc' },
+      select: {
+        version: true,
+        content: true,
+        updatedAt: true,
+      },
+    });
+
+    return versions;
+  }
+
+  /**
+   * Get specific version of submission
+   */
+  async getSubmissionVersion(
+    submissionId: string,
+    version: number,
+    userId: string,
+    role: string,
+  ) {
+    // Verify submission access
+    await this.getSubmissionDetail(submissionId, userId, role);
+
+    const submissionVersion = await this.prisma.submissionVersion.findUnique({
+      where: {
+        submissionId_version: {
+          submissionId,
+          version,
+        },
+      },
+      select: {
+        version: true,
+        content: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!submissionVersion) {
+      throw new NotFoundException('Version not found');
+    }
+
+    return submissionVersion;
+  }
+
+  // Update existing methods to include versioning
   async createSubmission(
     assignmentId: string,
     dto: CreateSubmissionDto,
@@ -40,7 +128,7 @@ export class SubmissionsService {
       where: { assignmentId, studentId },
     });
     if (existing) throw new ForbiddenException('Already submitted');
-    return this.prisma.submission.create({
+    const submission = await this.prisma.submission.create({
       data: {
         assignmentId,
         studentId,
@@ -48,6 +136,11 @@ export class SubmissionsService {
         status: 'DRAFT',
       },
     });
+
+    // Create initial version
+    await this.createVersion(submission.id, dto.content);
+
+    return submission;
   }
 
   async getSubmissionDetail(
@@ -73,6 +166,7 @@ export class SubmissionsService {
     const submission = await this.prisma.submission.findUnique({
       where: { id: submissionId },
     });
+
     if (!submission) throw new NotFoundException('Submission not found');
     if (submission.studentId !== userId)
       throw new ForbiddenException('Not your submission');
@@ -81,6 +175,9 @@ export class SubmissionsService {
       where: { id: submissionId },
       data: { content: dto.content },
     });
+
+    // Create new version
+    await this.createVersion(submissionId, dto.content);
 
     // Broadcast content update via WebSocket
     this.realtimeGateway.broadcastSubmissionUpdate(submissionId, {
@@ -95,13 +192,22 @@ export class SubmissionsService {
     const submission = await this.prisma.submission.findUnique({
       where: { id: submissionId },
     });
+
     if (!submission) throw new NotFoundException('Submission not found');
     if (submission.studentId !== userId)
       throw new ForbiddenException('Not your submission');
-    return this.prisma.submission.update({
+
+    const updatedSubmission = await this.prisma.submission.update({
       where: { id: submissionId },
       data: { status: 'SUBMITTED' },
     });
+
+    // Create version when submitted (if content changed)
+    if (submission.content !== updatedSubmission.content) {
+      await this.createVersion(submissionId, updatedSubmission.content);
+    }
+
+    return updatedSubmission;
   }
 
   async grade(submissionId: string, grade: number, instructorId: string) {

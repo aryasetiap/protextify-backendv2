@@ -17,8 +17,20 @@ import { NotificationDto } from './dto/notification.dto';
 @Injectable()
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: [
+      'http://localhost:5173', // Vite dev server (primary)
+      'http://localhost:3000', // Backend same-origin
+      'http://localhost:3001', // Alternative frontend port
+      'http://localhost:4173', // Vite preview
+      'http://localhost:5174', // Vite dev server backup
+      'http://127.0.0.1:5173', // IP variant
+      'http://127.0.0.1:3000', // IP variant
+    ],
+    credentials: true,
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   },
+  transports: ['websocket', 'polling'], // Support both transports
 })
 export class RealtimeGateway
   implements OnGatewayConnection, OnGatewayDisconnect
@@ -39,13 +51,19 @@ export class RealtimeGateway
   async handleConnection(client: Socket) {
     try {
       const token =
-        client.handshake.auth.token || client.handshake.headers.authorization;
+        client.handshake.auth.token ||
+        client.handshake.headers.authorization ||
+        client.handshake.query?.token;
+
       if (!token) {
+        this.logger.warn(`Client ${client.id} connected without token`);
         client.disconnect();
         return;
       }
 
-      const payload = this.jwtService.verify(token.replace('Bearer ', ''));
+      const cleanToken =
+        typeof token === 'string' ? token.replace('Bearer ', '') : token;
+      const payload = this.jwtService.verify(cleanToken);
       const user = { userId: payload.sub, role: payload.role };
 
       this.connectedUsers.set(client.id, user);
@@ -53,8 +71,16 @@ export class RealtimeGateway
 
       // Join user to their personal room for notifications
       client.join(`user_${user.userId}`);
+
+      // Send connection confirmation
+      client.emit('connected', {
+        status: 'success',
+        userId: user.userId,
+        message: 'WebSocket connection established',
+      });
     } catch (error) {
       this.logger.error('WebSocket authentication failed', error);
+      client.emit('error', { message: 'Authentication failed' });
       client.disconnect();
     }
   }
@@ -83,34 +109,54 @@ export class RealtimeGateway
     @MessageBody() data: { submissionId: string },
   ) {
     const user = this.connectedUsers.get(client.id);
-    if (!user) return;
-
-    // Verify user can access this submission
-    const submission = await this.prisma.submission.findUnique({
-      where: { id: data.submissionId },
-      include: { assignment: { include: { class: true } } },
-    });
-
-    if (!submission) return;
-
-    const canAccess =
-      (user.role === 'STUDENT' && submission.studentId === user.userId) ||
-      (user.role === 'INSTRUCTOR' &&
-        submission.assignment.class.instructorId === user.userId);
-
-    if (!canAccess) return;
-
-    // Join submission room
-    client.join(`submission_${data.submissionId}`);
-
-    if (!this.submissionRooms.has(data.submissionId)) {
-      this.submissionRooms.set(data.submissionId, new Set());
+    if (!user) {
+      client.emit('error', { message: 'User not authenticated' });
+      return;
     }
-    this.submissionRooms.get(data.submissionId)!.add(client.id);
 
-    this.logger.log(
-      `User ${user.userId} joined submission ${data.submissionId}`,
-    );
+    try {
+      // Verify user can access this submission
+      const submission = await this.prisma.submission.findUnique({
+        where: { id: data.submissionId },
+        include: { assignment: { include: { class: true } } },
+      });
+
+      if (!submission) {
+        client.emit('error', { message: 'Submission not found' });
+        return;
+      }
+
+      const canAccess =
+        (user.role === 'STUDENT' && submission.studentId === user.userId) ||
+        (user.role === 'INSTRUCTOR' &&
+          submission.assignment.class.instructorId === user.userId);
+
+      if (!canAccess) {
+        client.emit('error', { message: 'Access denied to this submission' });
+        return;
+      }
+
+      // Join submission room
+      client.join(`submission_${data.submissionId}`);
+
+      if (!this.submissionRooms.has(data.submissionId)) {
+        this.submissionRooms.set(data.submissionId, new Set());
+      }
+      this.submissionRooms.get(data.submissionId)!.add(client.id);
+
+      this.logger.log(
+        `User ${user.userId} joined submission ${data.submissionId}`,
+      );
+
+      client.emit('joinedSubmission', {
+        status: 'success',
+        submissionId: data.submissionId,
+        message: 'Joined submission room',
+      });
+    } catch (error) {
+      this.logger.error('Error joining submission', error);
+      client.emit('error', { message: 'Failed to join submission' });
+    }
   }
 
   @SubscribeMessage('updateContent')
@@ -119,7 +165,10 @@ export class RealtimeGateway
     @MessageBody() data: UpdateContentDto,
   ) {
     const user = this.connectedUsers.get(client.id);
-    if (!user || user.role !== 'STUDENT') return;
+    if (!user || user.role !== 'STUDENT') {
+      client.emit('error', { message: 'Only students can update content' });
+      return;
+    }
 
     try {
       // Throttling: Allow updates only every 2 seconds per submission
@@ -135,6 +184,9 @@ export class RealtimeGateway
       });
 
       if (!submission || submission.studentId !== user.userId) {
+        client.emit('error', {
+          message: 'Submission not found or access denied',
+        });
         return;
       }
 
@@ -223,10 +275,22 @@ export class RealtimeGateway
     @MessageBody() data: { assignmentId: string },
   ) {
     const user = this.connectedUsers.get(client.id);
-    if (!user || user.role !== 'INSTRUCTOR') return;
+    if (!user || user.role !== 'INSTRUCTOR') {
+      client.emit('error', {
+        message: 'Only instructors can monitor assignments',
+      });
+      return;
+    }
+
     client.join(`assignment_${data.assignmentId}`);
     this.logger.log(
       `Instructor ${user.userId} joined monitoring for assignment ${data.assignmentId}`,
     );
+
+    client.emit('joinedAssignmentMonitoring', {
+      status: 'success',
+      assignmentId: data.assignmentId,
+      message: 'Joined assignment monitoring',
+    });
   }
 }
