@@ -6,6 +6,10 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
+  Get,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -13,6 +17,7 @@ import {
   ApiResponse,
   ApiBody,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -150,5 +155,86 @@ export class PaymentsController {
         error: error.message,
       };
     }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Get('transactions')
+  @ApiOperation({
+    summary: 'Get instructor transaction history',
+    description:
+      'Returns paginated transaction history for instructor with filters.',
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    type: String,
+    example: 'SUCCESS',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    type: String,
+    example: '2025-01-01',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    type: String,
+    example: '2025-01-31',
+  })
+  @ApiQuery({
+    name: 'assignmentId',
+    required: false,
+    type: String,
+    example: 'assignment-xyz',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated transaction history',
+    schema: {
+      example: {
+        data: [
+          {
+            id: 'transaction-id',
+            orderId: 'PROTEXTIFY-xxx',
+            amount: 25000,
+            status: 'SUCCESS',
+            paymentMethod: 'bank_transfer',
+            createdAt: '2025-01-XX',
+            assignment: {
+              id: 'assignment-id',
+              title: 'Assignment Title',
+              class: { name: 'Class Name' },
+            },
+            expectedStudentCount: 10,
+          },
+        ],
+        page: 1,
+        limit: 10,
+        total: 50,
+        totalPages: 5,
+      },
+    },
+  })
+  async getTransactions(
+    @Req() req,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('status') status?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('assignmentId') assignmentId?: string,
+  ) {
+    return this.paymentsService.getTransactions(req.user.userId, {
+      page,
+      limit,
+      status,
+      startDate,
+      endDate,
+      assignmentId,
+    });
   }
 }

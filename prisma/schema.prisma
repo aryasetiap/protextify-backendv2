@@ -119,8 +119,9 @@ model Transaction {
   amount                Float
   creditsPurchased      Int               @default(0)
   status                TransactionStatus @default(PENDING)
-  midtransTransactionId String            @unique // 🔧 Ganti midtransOrderId dengan ini
+  midtransTransactionId String            @unique
   midtransToken         String?
+  paymentMethod         String? // 🆕 Field baru untuk metode pembayaran
   createdAt             DateTime          @default(now())
   user                  User              @relation(fields: [userId], references: [id])
   assignmentId          String?

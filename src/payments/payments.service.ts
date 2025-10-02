@@ -19,6 +19,15 @@ interface MidtransSnapResponse {
   redirect_url: string;
 }
 
+interface TransactionQuery {
+  page: number;
+  limit: number;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  assignmentId?: string;
+}
+
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
@@ -283,10 +292,13 @@ export class PaymentsService {
         newStatus = 'FAILED';
       }
 
-      // Update status transaksi
+      // Update status transaksi dengan paymentMethod jika field ditambahkan
       await this.prisma.transaction.update({
         where: { id: transaction.id },
-        data: { status: newStatus },
+        data: {
+          status: newStatus,
+          paymentMethod: dto.payment_type, // 🆕 Simpan metode pembayaran dari Midtrans
+        },
       });
 
       // Jika pembayaran sukses dan ini untuk assignment
@@ -330,5 +342,73 @@ export class PaymentsService {
       console.error('Webhook processing error:', error);
       throw error;
     }
+  }
+
+  async getTransactions(instructorId: string, query: TransactionQuery) {
+    // 🔧 Pastikan page dan limit adalah number dengan default values
+    const page = Number(query.page) || 1;
+    const limit = Math.min(Number(query.limit) || 10, 50); // Max 50 per request
+    const { status, startDate, endDate, assignmentId } = query;
+
+    // 🔧 Validasi input
+    if (page < 1) {
+      throw new BadRequestException('Page must be greater than 0');
+    }
+    if (limit < 1 || limit > 50) {
+      throw new BadRequestException('Limit must be between 1 and 50');
+    }
+
+    const where: any = {
+      userId: instructorId,
+      ...(status && { status }),
+      ...(assignmentId && { assignmentId }),
+      ...(startDate && endDate
+        ? { createdAt: { gte: new Date(startDate), lte: new Date(endDate) } }
+        : startDate
+          ? { createdAt: { gte: new Date(startDate) } }
+          : endDate
+            ? { createdAt: { lte: new Date(endDate) } }
+            : {}),
+    };
+
+    const [total, transactions] = await Promise.all([
+      this.prisma.transaction.count({ where }),
+      this.prisma.transaction.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit, // 🔧 Pastikan operasi matematika dengan number
+        take: limit, // 🔧 Sekarang sudah pasti number
+        include: {
+          assignment: {
+            include: {
+              class: { select: { name: true } },
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      data: transactions.map((tx) => ({
+        id: tx.id,
+        orderId: tx.midtransTransactionId,
+        amount: tx.amount,
+        status: tx.status,
+        paymentMethod: (tx as any).paymentMethod || 'bank_transfer',
+        createdAt: tx.createdAt,
+        assignment: tx.assignment
+          ? {
+              id: tx.assignment.id,
+              title: tx.assignment.title,
+              class: { name: tx.assignment.class?.name },
+            }
+          : null,
+        expectedStudentCount: tx.assignment?.expectedStudentCount || null,
+      })),
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 }

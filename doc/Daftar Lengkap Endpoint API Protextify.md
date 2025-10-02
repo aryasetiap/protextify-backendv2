@@ -44,6 +44,7 @@ Dokumentasi lengkap API backend Protextify - Platform deteksi plagiarisme dan ma
   - [💳 Modul Payments](#-modul-payments)
     - [POST /payments/create-transaction](#post-paymentscreate-transaction)
     - [POST /payments/webhook](#post-paymentswebhook)
+    - [GET /payments/transactions](#get-paymentstransactions)
   - [💾 Modul Storage](#-modul-storage)
     - [GET /storage/health](#get-storagehealth)
     - [GET /storage/refresh-url/:cloudKey](#get-storagerefresh-urlcloudkey)
@@ -945,6 +946,48 @@ Menerima notifikasi status pembayaran dari Midtrans.
 ```json
 {
   "message": "Webhook processed successfully"
+}
+```
+
+### GET /payments/transactions
+
+Mendapat riwayat transaksi pembayaran instruktur (dengan pagination & filter).
+
+**Authentication:** Required (INSTRUCTOR role)
+
+**Parameters:**
+
+- Query: `page` (number, optional, default: 1)
+- Query: `limit` (number, optional, default: 10)
+- Query: `status` (string, optional)
+- Query: `startDate` (string, optional)
+- Query: `endDate` (string, optional)
+- Query: `assignmentId` (string, optional)
+
+**Response Success (200):**
+
+```json
+{
+  "data": [
+    {
+      "id": "transaction-id",
+      "orderId": "PROTEXTIFY-xxx",
+      "amount": 25000,
+      "status": "SUCCESS",
+      "paymentMethod": "bank_transfer",
+      "createdAt": "2025-01-XX",
+      "assignment": {
+        "id": "assignment-id",
+        "title": "Assignment Title",
+        "class": { "name": "Class Name" }
+      },
+      "expectedStudentCount": 10
+    }
+  ],
+  "page": 1,
+  "limit": 10,
+  "total": 50,
+  "totalPages": 5
 }
 ```
 
