@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EmailModule } from '../email/email.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './strategies/jwt-strategy/jwt-strategy';
 import { GoogleStrategy } from './strategies/google-strategy/google.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
@@ -23,6 +24,7 @@ import { RolesGuard } from './guards/roles.guard';
     ConfigModule,
     EmailModule,
     PrismaModule,
+    forwardRef(() => UsersModule),
   ],
   controllers: [AuthController],
   providers: [

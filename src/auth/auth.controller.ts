@@ -6,6 +6,9 @@ import {
   Req,
   Res,
   UseGuards,
+  Inject,
+  forwardRef,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,6 +27,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UsersService } from '../users/users.service';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -31,6 +37,8 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly emailService: EmailService,
+    @Inject(forwardRef(() => UsersService))
+    private readonly usersService: UsersService,
   ) {}
 
   @Post('register')
@@ -214,27 +222,101 @@ export class AuthController {
     // Redirect handled by passport
   }
 
+  // Modifikasi endpoint google callback untuk mendukung kedua format
   @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
   @ApiOperation({
     summary: 'Google OAuth callback',
     description:
-      'Callback endpoint after Google login. Returns JWT and redirects to frontend.',
+      'Callback endpoint after Google login. Supports both redirect and JSON response.',
   })
-  @ApiResponse({
-    status: 302,
-    description: 'Redirect to frontend with JWT token',
-    schema: {
-      example: 'http://localhost:3000/auth/callback?token=jwt_token_here',
+  async googleAuthCallback(
+    @Req() req,
+    @Res() res,
+    @Query('format') format?: string,
+  ) {
+    const user = req.user;
+    const accessToken = await this.authService.generateJwtForUser(user);
+
+    // Jika frontend meminta JSON response (untuk AJAX calls)
+    if (format === 'json') {
+      return res.json({
+        accessToken,
+        user: {
+          ...user,
+          password: undefined,
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.updatedAt.toISOString(),
+        },
+      });
+    }
+
+    // Default behavior: redirect ke frontend dengan token
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/auth/callback?token=${accessToken}`);
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({
+    summary: 'Request password reset',
+    description: 'Send password reset link to user email.',
+  })
+  @ApiBody({
+    type: ForgotPasswordDto,
+    examples: {
+      default: {
+        summary: 'Request Password Reset',
+        value: {
+          email: 'student@example.com',
+        },
+      },
     },
   })
-  @UseGuards(AuthGuard('google'))
-  async googleAuthCallback(@Req() req, @Res() res) {
-    const user = req.user;
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    // Gunakan AuthService untuk generate JWT
-    const accessToken = await this.authService.generateJwtForUser(user);
-    // Redirect ke frontend dengan token
-    res.redirect(`http://localhost:3000/auth/callback?token=${accessToken}`);
+  @ApiResponse({
+    status: 200,
+    description: 'Reset password link sent',
+    schema: { example: { message: 'Reset password link sent to your email' } },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    schema: { example: { statusCode: 404, message: 'User not found' } },
+  })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({
+    summary: 'Reset password with token',
+    description: 'Reset user password using reset token.',
+  })
+  @ApiBody({
+    type: ResetPasswordDto,
+    examples: {
+      default: {
+        summary: 'Reset Password',
+        value: {
+          token: 'reset_token_123',
+          newPassword: 'newPassword123',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset successful',
+    schema: { example: { message: 'Password reset successful' } },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid or expired token',
+    schema: {
+      example: { statusCode: 400, message: 'Invalid or expired token' },
+    },
+  })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.newPassword);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -262,5 +344,40 @@ export class AuthController {
   })
   getInstructorData() {
     return { message: 'Only instructor can access this!' };
+  }
+
+  @Get('google/user')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get user data after Google login',
+    description:
+      'Returns user data with access token for Google authenticated users.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Google user data retrieved',
+    schema: {
+      example: {
+        accessToken: 'jwt.token.here',
+        user: {
+          id: 'user-123',
+          email: 'google@example.com',
+          fullName: 'Google User',
+          role: 'STUDENT',
+          institution: null,
+          emailVerified: true,
+          createdAt: '2025-06-01T12:00:00.000Z',
+          updatedAt: '2025-06-01T12:00:00.000Z',
+        },
+      },
+    },
+  })
+  async getGoogleUser(@Req() req) {
+    const user = await this.usersService.getMe(req.user.userId);
+    const accessToken = await this.authService.generateJwtForUser(user);
+    return {
+      accessToken,
+      user,
+    };
   }
 }
