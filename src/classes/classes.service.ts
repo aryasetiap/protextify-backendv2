@@ -150,9 +150,12 @@ export class ClassesService {
           select: {
             id: true,
             title: true,
+            instructions: true, // 🆕 Tambahkan field ini untuk kelengkapan
             deadline: true,
             active: true,
+            createdAt: true, // 🆕 Tambahkan untuk sorting/info
           },
+          orderBy: { createdAt: 'desc' }, // 🆕 Urutkan assignment terbaru dulu
         },
       },
     });
