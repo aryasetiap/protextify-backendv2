@@ -78,6 +78,21 @@ export class AssignmentsService {
       include: {
         submissions: {
           where: role === 'STUDENT' ? { studentId: userId } : undefined,
+          select: {
+            id: true,
+            status: true,
+            grade: true,
+            updatedAt: true,
+            // 🆕 Include student info for instructor view
+            ...(role === 'INSTRUCTOR' && {
+              student: {
+                select: {
+                  id: true,
+                  fullName: true,
+                },
+              },
+            }),
+          },
         },
         _count: {
           select: { submissions: true },
