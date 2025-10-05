@@ -135,8 +135,35 @@ export class ClassesController {
         {
           id: 'class-abc',
           name: 'Kelas Kalkulus',
-          instructorId: 'instructor-123',
+          description: 'Kelas untuk mata kuliah Kalkulus',
           classToken: '8charToken',
+          instructorId: 'instructor-123',
+          createdAt: '2025-06-01T12:00:00.000Z',
+          updatedAt: '2025-06-01T12:00:00.000Z',
+          instructor: {
+            id: 'instructor-123',
+            fullName: 'Nama Instruktur',
+          },
+          enrollments: [
+            {
+              student: {
+                id: 'student-1',
+                fullName: 'Siswa 1',
+              },
+            },
+          ],
+          assignments: [
+            {
+              id: 'assignment-1',
+              title: 'Tugas 1',
+              deadline: '2025-06-10T23:59:59.000Z',
+              active: true,
+            },
+          ],
+          currentUserEnrollment: {
+            id: 'enrollment-xyz',
+            joinedAt: '2025-06-01T12:00:00.000Z',
+          },
         },
       ],
     },
@@ -170,6 +197,10 @@ export class ClassesController {
         id: 'class-abc',
         name: 'Kelas Kalkulus',
         description: 'Kelas untuk mata kuliah Kalkulus',
+        classToken: '8charToken',
+        instructorId: 'instructor-123',
+        createdAt: '2025-06-01T12:00:00.000Z',
+        updatedAt: '2025-06-01T12:00:00.000Z',
         instructor: {
           id: 'instructor-123',
           fullName: 'Nama Instruktur',

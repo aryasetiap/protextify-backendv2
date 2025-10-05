@@ -51,24 +51,112 @@ export class ClassesService {
       // Kelas yang dibuat oleh instructor
       return this.prisma.class.findMany({
         where: { instructorId: userId },
+        include: {
+          instructor: {
+            select: {
+              id: true,
+              fullName: true,
+            },
+          },
+          enrollments: {
+            include: {
+              student: {
+                select: {
+                  id: true,
+                  fullName: true,
+                },
+              },
+            },
+          },
+          assignments: {
+            select: {
+              id: true,
+              title: true,
+              deadline: true,
+              active: true,
+            },
+          },
+        },
       });
     }
-    // Kelas yang diikuti student
-    return this.prisma.classEnrollment.findMany({
+
+    // For students - restructure response sesuai expectation FE
+    const enrollments = await this.prisma.classEnrollment.findMany({
       where: { studentId: userId },
-      include: { class: true },
+      include: {
+        class: {
+          include: {
+            instructor: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+            enrollments: {
+              include: {
+                student: {
+                  select: {
+                    id: true,
+                    fullName: true,
+                  },
+                },
+              },
+            },
+            assignments: {
+              where: { active: true }, // Student hanya melihat assignment aktif
+              select: {
+                id: true,
+                title: true,
+                deadline: true,
+                active: true,
+              },
+            },
+          },
+        },
+      },
     });
+
+    // Transform ke struktur yang diharapkan FE
+    return enrollments.map((enrollment) => ({
+      ...enrollment.class,
+      currentUserEnrollment: {
+        id: enrollment.id,
+        joinedAt: enrollment.joinedAt,
+      },
+    }));
   }
 
   async getClassDetail(classId: string) {
     const kelas = await this.prisma.class.findUnique({
       where: { id: classId },
       include: {
-        instructor: true,
-        enrollments: { include: { student: true } },
-        assignments: true,
+        instructor: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+        enrollments: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+          },
+        },
+        assignments: {
+          select: {
+            id: true,
+            title: true,
+            deadline: true,
+            active: true,
+          },
+        },
       },
     });
+
     if (!kelas) throw new NotFoundException('Class not found');
     return kelas;
   }
