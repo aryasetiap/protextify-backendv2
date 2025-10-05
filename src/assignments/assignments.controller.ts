@@ -6,6 +6,7 @@ import {
   Param,
   Req,
   UseGuards,
+  Query, // 🆕 Tambahkan import ini
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -13,6 +14,7 @@ import {
   ApiResponse,
   ApiBody,
   ApiParam,
+  ApiQuery, // 🆕 Tambahkan import ini
 } from '@nestjs/swagger';
 import { AssignmentsService } from './assignments.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
@@ -21,13 +23,13 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('assignments')
-@Controller('classes/:classId/assignments')
+@Controller()
 export class AssignmentsController {
   constructor(private readonly assignmentsService: AssignmentsService) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('INSTRUCTOR')
-  @Post()
+  @Post('classes/:classId/assignments')
   @ApiOperation({
     summary: 'Create new assignment for a class',
     description:
@@ -102,7 +104,7 @@ export class AssignmentsController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get()
+  @Get('classes/:classId/assignments')
   @ApiOperation({
     summary: 'Get assignments for a class',
     description:
@@ -149,6 +151,49 @@ export class AssignmentsController {
       classId,
       req.user.userId,
       req.user.role,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('STUDENT')
+  @Get('assignments/recent')
+  @ApiOperation({
+    summary: 'Get recent assignments for student',
+    description:
+      'Returns recent assignments for enrolled classes, ordered by deadline.',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of recent assignments to return',
+    example: 3,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of recent assignments',
+    schema: {
+      example: [
+        {
+          id: 'assignment-xyz',
+          title: 'Tugas Kalkulus',
+          deadline: '2025-12-31T23:59:59.000Z',
+          class: { name: 'Kelas Kalkulus' },
+          active: true,
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    schema: { example: { statusCode: 401, message: 'Unauthorized' } },
+  })
+  async getRecentAssignments(@Req() req, @Query('limit') limit?: number) {
+    const parsedLimit = limit ? parseInt(limit.toString()) : 3;
+    return this.assignmentsService.getRecentAssignments(
+      req.user.userId,
+      parsedLimit,
     );
   }
 }
