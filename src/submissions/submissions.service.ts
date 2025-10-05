@@ -150,11 +150,37 @@ export class SubmissionsService {
   ) {
     const submission = await this.prisma.submission.findUnique({
       where: { id: submissionId },
-      include: { assignment: true, plagiarismChecks: true },
+      include: {
+        assignment: {
+          include: {
+            class: true, // 🆕 Include class info untuk instructor validation
+          },
+        },
+        plagiarismChecks: true,
+        student: {
+          // 🆕 Include student info untuk instructor view
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+      },
     });
+
     if (!submission) throw new NotFoundException('Submission not found');
-    if (role === 'STUDENT' && submission.studentId !== userId)
+
+    // Enhanced permission check
+    if (role === 'STUDENT' && submission.studentId !== userId) {
       throw new ForbiddenException('Not your submission');
+    }
+
+    if (
+      role === 'INSTRUCTOR' &&
+      submission.assignment.class.instructorId !== userId
+    ) {
+      throw new ForbiddenException('Not your class submission');
+    }
+
     return submission;
   }
 

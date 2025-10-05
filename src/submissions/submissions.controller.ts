@@ -271,7 +271,20 @@ export class SubmissionsController {
         studentId: 'student-1',
         content: 'Jawaban tugas saya...',
         status: 'SUBMITTED',
+        grade: 90, // 🆕 Tambahkan contoh grade jika ada
         createdAt: '2025-06-01T12:00:00.000Z',
+        updatedAt: '2025-06-01T13:00:00.000Z', // 🆕 Tambahkan updatedAt
+        assignment: {
+          // 🆕 Tambahkan detail assignment untuk completeness
+          id: 'assignment-1',
+          title: 'Tugas 1',
+          deadline: '2025-06-10T23:59:59.000Z',
+        },
+        plagiarismChecks: {
+          // 🆕 Tambahkan plagiarism info jika ada
+          score: 5.2,
+          status: 'completed',
+        },
       },
     },
   })
