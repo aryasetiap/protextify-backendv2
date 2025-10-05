@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -80,30 +79,20 @@ export class ClassesService {
       });
     }
 
-    // For students - restructure response sesuai expectation FE
+    // Enhanced student logic sesuai ekspektasi FE
     const enrollments = await this.prisma.classEnrollment.findMany({
       where: { studentId: userId },
       include: {
         class: {
           include: {
-            instructor: {
-              select: {
-                id: true,
-                fullName: true,
-              },
-            },
+            instructor: { select: { id: true, fullName: true } },
             enrollments: {
               include: {
-                student: {
-                  select: {
-                    id: true,
-                    fullName: true,
-                  },
-                },
+                student: { select: { id: true, fullName: true } },
               },
             },
             assignments: {
-              where: { active: true }, // Student hanya melihat assignment aktif
+              where: { active: true },
               select: {
                 id: true,
                 title: true,
@@ -116,7 +105,7 @@ export class ClassesService {
       },
     });
 
-    // Transform ke struktur yang diharapkan FE
+    // Transform to expected FE structure
     return enrollments.map((enrollment) => ({
       ...enrollment.class,
       currentUserEnrollment: {
