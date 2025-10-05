@@ -280,8 +280,23 @@ export class SubmissionsService {
   async getStudentHistory(studentId: string) {
     return this.prisma.submission.findMany({
       where: { studentId },
-      include: { assignment: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' }, // Urutkan berdasarkan update terbaru
+      include: {
+        assignment: {
+          include: {
+            class: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        plagiarismChecks: {
+          select: {
+            score: true,
+          },
+        },
+      },
     });
   }
 
