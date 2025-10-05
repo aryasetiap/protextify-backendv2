@@ -13,6 +13,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { NotificationDto } from './dto/notification.dto';
+import { WEBSOCKET_EVENTS } from './events';
 
 @Injectable()
 @WebSocketGateway({
@@ -73,14 +74,18 @@ export class RealtimeGateway
       client.join(`user_${user.userId}`);
 
       // Send connection confirmation
-      client.emit('connected', {
+      client.emit(WEBSOCKET_EVENTS.CONNECTED, {
         status: 'success',
         userId: user.userId,
         message: 'WebSocket connection established',
+        timestamp: new Date().toISOString(), // 🆕 Tambahkan timestamp
       });
     } catch (error) {
       this.logger.error('WebSocket authentication failed', error);
-      client.emit('error', { message: 'Authentication failed' });
+      client.emit('error', {
+        message: 'Authentication failed',
+        timestamp: new Date().toISOString(), // 🆕 Tambahkan timestamp untuk error
+      });
       client.disconnect();
     }
   }
@@ -103,7 +108,7 @@ export class RealtimeGateway
     }
   }
 
-  @SubscribeMessage('joinSubmission')
+  @SubscribeMessage(WEBSOCKET_EVENTS.JOIN_SUBMISSION)
   async handleJoinSubmission(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { submissionId: string },
@@ -148,10 +153,11 @@ export class RealtimeGateway
         `User ${user.userId} joined submission ${data.submissionId}`,
       );
 
-      client.emit('joinedSubmission', {
+      client.emit(WEBSOCKET_EVENTS.JOINED_SUBMISSION, {
         status: 'success',
         submissionId: data.submissionId,
         message: 'Joined submission room',
+        timestamp: new Date().toISOString(), // 🆕 Tambahkan timestamp
       });
     } catch (error) {
       this.logger.error('Error joining submission', error);
@@ -159,7 +165,7 @@ export class RealtimeGateway
     }
   }
 
-  @SubscribeMessage('updateContent')
+  @SubscribeMessage(WEBSOCKET_EVENTS.UPDATE_CONTENT)
   async handleUpdateContent(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: UpdateContentDto,
@@ -198,25 +204,28 @@ export class RealtimeGateway
 
       this.lastUpdateTime.set(data.submissionId, now);
 
-      // Send response to the sender
-      client.emit('updateContentResponse', {
+      // Send response to the sender dengan struktur yang konsisten
+      client.emit(WEBSOCKET_EVENTS.UPDATE_CONTENT_RESPONSE, {
         status: 'success',
+        submissionId: data.submissionId, // 🆕 Tambahkan submissionId untuk referensi
         updatedAt: updatedSubmission.updatedAt.toISOString(),
+        timestamp: new Date().toISOString(), // 🆕 Tambahkan timestamp
       });
 
-      // Broadcast to other users in the submission room (like instructors monitoring)
-      client.to(`submission_${data.submissionId}`).emit('submissionUpdated', {
-        submissionId: data.submissionId,
-        status: submission.status,
-        updatedAt: updatedSubmission.updatedAt.toISOString(),
-      });
-
-      this.logger.log(`Content updated for submission ${data.submissionId}`);
+      // Broadcast dengan struktur yang sesuai ekspektasi FE
+      client
+        .to(`submission_${data.submissionId}`)
+        .emit(WEBSOCKET_EVENTS.SUBMISSION_UPDATED, {
+          submissionId: data.submissionId,
+          status: submission.status,
+          updatedAt: updatedSubmission.updatedAt.toISOString(),
+        });
     } catch (error) {
       this.logger.error('Error updating content', error);
-      client.emit('updateContentResponse', {
+      client.emit(WEBSOCKET_EVENTS.UPDATE_CONTENT_RESPONSE, {
         status: 'error',
         message: 'Failed to update content',
+        timestamp: new Date().toISOString(), // 🆕 Tambahkan timestamp
       });
     }
   }
@@ -231,15 +240,36 @@ export class RealtimeGateway
       updatedAt: string;
     },
   ) {
-    this.server.to(`submission_${submissionId}`).emit('submissionUpdated', {
-      submissionId,
-      ...data,
-    });
+    this.server
+      .to(`submission_${submissionId}`)
+      .emit(WEBSOCKET_EVENTS.SUBMISSION_UPDATED, {
+        submissionId,
+        ...data,
+      });
   }
 
-  // Method to send notifications to users (for external use)
+  /**
+   * Send notification to specific user
+   * @param userId - Target user ID
+   * @param notification - Notification data matching NotificationDto
+   * @example
+   * gateway.sendNotification('user-123', {
+   *   type: 'success',
+   *   message: 'Assignment graded!',
+   *   data: { grade: 90 },
+   *   createdAt: new Date().toISOString()
+   * });
+   */
   sendNotification(userId: string, notification: NotificationDto) {
-    this.server.to(`user_${userId}`).emit('notification', notification);
+    // Pastikan notification memiliki timestamp jika belum ada
+    const notificationWithTimestamp = {
+      ...notification,
+      createdAt: notification.createdAt || new Date().toISOString(),
+    };
+
+    this.server
+      .to(`user_${userId}`)
+      .emit(WEBSOCKET_EVENTS.NOTIFICATION, notificationWithTimestamp);
   }
 
   // Method to send notifications to all users in a submission
@@ -263,13 +293,16 @@ export class RealtimeGateway
       lastUpdated: string;
     }>,
   ) {
-    this.server.to(`assignment_${assignmentId}`).emit('submissionListUpdated', {
-      assignmentId,
-      submissions,
-    });
+    this.server
+      .to(`assignment_${assignmentId}`)
+      .emit(WEBSOCKET_EVENTS.SUBMISSION_LIST_UPDATED, {
+        assignmentId,
+        submissions,
+        timestamp: new Date().toISOString(), // 🆕 Tambahkan timestamp untuk event list
+      });
   }
 
-  @SubscribeMessage('joinAssignmentMonitoring')
+  @SubscribeMessage(WEBSOCKET_EVENTS.JOIN_ASSIGNMENT_MONITORING)
   async handleJoinAssignmentMonitoring(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { assignmentId: string },
@@ -278,6 +311,7 @@ export class RealtimeGateway
     if (!user || user.role !== 'INSTRUCTOR') {
       client.emit('error', {
         message: 'Only instructors can monitor assignments',
+        timestamp: new Date().toISOString(),
       });
       return;
     }
@@ -287,10 +321,11 @@ export class RealtimeGateway
       `Instructor ${user.userId} joined monitoring for assignment ${data.assignmentId}`,
     );
 
-    client.emit('joinedAssignmentMonitoring', {
+    client.emit(WEBSOCKET_EVENTS.JOINED_ASSIGNMENT_MONITORING, {
       status: 'success',
       assignmentId: data.assignmentId,
       message: 'Joined assignment monitoring',
+      timestamp: new Date().toISOString(), // 🆕 Tambahkan timestamp
     });
   }
 }
