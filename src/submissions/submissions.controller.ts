@@ -380,7 +380,7 @@ export class SubmissionsController {
       example: {
         id: 'submission-1',
         status: 'SUBMITTED',
-        submittedAt: '2025-06-01T13:10:00.000Z',
+        submittedAt: '2025-06-01T13:10:00.000Z', // 🆕 Update example response
       },
     },
   })

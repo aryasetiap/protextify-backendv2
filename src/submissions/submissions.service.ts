@@ -230,15 +230,31 @@ export class SubmissionsService {
     if (submission.studentId !== userId)
       throw new ForbiddenException('Not your submission');
 
+    const submittedAt = new Date(); // 🆕 Capture submitted timestamp
+
     const updatedSubmission = await this.prisma.submission.update({
       where: { id: submissionId },
-      data: { status: 'SUBMITTED' },
+      data: {
+        status: 'SUBMITTED',
+        submittedAt: submittedAt, // 🆕 Set submittedAt field
+      },
+      select: {
+        id: true,
+        status: true,
+        submittedAt: true, // 🆕 Include submittedAt in response
+      },
     });
 
     // Create version when submitted (if content changed)
-    if (submission.content !== updatedSubmission.content) {
-      await this.createVersion(submissionId, updatedSubmission.content);
+    if (submission.content !== submission.content) {
+      await this.createVersion(submissionId, submission.content);
     }
+
+    // Broadcast submission update via WebSocket
+    this.realtimeGateway.broadcastSubmissionUpdate(submissionId, {
+      status: 'SUBMITTED',
+      updatedAt: submittedAt.toISOString(),
+    });
 
     return updatedSubmission;
   }

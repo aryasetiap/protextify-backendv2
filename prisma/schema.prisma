@@ -81,6 +81,7 @@ model Submission {
   assignmentId     String
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
+  submittedAt      DateTime? // 🆕 Tambahkan field ini
   plagiarismChecks PlagiarismCheck?
   assignment       Assignment          @relation(fields: [assignmentId], references: [id])
   student          User                @relation(fields: [studentId], references: [id])
