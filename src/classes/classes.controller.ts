@@ -218,15 +218,11 @@ export class ClassesController {
             active: true,
             createdAt: '2025-06-01T12:00:00.000Z',
           },
-          {
-            id: 'assignment-2',
-            title: 'Tugas 2',
-            instructions: 'Kerjakan soal halaman 75.',
-            deadline: '2025-06-15T23:59:59.000Z',
-            active: true,
-            createdAt: '2025-06-02T12:00:00.000Z',
-          },
         ],
+        currentUserEnrollment: {
+          id: 'enrollment-xyz',
+          joinedAt: '2025-06-01T12:00:00.000Z',
+        },
       },
     },
   })
@@ -235,8 +231,9 @@ export class ClassesController {
     description: 'Class not found',
     schema: { example: { statusCode: 404, message: 'Class not found' } },
   })
-  async getClassDetail(@Param('id') id: string) {
-    return this.classesService.getClassDetail(id);
+  async getClassDetail(@Param('id') id: string, @Req() req) {
+    // Pass userId for currentUserEnrollment calculation
+    return this.classesService.getClassDetail(id, req.user?.userId);
   }
 
   @Get('preview/:classToken')

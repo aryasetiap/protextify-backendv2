@@ -115,42 +115,56 @@ export class ClassesService {
     }));
   }
 
-  async getClassDetail(classId: string) {
+  async getClassDetail(classId: string, userId?: string) {
     const kelas = await this.prisma.class.findUnique({
       where: { id: classId },
       include: {
-        instructor: {
-          select: {
-            id: true,
-            fullName: true,
-          },
-        },
+        instructor: { select: { id: true, fullName: true } },
         enrollments: {
           include: {
-            student: {
-              select: {
-                id: true,
-                fullName: true,
-              },
-            },
+            student: { select: { id: true, fullName: true } },
           },
         },
         assignments: {
           select: {
             id: true,
             title: true,
-            instructions: true, // 🆕 Tambahkan field ini untuk kelengkapan
+            instructions: true,
             deadline: true,
             active: true,
-            createdAt: true, // 🆕 Tambahkan untuk sorting/info
+            createdAt: true,
           },
-          orderBy: { createdAt: 'desc' }, // 🆕 Urutkan assignment terbaru dulu
+          orderBy: { createdAt: 'desc' },
         },
       },
     });
 
     if (!kelas) throw new NotFoundException('Class not found');
-    return kelas;
+
+    // Add currentUserEnrollment if userId provided
+    let currentUserEnrollment = null;
+    if (userId) {
+      const enrollment = await this.prisma.classEnrollment.findUnique({
+        where: {
+          studentId_classId: {
+            studentId: userId,
+            classId: classId,
+          },
+        },
+      });
+
+      if (enrollment) {
+        currentUserEnrollment = {
+          id: enrollment.id,
+          joinedAt: enrollment.joinedAt,
+        };
+      }
+    }
+
+    return {
+      ...kelas,
+      currentUserEnrollment,
+    };
   }
 
   async previewClass(classToken: string) {
