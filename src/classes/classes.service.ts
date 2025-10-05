@@ -152,4 +152,35 @@ export class ClassesService {
     if (!kelas) throw new NotFoundException('Class not found');
     return kelas;
   }
+
+  async previewClass(classToken: string) {
+    const kelas = await this.prisma.class.findUnique({
+      where: { classToken },
+      include: {
+        instructor: {
+          select: {
+            id: true,
+            fullName: true,
+            institution: true,
+          },
+        },
+        enrollments: true,
+        assignments: {
+          where: { active: true },
+        },
+      },
+    });
+
+    if (!kelas) throw new NotFoundException('Class not found');
+
+    return {
+      id: kelas.id,
+      name: kelas.name,
+      description: kelas.description,
+      instructor: kelas.instructor,
+      studentsCount: kelas.enrollments.length,
+      assignmentsCount: kelas.assignments.length,
+      createdAt: kelas.createdAt,
+    };
+  }
 }

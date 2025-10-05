@@ -238,4 +238,44 @@ export class ClassesController {
   async getClassDetail(@Param('id') id: string) {
     return this.classesService.getClassDetail(id);
   }
+
+  @Get('preview/:classToken')
+  @ApiOperation({
+    summary: 'Preview class information before joining',
+    description:
+      'Public endpoint to preview class details using class token. No authentication required.',
+  })
+  @ApiParam({
+    name: 'classToken',
+    type: String,
+    description: 'Unique class token',
+    example: 'Ab3Xy9Qz',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Class preview information',
+    schema: {
+      example: {
+        id: 'class-abc',
+        name: 'Kelas Kalkulus',
+        description: 'Kelas untuk mata kuliah Kalkulus',
+        instructor: {
+          id: 'instructor-123',
+          fullName: 'Dr. Ahmad Suharto',
+          institution: 'Universitas Indonesia',
+        },
+        studentsCount: 25,
+        assignmentsCount: 3,
+        createdAt: '2025-06-01T12:00:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Class not found',
+    schema: { example: { statusCode: 404, message: 'Class not found' } },
+  })
+  async previewClass(@Param('classToken') classToken: string) {
+    return this.classesService.previewClass(classToken);
+  }
 }
