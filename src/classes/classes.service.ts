@@ -142,7 +142,7 @@ export class ClassesService {
     if (!kelas) throw new NotFoundException('Class not found');
 
     // Add currentUserEnrollment if userId provided
-    let currentUserEnrollment = null;
+    let currentUserEnrollment: { id: string; joinedAt: Date } | null = null;
     if (userId) {
       const enrollment = await this.prisma.classEnrollment.findUnique({
         where: {
