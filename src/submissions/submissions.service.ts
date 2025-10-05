@@ -200,6 +200,13 @@ export class SubmissionsService {
     const updatedSubmission = await this.prisma.submission.update({
       where: { id: submissionId },
       data: { content: dto.content },
+      select: {
+        id: true,
+        content: true,
+        status: true,
+        updatedAt: true,
+        // 🆕 Pastikan hanya field yang dibutuhkan FE yang di-return
+      },
     });
 
     // Create new version
