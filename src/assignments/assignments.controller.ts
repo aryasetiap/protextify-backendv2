@@ -214,4 +214,38 @@ export class AssignmentsController {
       parsedLimit,
     );
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('assignments/:id')
+  @ApiOperation({
+    summary: 'Get assignment detail by ID',
+    description: 'Returns assignment detail for given assignment ID',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Assignment ID',
+    example: 'f47ac10b-58cc-4372-a567-0e02b2c3d470',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Assignment detail',
+    schema: {
+      example: {
+        id: 'f47ac10b-58cc-4372-a567-0e02b2c3d470',
+        title: 'Tugas Kalkulus',
+        description: 'Kerjakan soal halaman 50.',
+        deadline: '2025-12-31T23:59:59.000Z',
+        content: '',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Assignment not found',
+    schema: { example: { statusCode: 404, message: 'Assignment not found' } },
+  })
+  async getAssignmentDetail(@Param('id') id: string) {
+    return this.assignmentsService.getAssignmentDetail(id);
+  }
 }
