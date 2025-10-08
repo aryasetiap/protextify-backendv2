@@ -103,49 +103,35 @@ export class AssignmentsService {
     return assignments;
   }
 
-  async getRecentAssignments(userId: string, limit = 3) {
-    // Validasi input limit
-    if (limit < 1 || limit > 20) {
-      throw new BadRequestException('Limit must be between 1 and 20');
-    }
-
-    // Get classes that user enrolled in
+  async getRecentAssignments(userId: string, limit = 10) {
+    // Get all class IDs the student is enrolled in
     const enrolledClasses = await this.prisma.classEnrollment.findMany({
       where: { studentId: userId },
       select: { classId: true },
     });
-
-    // Jika student belum join kelas manapun
-    if (enrolledClasses.length === 0) {
-      return [];
-    }
+    if (enrolledClasses.length === 0) return [];
 
     const classIds = enrolledClasses.map((e) => e.classId);
 
-    // Get recent assignments from enrolled classes
-    const assignments = await this.prisma.assignment.findMany({
+    // Get recent assignments from those classes
+    return this.prisma.assignment.findMany({
       where: {
         classId: { in: classIds },
         active: true, // Hanya assignment yang aktif
       },
       take: limit,
       orderBy: [
-        { deadline: { sort: 'asc', nulls: 'last' } }, // Deadline terdekat dulu
-        { createdAt: 'desc' }, // Jika deadline sama, yang terbaru dibuat dulu
+        { deadline: 'asc' }, // Prisma tidak support 'nulls' di sini
+        { createdAt: 'desc' },
       ],
-      select: {
-        id: true,
-        title: true,
-        deadline: true,
-        active: true,
-        class: {
-          select: {
-            name: true,
-          },
+      include: {
+        class: { select: { name: true } },
+        submissions: {
+          where: { studentId: userId },
+          select: { id: true, status: true, grade: true, updatedAt: true },
         },
+        _count: { select: { submissions: true } },
       },
     });
-
-    return assignments;
   }
 }

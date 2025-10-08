@@ -179,15 +179,14 @@ export class AssignmentsController {
   @Get('assignments/recent')
   @ApiOperation({
     summary: 'Get recent assignments for student',
-    description:
-      'Returns recent assignments for enrolled classes, ordered by deadline.',
+    description: 'Returns recent assignments from all enrolled classes.',
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     type: Number,
-    description: 'Number of recent assignments to return',
-    example: 3,
+    description: 'Number of assignments to return',
+    example: 10,
   })
   @ApiResponse({
     status: 200,
@@ -197,20 +196,19 @@ export class AssignmentsController {
         {
           id: 'assignment-xyz',
           title: 'Tugas Kalkulus',
+          instructions: 'Kerjakan soal halaman 50.',
           deadline: '2025-12-31T23:59:59.000Z',
+          classId: 'class-123',
           class: { name: 'Kelas Kalkulus' },
           active: true,
+          submissions: [],
+          _count: { submissions: 5 },
         },
       ],
     },
   })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-    schema: { example: { statusCode: 401, message: 'Unauthorized' } },
-  })
   async getRecentAssignments(@Req() req, @Query('limit') limit?: number) {
-    const parsedLimit = limit ? parseInt(limit.toString()) : 3;
+    const parsedLimit = limit ? parseInt(limit.toString()) : 10;
     return this.assignmentsService.getRecentAssignments(
       req.user.userId,
       parsedLimit,
