@@ -25,16 +25,20 @@ export class SubmissionsService {
     submissionId: string,
     content: string,
   ): Promise<void> {
-    // Get current version count
-    const versionCount = await this.prisma.submissionVersion.count({
+    // Cari versi terbesar yang sudah ada
+    const lastVersion = await this.prisma.submissionVersion.findFirst({
       where: { submissionId },
+      orderBy: { version: 'desc' },
+      select: { version: true },
     });
 
-    // Create new version
+    const nextVersion = lastVersion ? lastVersion.version + 1 : 1;
+
+    // Buat versi baru dengan nomor versi yang benar
     await this.prisma.submissionVersion.create({
       data: {
         submissionId,
-        version: versionCount + 1,
+        version: nextVersion,
         content,
       },
     });

@@ -145,7 +145,6 @@ export class AssignmentsService {
       title: assignment.title,
       description: assignment.instructions || '',
       deadline: assignment.deadline,
-      content: '', // FE expects content field, can be empty
     };
   }
 }
