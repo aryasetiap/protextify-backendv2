@@ -119,7 +119,9 @@ Tidak ada.
 {
   "filename": "submission-1.pdf",
   "url": "https://storage.protextify.com/submissions/submission-1.pdf",
-  "size": 12345
+  "size": 12345,
+  "format": "pdf",
+  "generatedAt": "2025-06-01T13:00:00.000Z"
 }
 ```
 
