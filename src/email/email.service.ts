@@ -29,6 +29,7 @@ export class EmailService {
     const html = fs
       .readFileSync(templatePath, 'utf8')
       .replace('{{TOKEN}}', token)
+      .replace('{{USER_NAME}}', user.fullName)
       .replace('{{FRONTEND_URL}}', frontendUrl);
     const transporter = nodemailer.createTransport({
       service: 'gmail',
