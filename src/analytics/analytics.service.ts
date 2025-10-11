@@ -80,6 +80,162 @@ export class AnalyticsService {
     return { stats, charts };
   }
 
+  async getInstructorDashboard(instructorId: string) {
+    const instructorClasses = await this.prisma.class.findMany({
+      where: { instructorId },
+      select: { id: true, name: true },
+    });
+    const classIds = instructorClasses.map((c) => c.id);
+
+    if (classIds.length === 0) {
+      return {
+        stats: {
+          totalClasses: 0,
+          totalStudents: 0,
+          activeAssignments: 0,
+          pendingGrading: 0,
+          completionRate: 0,
+          averageGrade: 0,
+          totalRevenue: 0,
+          monthlyRevenue: 0,
+        },
+        recentClasses: [],
+        recentSubmissions: [],
+        recentTransactions: [],
+        analyticsData: {
+          classActivity: [],
+          submissionTrends: [],
+          gradingTrends: [],
+        },
+      };
+    }
+
+    const thirtyDaysAgo = new Date(
+      new Date().setDate(new Date().getDate() - 30),
+    );
+
+    const [
+      totalStudents,
+      activeAssignments,
+      pendingGrading,
+      gradedSubmissions,
+      transactions,
+      recentClasses,
+      recentSubmissions,
+      recentTransactions,
+      chartSubmissions,
+    ] = await Promise.all([
+      this.prisma.classEnrollment.count({
+        where: { classId: { in: classIds } },
+      }),
+      this.prisma.assignment.count({
+        where: { classId: { in: classIds }, active: true },
+      }),
+      this.prisma.submission.count({
+        where: {
+          assignment: { classId: { in: classIds } },
+          status: 'SUBMITTED',
+        },
+      }),
+      this.prisma.submission.findMany({
+        where: {
+          assignment: { classId: { in: classIds } },
+          status: 'GRADED',
+        },
+        select: { grade: true },
+      }),
+      this.prisma.transaction.findMany({
+        where: { userId: instructorId, status: 'SUCCESS' },
+        select: { amount: true, createdAt: true },
+      }),
+      this.prisma.class.findMany({
+        where: { instructorId },
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+        include: { _count: { select: { enrollments: true } } },
+      }),
+      this.prisma.submission.findMany({
+        where: {
+          assignment: { classId: { in: classIds } },
+          status: 'SUBMITTED',
+        },
+        orderBy: { submittedAt: 'desc' },
+        take: 3,
+        include: {
+          student: { select: { fullName: true } },
+          assignment: { select: { title: true } },
+        },
+      }),
+      this.prisma.transaction.findMany({
+        where: { userId: instructorId, status: 'SUCCESS' },
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+        include: { assignment: { select: { title: true } } },
+      }),
+      this.prisma.submission.findMany({
+        where: {
+          assignment: { classId: { in: classIds } },
+          status: { in: ['SUBMITTED', 'GRADED'] },
+          submittedAt: { gte: thirtyDaysAgo },
+        },
+        include: {
+          assignment: { select: { class: { select: { name: true } } } },
+        },
+      }),
+    ]);
+
+    const totalGraded = gradedSubmissions.length;
+    const totalSubmissionsForRate = await this.prisma.submission.count({
+      where: {
+        assignment: { classId: { in: classIds } },
+        status: { in: ['SUBMITTED', 'GRADED'] },
+      },
+    });
+    const completionRate =
+      totalSubmissionsForRate > 0
+        ? Math.round((totalGraded / totalSubmissionsForRate) * 100)
+        : 0;
+    const grades = gradedSubmissions
+      .map((s) => s.grade)
+      .filter((g) => g !== null) as number[];
+    const averageGrade =
+      grades.length > 0
+        ? Math.round(grades.reduce((a, b) => a + b, 0) / grades.length)
+        : 0;
+    const totalRevenue = transactions.reduce((sum, t) => sum + t.amount, 0);
+    const monthlyRevenue = transactions
+      .filter((t) => t.createdAt >= thirtyDaysAgo)
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const stats = {
+      totalClasses: classIds.length,
+      totalStudents,
+      activeAssignments,
+      pendingGrading,
+      completionRate,
+      averageGrade,
+      totalRevenue,
+      monthlyRevenue,
+    };
+
+    const chartData = this.calculateChartData(
+      chartSubmissions,
+      instructorClasses,
+    );
+
+    return {
+      stats,
+      recentClasses,
+      recentSubmissions,
+      recentTransactions,
+      analyticsData: {
+        classActivity: chartData.classActivity,
+        submissionTrends: chartData.submissionTrends,
+        gradingTrends: chartData.gradingSpeed,
+      },
+    };
+  }
+
   /**
    * Menghitung statistik utama.
    */

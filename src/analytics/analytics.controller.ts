@@ -19,6 +19,21 @@ import { GetAnalyticsDto } from './dto/get-analytics.dto';
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
+  @Get('dashboard')
+  @ApiOperation({
+    summary: 'Get instructor dashboard overview data',
+    description:
+      'Provides a comprehensive overview for the main instructor dashboard, including stats, recent activities, and chart data.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard data retrieved successfully',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async getDashboard(@Req() req) {
+    return this.analyticsService.getInstructorDashboard(req.user.userId);
+  }
+
   @Get('analytics')
   @ApiOperation({
     summary: 'Get instructor analytics data',
