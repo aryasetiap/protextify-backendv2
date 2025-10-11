@@ -8,9 +8,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
-import { StorageService } from '../storage/storage.service'; // 🆕 Import StorageService
+import { StorageService } from '../storage/storage.service';
 import { BulkGradeDto } from './dto/bulk-grade.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
+import { BulkDownloadDto } from './dto/bulk-download.dto';
+import JSZip from 'jszip';
+import { nanoid } from 'nanoid';
 
 @Injectable()
 export class SubmissionsService {
@@ -426,6 +429,86 @@ export class SubmissionsService {
     return {
       message: 'Bulk grading completed successfully',
       updatedCount: updatedSubmissions.length,
+    };
+  }
+
+  async bulkDownloadSubmissions(dto: BulkDownloadDto, instructorId: string) {
+    const { submissionIds, format } = dto;
+
+    // 1. Fetch and validate submissions
+    const submissions = await this.prisma.submission.findMany({
+      where: {
+        id: { in: submissionIds },
+        assignment: { class: { instructorId } },
+      },
+      include: {
+        student: { select: { fullName: true } },
+        assignment: {
+          select: { title: true, class: { select: { name: true } } },
+        },
+        plagiarismChecks: { select: { score: true } },
+      },
+    });
+
+    if (submissions.length !== submissionIds.length) {
+      throw new ForbiddenException(
+        'Some submissions could not be found or you do not have permission to access them.',
+      );
+    }
+
+    let fileBuffer: Buffer;
+    let filename: string;
+    let mimeType: string;
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+    if (format === 'csv') {
+      // 2a. Generate CSV
+      filename = `export-grades-${timestamp}.csv`;
+      mimeType = 'text/csv';
+      const headers =
+        'Submission ID,Student Name,Assignment Title,Status,Grade,Feedback,Plagiarism Score\n';
+      const rows = submissions
+        .map(
+          (s) =>
+            `${s.id},"${s.student.fullName}","${s.assignment.title}",${s.status},${s.grade ?? ''},"${s.feedback ?? ''}",${s.plagiarismChecks?.score ?? ''}`,
+        )
+        .join('\n');
+      fileBuffer = Buffer.from(headers + rows);
+    } else {
+      // 2b. Generate ZIP
+      filename = `export-submissions-${timestamp}.zip`;
+      mimeType = 'application/zip';
+      const zip = new JSZip();
+
+      for (const sub of submissions) {
+        const docxBuffer = await this.storageService.generateDOCXBuffer(sub);
+        const docxFilename =
+          `${sub.student.fullName} - ${sub.assignment.title}.docx`.replace(
+            /[\\/:*?"<>|]/g,
+            '',
+          );
+        zip.file(docxFilename, docxBuffer);
+      }
+      fileBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+    }
+
+    // 3. Upload to cloud storage
+    const cloudKey = `exports/${filename}`;
+    await this.storageService.uploadRawBuffer(fileBuffer, cloudKey, mimeType);
+
+    // 4. Generate pre-signed URL
+    const downloadUrl = await this.storageService.refreshDownloadUrl(
+      cloudKey,
+      filename,
+      3600, // Expires in 1 hour
+    );
+
+    return {
+      downloadUrl,
+      expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+      fileCount: submissions.length,
+      filename,
     };
   }
 

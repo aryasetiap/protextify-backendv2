@@ -27,6 +27,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { BulkGradeDto } from './dto/bulk-grade.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
+import { BulkDownloadDto } from './dto/bulk-download.dto';
 
 @ApiTags('submissions')
 @ApiBearerAuth()
@@ -509,6 +510,53 @@ export class SubmissionsController {
   @ApiResponse({ status: 404, description: 'Submission not found.' })
   async bulkGrade(@Req() req, @Body() dto: BulkGradeDto) {
     return this.submissionsService.bulkGrade(dto, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Post('submissions/bulk-download')
+  @ApiOperation({
+    summary: 'Export or bulk download submissions',
+    description:
+      'Generates a ZIP of DOCX files or a CSV of grades for multiple submissions and returns a download URL.',
+  })
+  @ApiBody({
+    type: BulkDownloadDto,
+    examples: {
+      zip: {
+        summary: 'Download as ZIP',
+        value: {
+          submissionIds: ['submission-1', 'submission-2'],
+          format: 'zip',
+        },
+      },
+      csv: {
+        summary: 'Export as CSV',
+        value: {
+          submissionIds: ['submission-1', 'submission-2', 'submission-3'],
+          format: 'csv',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Export file generated successfully.',
+    schema: {
+      example: {
+        downloadUrl: 'https://storage.protextify.com/exports/export-xyz.zip',
+        expiresAt: '2025-10-12T14:00:00Z',
+        fileCount: 2,
+        filename: 'export-xyz.zip',
+      },
+    },
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  async bulkDownload(@Req() req, @Body() dto: BulkDownloadDto) {
+    return this.submissionsService.bulkDownloadSubmissions(
+      dto,
+      req.user.userId,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

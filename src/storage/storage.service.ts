@@ -227,6 +227,45 @@ export class StorageService {
   }
 
   /**
+   * Generate DOCX file buffer without uploading
+   */
+  async generateDOCXBuffer(submission: any): Promise<Buffer> {
+    try {
+      const doc = this.createDOCXDocument(submission);
+      return await DOCX.Packer.toBuffer(doc);
+    } catch (error) {
+      this.logger.error(
+        `[STORAGE] Failed to generate DOCX buffer for submission: ${submission.id}`,
+        error,
+      );
+      throw new InternalServerErrorException('Failed to generate DOCX buffer');
+    }
+  }
+
+  /**
+   * Upload a raw buffer to cloud storage.
+   * Used for generated files like exports.
+   */
+  async uploadRawBuffer(
+    buffer: Buffer,
+    cloudKey: string,
+    mimeType: string,
+  ): Promise<void> {
+    try {
+      await this.cloudStorageProvider.uploadFile(buffer, cloudKey, mimeType);
+      this.logger.log(
+        `[STORAGE] Raw buffer uploaded successfully: ${cloudKey}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `[STORAGE] Raw buffer upload failed for key: ${cloudKey}`,
+        error,
+      );
+      throw new InternalServerErrorException('Failed to upload generated file');
+    }
+  }
+
+  /**
    * Generate new pre-signed URL for existing file
    */
   async refreshDownloadUrl(
