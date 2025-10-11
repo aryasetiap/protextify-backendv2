@@ -229,6 +229,10 @@ export class SubmissionsService {
   async submit(submissionId: string, userId: string) {
     const submission = await this.prisma.submission.findUnique({
       where: { id: submissionId },
+      include: {
+        student: { select: { fullName: true } },
+        assignment: { select: { title: true, classId: true } },
+      },
     });
 
     if (!submission) throw new NotFoundException('Submission not found');
@@ -261,13 +265,29 @@ export class SubmissionsService {
       updatedAt: submittedAt.toISOString(),
     });
 
+    // Log activity
+    await this.prisma.classActivity.create({
+      data: {
+        classId: submission.assignment.classId,
+        type: 'SUBMISSION_SUBMITTED',
+        details: {
+          studentName: submission.student.fullName,
+          assignmentTitle: submission.assignment.title,
+        },
+        actorId: userId,
+      },
+    });
+
     return updatedSubmission;
   }
 
   async grade(submissionId: string, grade: number, instructorId: string) {
     const submission = await this.prisma.submission.findUnique({
       where: { id: submissionId },
-      include: { assignment: { include: { class: true } } },
+      include: {
+        assignment: { include: { class: true } },
+        student: { select: { fullName: true } },
+      },
     });
     if (!submission) throw new NotFoundException('Submission not found');
     if (submission.assignment.class.instructorId !== instructorId)
@@ -276,6 +296,20 @@ export class SubmissionsService {
     const updatedSubmission = await this.prisma.submission.update({
       where: { id: submissionId },
       data: { grade, status: 'GRADED' },
+    });
+
+    // Log activity
+    await this.prisma.classActivity.create({
+      data: {
+        classId: submission.assignment.classId,
+        type: 'SUBMISSION_GRADED',
+        details: {
+          studentName: submission.student.fullName,
+          assignmentTitle: submission.assignment.title,
+          grade: grade,
+        },
+        actorId: instructorId,
+      },
     });
 
     // Broadcast submission update via WebSocket
@@ -341,11 +375,27 @@ export class SubmissionsService {
             status: 'GRADED',
           },
           include: {
-            assignment: { select: { title: true } },
+            assignment: { select: { title: true, classId: true } },
+            student: { select: { fullName: true } },
           },
         }),
       ),
     );
+
+    // Log activities in bulk
+    const activitiesData = updatedSubmissions.map((sub) => ({
+      classId: sub.assignment.classId,
+      type: 'SUBMISSION_GRADED' as const,
+      details: {
+        studentName: sub.student.fullName,
+        assignmentTitle: sub.assignment.title,
+        grade: sub.grade,
+      },
+      actorId: instructorId,
+    }));
+    await this.prisma.classActivity.createMany({
+      data: activitiesData,
+    });
 
     // 4. Kirim notifikasi setelah transaksi berhasil
     for (const updatedSubmission of updatedSubmissions) {

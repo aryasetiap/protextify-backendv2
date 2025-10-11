@@ -313,6 +313,18 @@ export class PaymentsService {
           data: { active: true },
         });
 
+        // Log activity
+        await this.prisma.classActivity.create({
+          data: {
+            classId: transaction.assignment.classId,
+            type: 'ASSIGNMENT_CREATED',
+            details: {
+              assignmentTitle: transaction.assignment.title,
+            },
+            actorId: transaction.userId,
+          },
+        });
+
         // Kirim notifikasi WebSocket dengan data yang benar
         this.realtimeGateway.sendNotification(transaction.userId, {
           type: 'payment_success',

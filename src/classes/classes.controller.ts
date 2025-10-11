@@ -6,6 +6,9 @@ import {
   Param,
   Req,
   UseGuards,
+  Query,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,6 +17,7 @@ import {
   ApiBody,
   ApiParam,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ClassesService } from './classes.service';
 import { CreateClassDto } from './dto/create-class.dto';
@@ -234,6 +238,47 @@ export class ClassesController {
   async getClassDetail(@Param('id') id: string, @Req() req) {
     // Pass userId for currentUserEnrollment calculation
     return this.classesService.getClassDetail(id, req.user?.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Get(':id/activity-feed')
+  @ApiOperation({
+    summary: 'Get class activity feed',
+    description: 'Retrieves a list of recent activities within a class.',
+  })
+  @ApiParam({ name: 'id', type: String, description: 'Class ID' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of activities to return (default: 20)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Activity feed retrieved successfully.',
+    schema: {
+      example: [
+        {
+          id: 'activity-1',
+          type: 'SUBMISSION_GRADED',
+          timestamp: '2025-10-10T14:30:00Z',
+          details: {
+            studentName: 'Budi Santoso',
+            assignmentTitle: 'Tugas Kalkulus Lanjutan',
+            grade: 95,
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async getActivityFeed(
+    @Param('id') classId: string,
+    @Req() req,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ) {
+    return this.classesService.getActivityFeed(classId, req.user.userId, limit);
   }
 
   @Get('preview/:classToken')

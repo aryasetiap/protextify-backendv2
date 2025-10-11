@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateClassDto } from './dto/create-class.dto';
@@ -36,12 +37,31 @@ export class ClassesService {
       where: { studentId_classId: { studentId, classId: kelas.id } },
     });
     if (existing) throw new ConflictException('Already joined this class');
+
+    const student = await this.prisma.user.findUnique({
+      where: { id: studentId },
+    });
+    if (!student) throw new NotFoundException('Student not found');
+
     await this.prisma.classEnrollment.create({
       data: {
         studentId,
         classId: kelas.id,
       },
     });
+
+    // Log activity
+    await this.prisma.classActivity.create({
+      data: {
+        classId: kelas.id,
+        type: 'STUDENT_JOINED',
+        details: {
+          studentName: student.fullName,
+        },
+        actorId: studentId,
+      },
+    });
+
     return { message: 'Successfully joined class', class: kelas };
   }
 
@@ -165,6 +185,35 @@ export class ClassesService {
       ...kelas,
       currentUserEnrollment,
     };
+  }
+
+  async getActivityFeed(classId: string, instructorId: string, limit: number) {
+    // 1. Verify instructor owns the class
+    const kelas = await this.prisma.class.findFirst({
+      where: { id: classId, instructorId },
+    });
+    if (!kelas) {
+      throw new ForbiddenException('You do not have access to this class');
+    }
+
+    // 2. Fetch activities
+    const activities = await this.prisma.classActivity.findMany({
+      where: { classId },
+      take: limit,
+      orderBy: { timestamp: 'desc' },
+      select: {
+        id: true,
+        type: true,
+        timestamp: true,
+        details: true,
+      },
+    });
+
+    // 3. Format response
+    return activities.map((activity) => ({
+      ...activity,
+      timestamp: activity.timestamp.toISOString(),
+    }));
   }
 
   async previewClass(classToken: string) {

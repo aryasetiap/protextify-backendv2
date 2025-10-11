@@ -24,6 +24,7 @@ model User {
   creditBalance CreditBalance?
   submissions   Submission[]
   transactions  Transaction[]
+  ClassActivity ClassActivity[]
 }
 
 model CreditBalance {
@@ -45,6 +46,7 @@ model Class {
   assignments  Assignment[]
   instructor   User              @relation("InstructorClasses", fields: [instructorId], references: [id])
   enrollments  ClassEnrollment[]
+  activities   ClassActivity[]
 }
 
 model ClassEnrollment {
@@ -130,6 +132,20 @@ model Transaction {
   assignment            Assignment?       @relation(fields: [assignmentId], references: [id])
 }
 
+model ClassActivity {
+  id        String       @id @default(cuid())
+  classId   String
+  type      ActivityType
+  timestamp DateTime     @default(now())
+  details   Json
+  actorId   String?
+
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([classId, timestamp])
+}
+
 enum Role {
   STUDENT
   INSTRUCTOR
@@ -139,6 +155,13 @@ enum SubmissionStatus {
   DRAFT
   SUBMITTED
   GRADED
+}
+
+enum ActivityType {
+  STUDENT_JOINED
+  ASSIGNMENT_CREATED
+  SUBMISSION_SUBMITTED
+  SUBMISSION_GRADED
 }
 
 enum TransactionStatus {
