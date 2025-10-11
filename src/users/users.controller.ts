@@ -91,6 +91,16 @@ export class UsersController {
           institution: 'Universitas Protextify',
         },
       },
+      fullProfile: {
+        summary: 'Update full profile',
+        value: {
+          fullName: 'Dr. Jane Doe',
+          institution: 'Universitas Protextify',
+          phone: '+628123456789',
+          bio: 'Dosen senior dengan fokus pada AI.',
+          avatarUrl: 'https://storage.protextify.com/avatars/user-123.png',
+        },
+      },
     },
   })
   @ApiResponse({

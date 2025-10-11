@@ -28,10 +28,10 @@ export class UsersService {
 
   async updateMe(userId: string, dto: UpdateUserDto) {
     // Pastikan field role tidak bisa diubah
-    const { fullName, institution } = dto;
+    const { fullName, institution, phone, bio, avatarUrl } = dto;
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { fullName, institution },
+      data: { fullName, institution, phone, bio, avatarUrl },
     });
     return {
       ...user,
