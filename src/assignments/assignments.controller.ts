@@ -311,4 +311,97 @@ export class AssignmentsController {
   async getAssignmentAnalytics(@Param('id') id: string, @Req() req) {
     return this.assignmentsService.getAssignmentAnalytics(id, req.user.userId);
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Get('assignments/:id/submissions-overview')
+  @ApiOperation({
+    summary: 'Get assignment detail and submissions overview',
+    description:
+      'Returns full assignment details, aggregated stats, and a complete list of student submissions for monitoring.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Assignment ID',
+    example: 'assignment-xyz',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Assignment overview retrieved successfully',
+    schema: {
+      example: {
+        assignment: {
+          id: 'assignment-xyz',
+          title: 'Analisis Sistem Informasi Manajemen',
+          instructions: 'Buatlah analisis mendalam tentang sistem informasi...',
+          deadline: '2025-10-15T23:59:00Z',
+          classId: 'class-1',
+          active: true,
+        },
+        stats: {
+          totalStudents: 30,
+          submittedCount: 8,
+          gradedCount: 4,
+          pendingCount: 22,
+        },
+        submissions: [
+          {
+            id: 'sub-1',
+            student: {
+              id: 'student-1',
+              fullName: 'Andi Setiawan',
+            },
+            status: 'GRADED',
+            submittedAt: '2025-10-12T14:30:00Z',
+            grade: 85,
+            plagiarismScore: 12,
+          },
+          {
+            id: 'sub-3',
+            student: {
+              id: 'student-3',
+              fullName: 'Citra Dewi',
+            },
+            status: 'SUBMITTED',
+            submittedAt: '2025-10-14T16:45:00Z',
+            grade: null,
+            plagiarismScore: null,
+          },
+          {
+            id: 'sub-6',
+            student: {
+              id: 'student-6',
+              fullName: 'Farah Nabila',
+            },
+            status: 'PENDING',
+            submittedAt: null,
+            grade: null,
+            plagiarismScore: null,
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Assignment not found',
+    schema: { example: { statusCode: 404, message: 'Assignment not found' } },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'You do not have access to this assignment',
+      },
+    },
+  })
+  async getAssignmentSubmissionsOverview(@Param('id') id: string, @Req() req) {
+    return this.assignmentsService.getAssignmentSubmissionsOverview(
+      id,
+      req.user.userId,
+    );
+  }
 }

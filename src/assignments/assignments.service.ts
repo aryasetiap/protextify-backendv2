@@ -237,4 +237,104 @@ export class AssignmentsService {
       submissions: formattedSubmissions,
     };
   }
+
+  async getAssignmentSubmissionsOverview(
+    assignmentId: string,
+    instructorId: string,
+  ) {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: {
+        class: {
+          include: {
+            enrollments: {
+              include: {
+                student: {
+                  select: { id: true, fullName: true },
+                },
+              },
+            },
+          },
+        },
+        submissions: {
+          include: {
+            plagiarismChecks: {
+              select: { score: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!assignment) {
+      throw new NotFoundException('Assignment not found');
+    }
+
+    if (assignment.class.instructorId !== instructorId) {
+      throw new ForbiddenException('You do not have access to this assignment');
+    }
+
+    const allStudents = assignment.class.enrollments.map((e) => e.student);
+    const submissionsMap = new Map(
+      assignment.submissions.map((s) => [s.studentId, s]),
+    );
+
+    const totalStudents = allStudents.length;
+    const submittedCount = assignment.submissions.filter(
+      (s) => s.status === 'SUBMITTED' || s.status === 'GRADED',
+    ).length;
+    const gradedCount = assignment.submissions.filter(
+      (s) => s.status === 'GRADED',
+    ).length;
+    const pendingCount = totalStudents - submittedCount;
+
+    const stats = {
+      totalStudents,
+      submittedCount,
+      gradedCount,
+      pendingCount,
+    };
+
+    const submissionsOverview = allStudents.map((student) => {
+      const submission = submissionsMap.get(student.id);
+      if (submission) {
+        return {
+          id: submission.id,
+          student: {
+            id: student.id,
+            fullName: student.fullName,
+          },
+          status: submission.status,
+          submittedAt: submission.submittedAt?.toISOString() || null,
+          grade: submission.grade,
+          plagiarismScore: submission.plagiarismChecks?.score ?? null,
+        };
+      } else {
+        return {
+          id: null,
+          student: {
+            id: student.id,
+            fullName: student.fullName,
+          },
+          status: 'PENDING',
+          submittedAt: null,
+          grade: null,
+          plagiarismScore: null,
+        };
+      }
+    });
+
+    return {
+      assignment: {
+        id: assignment.id,
+        title: assignment.title,
+        instructions: assignment.instructions,
+        deadline: assignment.deadline?.toISOString() || null,
+        classId: assignment.classId,
+        active: assignment.active,
+      },
+      stats,
+      submissions: submissionsOverview,
+    };
+  }
 }
