@@ -356,6 +356,32 @@ export class PaymentsService {
     }
   }
 
+  async getTransactionStatusByOrderId(orderId: string, instructorId: string) {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { midtransTransactionId: orderId },
+    });
+
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    if (transaction.userId !== instructorId) {
+      throw new ForbiddenException(
+        'You do not have permission to view this transaction',
+      );
+    }
+
+    return {
+      orderId: transaction.midtransTransactionId,
+      status: transaction.status,
+      paymentMethod: transaction.paymentMethod,
+      paidAt:
+        transaction.status === 'SUCCESS'
+          ? transaction.updatedAt.toISOString()
+          : null,
+    };
+  }
+
   async getTransactions(instructorId: string, query: TransactionQuery) {
     // 🔧 Pastikan page dan limit adalah number dengan default values
     const page = Number(query.page) || 1;

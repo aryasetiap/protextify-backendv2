@@ -10,6 +10,7 @@ import {
   Get,
   ParseIntPipe,
   DefaultValuePipe,
+  Param,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,6 +19,7 @@ import {
   ApiBody,
   ApiBearerAuth,
   ApiQuery,
+  ApiParam,
 } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -155,6 +157,41 @@ export class PaymentsController {
         error: error.message,
       };
     }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Get('status/:orderId')
+  @ApiOperation({
+    summary: 'Get payment transaction status by Order ID',
+    description:
+      'Checks the status of a specific payment transaction using its Order ID.',
+  })
+  @ApiParam({
+    name: 'orderId',
+    type: String,
+    description: 'The Order ID from Midtrans (e.g., PROTEXTIFY-xxx)',
+    example: 'PROTEXTIFY-1633867800000-abcdef123',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Transaction status retrieved successfully',
+    schema: {
+      example: {
+        orderId: 'PROTEXTIFY-xxx',
+        status: 'SUCCESS',
+        paymentMethod: 'bank_transfer',
+        paidAt: '2025-10-10T14:30:00Z',
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Transaction not found.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  async getTransactionStatus(@Param('orderId') orderId: string, @Req() req) {
+    return this.paymentsService.getTransactionStatusByOrderId(
+      orderId,
+      req.user.userId,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

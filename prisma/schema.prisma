@@ -125,8 +125,9 @@ model Transaction {
   status                TransactionStatus @default(PENDING)
   midtransTransactionId String            @unique
   midtransToken         String?
-  paymentMethod         String? // 🆕 Field baru untuk metode pembayaran
+  paymentMethod         String?
   createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
   user                  User              @relation(fields: [userId], references: [id])
   assignmentId          String?
   assignment            Assignment?       @relation(fields: [assignmentId], references: [id])
