@@ -20,6 +20,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { PlagiarismModule } from './plagiarism/plagiarism.module';
 import { StorageModule } from './storage/storage.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     PlagiarismModule,
     StorageModule,
     ScheduleModule.forRoot(), // Add this for cron jobs
+    AnalyticsModule,
   ],
   controllers: [
     AppController,
