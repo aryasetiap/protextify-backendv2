@@ -9,6 +9,10 @@ import {
   Query,
   DefaultValuePipe,
   ParseIntPipe,
+  Patch,
+  Delete,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,6 +29,7 @@ import { JoinClassDto } from './dto/join-class.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { UpdateClassDto } from './dto/update-class.dto';
 
 @ApiTags('classes')
 @ApiBearerAuth()
@@ -238,6 +243,63 @@ export class ClassesController {
   async getClassDetail(@Param('id') id: string, @Req() req) {
     // Pass userId for currentUserEnrollment calculation
     return this.classesService.getClassDetail(id, req.user?.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Update class details',
+    description: 'Updates the name and/or description of a class.',
+  })
+  @ApiParam({ name: 'id', type: String, description: 'Class ID' })
+  @ApiBody({ type: UpdateClassDto })
+  @ApiResponse({ status: 200, description: 'Class updated successfully.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({ status: 404, description: 'Class not found.' })
+  async updateClass(
+    @Param('id') classId: string,
+    @Body() dto: UpdateClassDto,
+    @Req() req,
+  ) {
+    return this.classesService.updateClass(classId, dto, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Post(':id/regenerate-token')
+  @ApiOperation({
+    summary: 'Regenerate class token',
+    description: 'Generates a new unique token for a class.',
+  })
+  @ApiParam({ name: 'id', type: String, description: 'Class ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Token regenerated successfully.',
+    schema: { example: { classToken: 'newT0ken' } },
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({ status: 404, description: 'Class not found.' })
+  async regenerateToken(@Param('id') classId: string, @Req() req) {
+    return this.classesService.regenerateClassToken(classId, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete a class',
+    description:
+      'Permanently deletes a class. Only possible if there are no students or assignments.',
+  })
+  @ApiParam({ name: 'id', type: String, description: 'Class ID' })
+  @ApiResponse({ status: 204, description: 'Class deleted successfully.' })
+  @ApiResponse({ status: 400, description: 'Class is not empty.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({ status: 404, description: 'Class not found.' })
+  async deleteClass(@Param('id') classId: string, @Req() req) {
+    return this.classesService.deleteClass(classId, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

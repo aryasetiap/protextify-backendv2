@@ -3,11 +3,13 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateClassDto } from './dto/create-class.dto';
 import { JoinClassDto } from './dto/join-class.dto';
 import { nanoid } from 'nanoid';
+import { UpdateClassDto } from './dto/update-class.dto';
 
 @Injectable()
 export class ClassesService {
@@ -63,6 +65,59 @@ export class ClassesService {
     });
 
     return { message: 'Successfully joined class', class: kelas };
+  }
+
+  async updateClass(
+    classId: string,
+    dto: UpdateClassDto,
+    instructorId: string,
+  ) {
+    const kelas = await this.prisma.class.findUnique({
+      where: { id: classId },
+    });
+    if (!kelas) throw new NotFoundException('Class not found');
+    if (kelas.instructorId !== instructorId)
+      throw new ForbiddenException('You do not own this class');
+
+    return this.prisma.class.update({
+      where: { id: classId },
+      data: dto,
+    });
+  }
+
+  async regenerateClassToken(classId: string, instructorId: string) {
+    const kelas = await this.prisma.class.findUnique({
+      where: { id: classId },
+    });
+    if (!kelas) throw new NotFoundException('Class not found');
+    if (kelas.instructorId !== instructorId)
+      throw new ForbiddenException('You do not own this class');
+
+    const newClassToken = nanoid(8);
+    return this.prisma.class.update({
+      where: { id: classId },
+      data: { classToken: newClassToken },
+    });
+  }
+
+  async deleteClass(classId: string, instructorId: string) {
+    const kelas = await this.prisma.class.findUnique({
+      where: { id: classId },
+      include: { _count: { select: { enrollments: true, assignments: true } } },
+    });
+
+    if (!kelas) throw new NotFoundException('Class not found');
+    if (kelas.instructorId !== instructorId)
+      throw new ForbiddenException('You do not own this class');
+
+    if (kelas._count.enrollments > 0 || kelas._count.assignments > 0) {
+      throw new BadRequestException(
+        'Cannot delete class with active students or assignments.',
+      );
+    }
+
+    await this.prisma.class.delete({ where: { id: classId } });
+    return { message: 'Class deleted successfully' };
   }
 
   async getClasses(userId: string, role: string) {
