@@ -9,6 +9,7 @@ import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { StorageService } from '../storage/storage.service'; // 🆕 Import StorageService
+import { BulkGradeDto } from './dto/bulk-grade.dto';
 
 @Injectable()
 export class SubmissionsService {
@@ -280,7 +281,7 @@ export class SubmissionsService {
     // Broadcast submission update via WebSocket
     this.realtimeGateway.broadcastSubmissionUpdate(submissionId, {
       status: 'GRADED',
-      grade: grade,
+      grade,
       updatedAt: updatedSubmission.updatedAt.toISOString(),
     });
 
@@ -297,6 +298,79 @@ export class SubmissionsService {
     });
 
     return updatedSubmission;
+  }
+
+  async bulkGrade(dto: BulkGradeDto, instructorId: string) {
+    const { grades } = dto;
+    if (!grades || grades.length === 0) {
+      throw new BadRequestException('Grades array cannot be empty.');
+    }
+
+    const submissionIds = grades.map((g) => g.submissionId);
+
+    // 1. Ambil semua submission sekaligus untuk validasi
+    const submissionsToGrade = await this.prisma.submission.findMany({
+      where: {
+        id: { in: submissionIds },
+        assignment: { class: { instructorId } }, // Filter by instructor
+      },
+      select: {
+        id: true,
+        assignment: { select: { class: { select: { instructorId: true } } } },
+      },
+    });
+
+    // 2. Validasi kepemilikan dan keberadaan data
+    const validSubmissionIds = new Set(submissionsToGrade.map((s) => s.id));
+    for (const gradeInput of grades) {
+      if (!validSubmissionIds.has(gradeInput.submissionId)) {
+        throw new ForbiddenException(
+          `You do not have permission to grade submission ${gradeInput.submissionId} or it does not exist.`,
+        );
+      }
+    }
+
+    // 3. Lakukan update dalam satu transaksi
+    const updatedSubmissions = await this.prisma.$transaction(
+      grades.map((gradeInput) =>
+        this.prisma.submission.update({
+          where: { id: gradeInput.submissionId },
+          data: {
+            grade: gradeInput.grade,
+            feedback: gradeInput.feedback,
+            status: 'GRADED',
+          },
+          include: {
+            assignment: { select: { title: true } },
+          },
+        }),
+      ),
+    );
+
+    // 4. Kirim notifikasi setelah transaksi berhasil
+    for (const updatedSubmission of updatedSubmissions) {
+      this.realtimeGateway.broadcastSubmissionUpdate(updatedSubmission.id, {
+        status: 'GRADED',
+        grade: updatedSubmission.grade ?? undefined,
+        updatedAt: updatedSubmission.updatedAt.toISOString(),
+      });
+
+      this.realtimeGateway.sendNotification(updatedSubmission.studentId, {
+        type: 'grade_received',
+        message: `You received a grade of ${updatedSubmission.grade} for assignment "${updatedSubmission.assignment.title}".`,
+        data: {
+          submissionId: updatedSubmission.id,
+          grade: updatedSubmission.grade,
+          assignmentTitle: updatedSubmission.assignment.title,
+        },
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    return {
+      message: 'Bulk grading completed successfully',
+      updatedCount: updatedSubmissions.length,
+    };
   }
 
   async getSubmissionsForAssignment(

@@ -25,6 +25,7 @@ import { DownloadResponseDto } from '../storage/dto/download-file.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { BulkGradeDto } from './dto/bulk-grade.dto';
 
 @ApiTags('submissions')
 @ApiBearerAuth()
@@ -444,6 +445,55 @@ export class SubmissionsController {
     @Body('grade') grade: number,
   ) {
     return this.submissionsService.grade(id, grade, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Patch('submissions/bulk-grade')
+  @ApiOperation({
+    summary: 'Grade multiple submissions at once',
+    description:
+      'Instructor grades multiple submissions in a single transaction.',
+  })
+  @ApiBody({
+    type: BulkGradeDto,
+    examples: {
+      default: {
+        summary: 'Bulk Grade Example',
+        value: {
+          grades: [
+            {
+              submissionId: 'submission-1',
+              grade: 90,
+              feedback: 'Kerja bagus, analisisnya mendalam.',
+            },
+            {
+              submissionId: 'submission-2',
+              grade: 75,
+              feedback: 'Perlu perbaikan pada bagian kesimpulan.',
+            },
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Bulk grading completed successfully',
+    schema: {
+      example: {
+        message: 'Bulk grading completed successfully',
+        updatedCount: 2,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden. Not your class or submission.',
+  })
+  @ApiResponse({ status: 404, description: 'Submission not found.' })
+  async bulkGrade(@Req() req, @Body() dto: BulkGradeDto) {
+    return this.submissionsService.bulkGrade(dto, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
