@@ -248,4 +248,67 @@ export class AssignmentsController {
   async getAssignmentDetail(@Param('id') id: string) {
     return this.assignmentsService.getAssignmentDetail(id);
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Get('assignments/:id/analytics')
+  @ApiOperation({
+    summary: 'Get assignment analytics data',
+    description:
+      'Returns aggregated statistics for a specific assignment, optimized for the analytics page.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Assignment ID',
+    example: 'f47ac10b-58cc-4372-a567-0e02b2c3d470',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Assignment analytics data retrieved successfully',
+    schema: {
+      example: {
+        assignment: {
+          id: 'assignment-xyz',
+          title: 'Tugas Kalkulus',
+          classId: 'class-123',
+        },
+        stats: {
+          totalSubmissions: 50,
+          submittedCount: 45,
+          gradedCount: 30,
+          avgPlagiarism: 15,
+          avgGrade: 82,
+        },
+        submissions: [
+          {
+            id: 'submission-1',
+            student: { fullName: 'Siswa A' },
+            status: 'GRADED',
+            grade: 90,
+            plagiarismChecks: { score: 10 },
+            updatedAt: '2025-06-01T13:30:00.000Z',
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Assignment not found',
+    schema: { example: { statusCode: 404, message: 'Assignment not found' } },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'You do not have access to this assignment',
+      },
+    },
+  })
+  async getAssignmentAnalytics(@Param('id') id: string, @Req() req) {
+    return this.assignmentsService.getAssignmentAnalytics(id, req.user.userId);
+  }
 }

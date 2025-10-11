@@ -148,4 +148,93 @@ export class AssignmentsService {
     if (!assignment) throw new NotFoundException('Assignment not found');
     return assignment;
   }
+
+  async getAssignmentAnalytics(assignmentId: string, instructorId: string) {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: {
+        class: {
+          select: { instructorId: true },
+        },
+        submissions: {
+          include: {
+            student: {
+              select: { fullName: true },
+            },
+            plagiarismChecks: {
+              select: { score: true },
+            },
+          },
+          orderBy: {
+            updatedAt: 'desc',
+          },
+        },
+      },
+    });
+
+    if (!assignment) {
+      throw new NotFoundException('Assignment not found');
+    }
+
+    if (assignment.class.instructorId !== instructorId) {
+      throw new ForbiddenException('You do not have access to this assignment');
+    }
+
+    const { submissions } = assignment;
+
+    // Calculate stats
+    const gradedSubmissions = submissions.filter((s) => s.status === 'GRADED');
+    const submittedAndGraded = submissions.filter(
+      (s) => s.status === 'SUBMITTED' || s.status === 'GRADED',
+    );
+
+    const plagiarismScores = submissions
+      .map((s) => s.plagiarismChecks?.score)
+      .filter((score): score is number => score != null);
+
+    const grades = gradedSubmissions
+      .map((s) => s.grade)
+      .filter((grade): grade is number => grade != null);
+
+    const stats = {
+      totalSubmissions: submissions.length,
+      submittedCount: submittedAndGraded.length,
+      gradedCount: gradedSubmissions.length,
+      avgPlagiarism:
+        plagiarismScores.length > 0
+          ? Math.round(
+              plagiarismScores.reduce((acc, score) => acc + score, 0) /
+                plagiarismScores.length,
+            )
+          : 0,
+      avgGrade:
+        grades.length > 0
+          ? Math.round(
+              grades.reduce((acc, grade) => acc + grade, 0) / grades.length,
+            )
+          : 0,
+    };
+
+    // Format submissions
+    const formattedSubmissions = submissions.map((s) => ({
+      id: s.id,
+      student: { fullName: s.student.fullName },
+      status: s.status,
+      grade: s.grade,
+      plagiarismChecks: s.plagiarismChecks
+        ? { score: s.plagiarismChecks.score }
+        : null,
+      updatedAt: s.updatedAt.toISOString(),
+    }));
+
+    return {
+      assignment: {
+        id: assignment.id,
+        title: assignment.title,
+        classId: assignment.classId,
+      },
+      stats,
+      submissions: formattedSubmissions,
+    };
+  }
 }
