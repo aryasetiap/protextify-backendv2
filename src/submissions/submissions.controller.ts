@@ -26,6 +26,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { BulkGradeDto } from './dto/bulk-grade.dto';
+import { GradeSubmissionDto } from './dto/grade-submission.dto';
 
 @ApiTags('submissions')
 @ApiBearerAuth()
@@ -413,8 +414,22 @@ export class SubmissionsController {
     example: 'submission-1',
   })
   @ApiBody({
-    schema: {
-      example: { grade: 90 },
+    type: GradeSubmissionDto,
+    examples: {
+      withFeedback: {
+        summary: 'Grade with Feedback',
+        value: {
+          grade: 90,
+          feedback:
+            'Analisis sudah baik, namun perlu diperdalam pada bagian kesimpulan.',
+        },
+      },
+      gradeOnly: {
+        summary: 'Grade Only',
+        value: {
+          grade: 85,
+        },
+      },
     },
   })
   @ApiResponse({
@@ -442,9 +457,9 @@ export class SubmissionsController {
   async grade(
     @Param('id') id: string,
     @Req() req,
-    @Body('grade') grade: number,
+    @Body() dto: GradeSubmissionDto,
   ) {
-    return this.submissionsService.grade(id, grade, req.user.userId);
+    return this.submissionsService.grade(id, dto, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

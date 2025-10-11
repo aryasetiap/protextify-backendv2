@@ -10,6 +10,7 @@ import { UpdateContentDto } from './dto/update-content.dto';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { StorageService } from '../storage/storage.service'; // 🆕 Import StorageService
 import { BulkGradeDto } from './dto/bulk-grade.dto';
+import { GradeSubmissionDto } from './dto/grade-submission.dto';
 
 @Injectable()
 export class SubmissionsService {
@@ -281,7 +282,11 @@ export class SubmissionsService {
     return updatedSubmission;
   }
 
-  async grade(submissionId: string, grade: number, instructorId: string) {
+  async grade(
+    submissionId: string,
+    dto: GradeSubmissionDto,
+    instructorId: string,
+  ) {
     const submission = await this.prisma.submission.findUnique({
       where: { id: submissionId },
       include: {
@@ -295,7 +300,7 @@ export class SubmissionsService {
 
     const updatedSubmission = await this.prisma.submission.update({
       where: { id: submissionId },
-      data: { grade, status: 'GRADED' },
+      data: { grade: dto.grade, feedback: dto.feedback, status: 'GRADED' },
     });
 
     // Log activity
@@ -306,7 +311,8 @@ export class SubmissionsService {
         details: {
           studentName: submission.student.fullName,
           assignmentTitle: submission.assignment.title,
-          grade: grade,
+          grade: dto.grade,
+          feedback: dto.feedback, // 🆕 Add feedback to activity log
         },
         actorId: instructorId,
       },
@@ -315,17 +321,17 @@ export class SubmissionsService {
     // Broadcast submission update via WebSocket
     this.realtimeGateway.broadcastSubmissionUpdate(submissionId, {
       status: 'GRADED',
-      grade,
+      grade: dto.grade,
       updatedAt: updatedSubmission.updatedAt.toISOString(),
     });
 
     // Send notification to student
     this.realtimeGateway.sendNotification(submission.studentId, {
       type: 'grade_received',
-      message: `You received a grade of ${grade} for your submission.`,
+      message: `You received a grade of ${dto.grade} for your submission.`,
       data: {
         submissionId,
-        grade,
+        grade: dto.grade,
         assignmentTitle: submission.assignment.title,
       },
       createdAt: new Date().toISOString(),
