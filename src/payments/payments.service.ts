@@ -15,6 +15,7 @@ import * as crypto from 'crypto';
 import { StorageService } from '../storage/storage.service';
 import { EmailService } from '../email/email.service';
 import PDFDocument from 'pdfkit';
+import { ExportTransactionsDto } from './dto/export-transactions.dto';
 
 // 🔧 Interface untuk response Midtrans
 interface MidtransSnapResponse {
@@ -545,6 +546,87 @@ export class PaymentsService {
     );
 
     return { message: 'Invoice successfully sent to your email.' };
+  }
+
+  async exportTransactions(dto: ExportTransactionsDto, instructorId: string) {
+    const { status, startDate, endDate, search } = dto;
+
+    const where: any = {
+      userId: instructorId,
+      ...(status && { status }),
+      ...(startDate && endDate
+        ? { createdAt: { gte: new Date(startDate), lte: new Date(endDate) } }
+        : startDate
+          ? { createdAt: { gte: new Date(startDate) } }
+          : endDate
+            ? { createdAt: { lte: new Date(endDate) } }
+            : {}),
+    };
+
+    if (search) {
+      where.OR = [
+        { assignment: { title: { contains: search, mode: 'insensitive' } } },
+        {
+          assignment: {
+            class: { name: { contains: search, mode: 'insensitive' } },
+          },
+        },
+      ];
+    }
+
+    const transactions = await this.prisma.transaction.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        assignment: {
+          include: {
+            class: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    if (transactions.length === 0) {
+      throw new NotFoundException(
+        'No transactions found matching the criteria.',
+      );
+    }
+
+    const headers =
+      'Order ID,Date,Amount,Status,Payment Method,Assignment Title,Class Name\n';
+    const rows = transactions
+      .map((tx) => {
+        const escapeCsv = (str: string) => `"${str.replace(/"/g, '""')}"`;
+        return [
+          tx.midtransTransactionId,
+          tx.createdAt.toISOString(),
+          tx.amount,
+          tx.status,
+          tx.paymentMethod || 'N/A',
+          escapeCsv(tx.assignment?.title || 'Credit Top-up'),
+          escapeCsv(tx.assignment?.class?.name || 'N/A'),
+        ].join(',');
+      })
+      .join('\n');
+
+    const csvBuffer = Buffer.from(headers + rows);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `protextify-transactions-export-${timestamp}.csv`;
+    const cloudKey = `exports/${filename}`;
+
+    await this.storageService.uploadRawBuffer(csvBuffer, cloudKey, 'text/csv');
+
+    const downloadUrl = await this.storageService.refreshDownloadUrl(
+      cloudKey,
+      filename,
+      3600, // Expires in 1 hour
+    );
+
+    return {
+      downloadUrl,
+      expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+      filename,
+    };
   }
 
   async getTransactionStatusByOrderId(orderId: string, instructorId: string) {

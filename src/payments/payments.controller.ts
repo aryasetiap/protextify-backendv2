@@ -27,6 +27,7 @@ import { WebhookDto } from './dto/webhook.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { ExportTransactionsDto } from './dto/export-transactions.dto';
 
 @ApiTags('payments')
 @ApiBearerAuth()
@@ -206,6 +207,55 @@ export class PaymentsController {
   @ApiResponse({ status: 200, description: 'Invoice sent successfully.' })
   async emailInvoice(@Param('id') id: string, @Req() req) {
     return this.paymentsService.emailInvoice(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Post('transactions/export')
+  @ApiOperation({
+    summary: 'Export transaction history to CSV',
+    description:
+      'Generates a CSV file of the instructor’s transaction history based on provided filters and returns a secure download URL.',
+  })
+  @ApiBody({
+    type: ExportTransactionsDto,
+    examples: {
+      full: {
+        summary: 'Export with all filters',
+        value: {
+          status: 'SUCCESS',
+          startDate: '2025-01-01',
+          endDate: '2025-03-31',
+          search: 'Kalkulus',
+        },
+      },
+      partial: {
+        summary: 'Export with partial filters',
+        value: {
+          status: 'SUCCESS',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'CSV export file generated successfully.',
+    schema: {
+      example: {
+        downloadUrl:
+          'https://storage.protextify.com/exports/transactions-export-xyz.csv',
+        expiresAt: '2025-10-12T15:00:00Z',
+        filename: 'protextify-transactions-export.csv',
+      },
+    },
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({
+    status: 404,
+    description: 'No transactions found for the given criteria.',
+  })
+  async exportTransactions(@Req() req, @Body() dto: ExportTransactionsDto) {
+    return this.paymentsService.exportTransactions(dto, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
