@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import PDFDocument from 'pdfkit';
 import { PrismaService } from '../../prisma/prisma.service';
+import { WinstonAIResponse } from '../interfaces/winston-ai.interface';
 
 @Injectable()
 export class PDFReportService {
@@ -12,6 +13,58 @@ export class PDFReportService {
     private readonly prismaService: PrismaService,
   ) {}
 
+  /**
+   * Helper to determine color based on plagiarism score.
+   */
+  private getScoreColor(score: number): string {
+    if (score < 15) return '#28a745'; // Green
+    if (score < 40) return '#ffc107'; // Yellow
+    return '#dc3545'; // Red
+  }
+
+  /**
+   * Renders the full text with plagiarized segments highlighted in red.
+   */
+  private renderHighlightedText(
+    doc: PDFKit.PDFDocument,
+    fullText: string,
+    indexes: { startIndex: number; endIndex: number }[],
+  ) {
+    doc.fontSize(11).fillColor('black');
+    let lastIndex = 0;
+
+    // Sort indexes to process them in order
+    const sortedIndexes = [...indexes].sort(
+      (a, b) => a.startIndex - b.startIndex,
+    );
+
+    for (const segment of sortedIndexes) {
+      // Render non-plagiarized text before the current segment
+      if (segment.startIndex > lastIndex) {
+        const nonPlagiarizedText = fullText.substring(
+          lastIndex,
+          segment.startIndex,
+        );
+        doc.fillColor('black').text(nonPlagiarizedText, { continued: true });
+      }
+
+      // Render plagiarized text in red
+      const plagiarizedText = fullText.substring(
+        segment.startIndex,
+        segment.endIndex,
+      );
+      doc.fillColor('#dc3545').text(plagiarizedText, { continued: true });
+
+      lastIndex = segment.endIndex;
+    }
+
+    // Render the remaining text after the last plagiarized segment
+    if (lastIndex < fullText.length) {
+      const remainingText = fullText.substring(lastIndex);
+      doc.fillColor('black').text(remainingText);
+    }
+  }
+
   async generatePlagiarismReport(
     submissionId: string,
     includeDetailedResults: boolean = false,
@@ -20,9 +73,7 @@ export class PDFReportService {
       where: { id: submissionId },
       include: {
         student: true,
-        assignment: {
-          include: { class: true },
-        },
+        assignment: { include: { class: true } },
         plagiarismChecks: true,
       },
     });
@@ -32,94 +83,156 @@ export class PDFReportService {
     }
 
     const { plagiarismChecks } = submission;
+    const rawData =
+      plagiarismChecks.rawResponse as unknown as WinstonAIResponse;
 
     return new Promise((resolve, reject) => {
       try {
-        const doc = new PDFDocument();
+        const doc = new PDFDocument({ margin: 50 });
         const buffers: Buffer[] = [];
 
         doc.on('data', buffers.push.bind(buffers));
-        doc.on('end', () => {
-          const pdfBuffer = Buffer.concat(buffers);
-          resolve(pdfBuffer);
-        });
+        doc.on('end', () => resolve(Buffer.concat(buffers)));
 
-        // Header
-        doc.fontSize(20).text('Plagiarism Check Report', 50, 50);
+        // ===== HEADER =====
+        doc
+          .fontSize(22)
+          .font('Helvetica-Bold')
+          .text('Plagiarism Analysis Report', { align: 'center' });
+        doc.moveDown(2);
+
+        // ===== SUMMARY SECTION =====
+        doc
+          .fontSize(16)
+          .font('Helvetica-Bold')
+          .text('Submission Summary', { underline: true });
         doc.moveDown();
-
-        // Basic Information
-        doc.fontSize(14).text('Submission Information:', 50, doc.y);
         doc
           .fontSize(12)
-          .text(`Student: ${submission.student.fullName}`, 50, doc.y + 20)
-          .text(`Assignment: ${submission.assignment.title}`, 50, doc.y + 15)
-          .text(`Class: ${submission.assignment.class.name}`, 50, doc.y + 15)
-          .text(
-            `Checked At: ${plagiarismChecks.checkedAt.toLocaleString()}`,
-            50,
-            doc.y + 15,
-          );
+          .font('Helvetica')
+          .text(`Student: ${submission.student.fullName}`)
+          .text(`Assignment: ${submission.assignment.title}`)
+          .text(`Class: ${submission.assignment.class.name}`)
+          .text(`Checked On: ${plagiarismChecks.checkedAt.toLocaleString()}`);
+        doc.moveDown(2);
 
-        doc.moveDown();
-
-        // Plagiarism Results
-        doc.fontSize(14).text('Plagiarism Results:', 50, doc.y + 20);
+        // Visual Score Display
+        const scoreColor = this.getScoreColor(plagiarismChecks.score);
         doc
-          .fontSize(12)
-          .text(`Plagiarism Score: ${plagiarismChecks.score}%`, 50, doc.y + 20)
-          .text(`Word Count: ${plagiarismChecks.wordCount}`, 50, doc.y + 15)
-          .text(
-            `Credits Used: ${plagiarismChecks.creditsUsed}`,
-            50,
-            doc.y + 15,
-          );
+          .fontSize(16)
+          .font('Helvetica-Bold')
+          .text('Overall Plagiarism Score:', { continued: true });
+        doc
+          .fillColor(scoreColor)
+          .text(` ${plagiarismChecks.score.toFixed(2)}%`);
+        doc.fillColor('black').moveDown();
 
-        // Content Preview
+        // Key Metrics
+        if (rawData && rawData.result) {
+          doc
+            .fontSize(12)
+            .font('Helvetica')
+            .text(`Total Words: ${rawData.result.textWordCounts}`)
+            .text(`Plagiarized Words: ${rawData.result.totalPlagiarismWords}`)
+            .text(`Identical Words: ${rawData.result.identicalWordCounts}`)
+            .text(`Sources Found: ${rawData.result.sourceCounts}`);
+        }
+        doc.moveDown(2);
+
+        // ===== FULL CONTENT WITH HIGHLIGHTS =====
+        doc.addPage();
+        doc
+          .fontSize(16)
+          .font('Helvetica-Bold')
+          .text('Submission Content Analysis', { underline: true });
         doc.moveDown();
-        doc.fontSize(14).text('Submission Content:', 50, doc.y + 20);
-        const contentPreview =
-          submission.content.length > 500
-            ? submission.content.substring(0, 500) + '...'
-            : submission.content;
 
-        doc.fontSize(10).text(contentPreview, 50, doc.y + 15, {
-          width: 500,
-          align: 'justify',
-        });
+        if (rawData && rawData.indexes && rawData.indexes.length > 0) {
+          this.renderHighlightedText(doc, submission.content, rawData.indexes);
+        } else {
+          // If no plagiarism, just render the full text normally
+          doc
+            .fontSize(11)
+            .fillColor('black')
+            .text(submission.content, { align: 'justify' });
+        }
 
-        // Detailed Results (for instructors only)
-        if (includeDetailedResults && plagiarismChecks.rawResponse) {
-          const rawData = plagiarismChecks.rawResponse as any;
-
+        // ===== DETAILED SOURCES (INSTRUCTOR ONLY) =====
+        if (
+          includeDetailedResults &&
+          rawData &&
+          rawData.sources &&
+          rawData.sources.length > 0
+        ) {
+          doc.addPage();
+          doc
+            .fontSize(16)
+            .font('Helvetica-Bold')
+            .text('Detected Sources', { underline: true });
           doc.moveDown();
-          doc.fontSize(14).text('Detailed Analysis:', 50, doc.y + 30);
 
-          if (rawData.sources && rawData.sources.length > 0) {
-            doc.fontSize(12).text('Sources Found:', 50, doc.y + 15);
-            rawData.sources.forEach((source: any, index: number) => {
+          const relevantSources = rawData.sources.filter((s) => s.score > 0);
+
+          if (relevantSources.length > 0) {
+            relevantSources.forEach((source, index) => {
+              doc
+                .fontSize(12)
+                .font('Helvetica-Bold')
+                .text(`${index + 1}. ${source.title || 'Unknown Title'}`);
               doc
                 .fontSize(10)
-                .text(
-                  `${index + 1}. ${source.title} (${source.score}% match) - ${source.url}`,
-                  70,
-                  doc.y + 12,
-                  { width: 450 },
+                .font('Helvetica')
+                .fillColor('blue')
+                .text(source.url, { link: source.url, underline: true })
+                .fillColor('black')
+                .text(`Match Score: ${source.score.toFixed(2)}%`)
+                .text(`Plagiarized Words: ${source.plagiarismWords}`);
+
+              if (source.plagiarismFound && source.plagiarismFound.length > 0) {
+                const preview = source.plagiarismFound[0].sequence.substring(
+                  0,
+                  150,
                 );
+                doc.fillColor('#555').text(`Snippet: "${preview}..."`);
+              }
+              doc.moveDown(1.5);
             });
           } else {
-            doc.fontSize(10).text('No matching sources found.', 70, doc.y + 15);
+            doc
+              .fontSize(12)
+              .font('Helvetica')
+              .text('No significant matching sources found.');
           }
         }
 
-        // Footer
-        doc
-          .fontSize(8)
-          .text('Generated by Protextify Platform', 50, doc.page.height - 50)
-          .text(new Date().toLocaleString(), 50, doc.page.height - 35);
+        // ===== FOOTER on every page =====
+        const range = doc.bufferedPageRange();
+        for (let i = range.start; i <= range.start + range.count - 1; i++) {
+          doc.switchToPage(i);
+          doc
+            .fontSize(8)
+            .font('Helvetica')
+            .fillColor('grey')
+            .text(
+              'Generated by Protextify Platform',
+              50,
+              doc.page.height - 40,
+              { align: 'left' },
+            )
+            .text(
+              `Page ${i + 1} of ${range.count}`,
+              doc.page.width - 100,
+              doc.page.height - 40,
+              { align: 'right' },
+            );
+        }
 
         doc.end();
       } catch (error) {
+        this.logger.error(
+          `Failed to generate PDF for submission ${submissionId}`,
+          error.stack,
+        );
         reject(error);
       }
     });
