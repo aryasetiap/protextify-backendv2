@@ -132,4 +132,48 @@ export class EmailService {
       throw new BadRequestException('Invalid or expired token');
     }
   }
+
+  async sendInvoiceEmail(
+    to: string,
+    userName: string,
+    invoiceData: { orderId: string; amount: number },
+    pdfBuffer: Buffer,
+  ) {
+    const templatePath = path.resolve(__dirname, 'templates', 'invoice.html');
+    const html = fs
+      .readFileSync(templatePath, 'utf8')
+      .replace('{{USER_NAME}}', userName)
+      .replace('{{ORDER_ID}}', invoiceData.orderId)
+      .replace(
+        '{{AMOUNT}}',
+        new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+        }).format(invoiceData.amount),
+      );
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: '"Protextify" <no-reply@protextify.com>',
+      to,
+      subject: `Invoice for Protextify Order #${invoiceData.orderId}`,
+      html,
+      attachments: [
+        {
+          filename: `invoice-${invoiceData.orderId}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf',
+        },
+      ],
+    });
+
+    return { message: 'Invoice successfully sent to your email.' };
+  }
 }

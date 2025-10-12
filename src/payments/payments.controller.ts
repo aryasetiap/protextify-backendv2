@@ -161,6 +161,55 @@ export class PaymentsController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('INSTRUCTOR')
+  @Get('transactions/:id')
+  @ApiOperation({
+    summary: 'Get transaction detail by ID',
+    description: 'Retrieves full details for a single transaction.',
+  })
+  @ApiParam({ name: 'id', type: String, description: 'Transaction ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Transaction detail retrieved successfully.',
+  })
+  @ApiResponse({ status: 404, description: 'Transaction not found.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  async getTransactionById(@Param('id') id: string, @Req() req) {
+    return this.paymentsService.getTransactionById(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Post('transactions/:id/download-invoice')
+  @ApiOperation({
+    summary: 'Download transaction invoice as PDF',
+    description:
+      'Generates a PDF invoice for a transaction and returns a secure, time-limited download URL.',
+  })
+  @ApiParam({ name: 'id', type: String, description: 'Transaction ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Invoice download URL generated successfully.',
+  })
+  async downloadInvoice(@Param('id') id: string, @Req() req) {
+    return this.paymentsService.downloadInvoice(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
+  @Post('transactions/:id/email-invoice')
+  @ApiOperation({
+    summary: 'Send transaction invoice to user email',
+    description:
+      'Generates a PDF invoice and sends it as an attachment to the instructor’s registered email.',
+  })
+  @ApiParam({ name: 'id', type: String, description: 'Transaction ID' })
+  @ApiResponse({ status: 200, description: 'Invoice sent successfully.' })
+  async emailInvoice(@Param('id') id: string, @Req() req) {
+    return this.paymentsService.emailInvoice(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
   @Get('status/:orderId')
   @ApiOperation({
     summary: 'Get payment transaction status by Order ID',

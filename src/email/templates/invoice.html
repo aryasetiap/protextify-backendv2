@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="id"></html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Faktur Protextify</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: #f6f8fa;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 420px;
+        margin: 40px auto;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(35, 64, 122, 0.08);
+        padding: 40px 32px 32px 32px;
+        border: 1.5px solid #23407a22;
+      }
+      .logo {
+        display: block;
+        margin: 0 auto 24px auto;
+        height: 48px;
+      }
+      h2 {
+        color: #23407a;
+        margin-top: 0;
+        margin-bottom: 18px;
+        font-weight: 700;
+        font-size: 1.7rem;
+        letter-spacing: -1px;
+        text-align: center;
+      }
+      p {
+        color: #374151;
+        margin-bottom: 20px;
+        font-size: 1rem;
+        line-height: 1.6;
+        text-align: left;
+      }
+      .footer {
+        margin-top: 32px;
+        font-size: 13px;
+        color: #888;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <img
+        class="logo"
+        src="https://i.ibb.co.com/MyBZrTgK/logo-protextify-warna.png"
+        alt="Logo Protextify"
+      />
+      <h2>Faktur Protextify Anda</h2>
+      <p>Hai <b>{{USER_NAME}}</b>,</p>
+      <p>
+        Terima kasih atas pembayaran Anda. Faktur untuk pesanan
+        <b>#{{ORDER_ID}}</b> sebesar <b>{{AMOUNT}}</b> telah dilampirkan pada email ini untuk arsip Anda.
+      </p>
+      <p>Jika ada pertanyaan, silakan hubungi tim dukungan kami.</p>
+      <div class="footer">
+        Salam hangat,<br />
+        Tim Protextify
+      </div>
+    </div>
+  </body>
+</html>

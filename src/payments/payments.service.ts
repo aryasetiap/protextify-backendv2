@@ -12,6 +12,9 @@ import { WebhookDto } from './dto/webhook.dto';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import axios from 'axios';
 import * as crypto from 'crypto';
+import { StorageService } from '../storage/storage.service';
+import { EmailService } from '../email/email.service';
+import PDFDocument from 'pdfkit';
 
 // 🔧 Interface untuk response Midtrans
 interface MidtransSnapResponse {
@@ -36,6 +39,8 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly realtimeGateway: RealtimeGateway,
+    private readonly storageService: StorageService,
+    private readonly emailService: EmailService,
   ) {}
 
   async createTransaction(dto: CreateTransactionDto, instructorId: string) {
@@ -354,6 +359,192 @@ export class PaymentsService {
       console.error('Webhook processing error:', error);
       throw error;
     }
+  }
+
+  async getTransactionById(transactionId: string, instructorId: string) {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { id: transactionId },
+      include: {
+        assignment: {
+          include: {
+            class: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    if (transaction.userId !== instructorId) {
+      throw new ForbiddenException(
+        'You do not have permission to view this transaction',
+      );
+    }
+
+    // Construct payment history
+    const paymentHistory = [
+      {
+        status: 'PENDING',
+        timestamp: transaction.createdAt.toISOString(),
+      },
+    ];
+
+    if (transaction.status !== 'PENDING') {
+      paymentHistory.push({
+        status: transaction.status,
+        timestamp: transaction.updatedAt.toISOString(),
+      });
+    }
+
+    return {
+      id: transaction.id,
+      orderId: transaction.midtransTransactionId,
+      amount: transaction.amount,
+      status: transaction.status,
+      paymentMethod: transaction.paymentMethod,
+      createdAt: transaction.createdAt.toISOString(),
+      updatedAt: transaction.updatedAt.toISOString(),
+      expectedStudentCount:
+        transaction.assignment?.expectedStudentCount || null,
+      assignment: transaction.assignment
+        ? {
+            id: transaction.assignment.id,
+            title: transaction.assignment.title,
+            deadline: transaction.assignment.deadline?.toISOString() || null,
+            class: transaction.assignment.class,
+          }
+        : null,
+      paymentHistory,
+    };
+  }
+
+  private async generateInvoicePdf(
+    transactionId: string,
+    instructorId: string,
+  ): Promise<{ buffer: Buffer; transactionData: any }> {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { id: transactionId },
+      include: {
+        user: { select: { fullName: true, email: true } },
+        assignment: {
+          include: {
+            class: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    if (!transaction || transaction.userId !== instructorId) {
+      throw new ForbiddenException('Transaction not found or access denied.');
+    }
+
+    const buffer = await new Promise<Buffer>((resolve) => {
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+
+      doc.fontSize(20).text('INVOICE', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12).text(`Order ID: ${transaction.midtransTransactionId}`);
+      doc.text(`Date: ${transaction.createdAt.toLocaleDateString('id-ID')}`);
+      doc.moveDown();
+      doc.text('Billed To:');
+      doc.text(transaction.user.fullName);
+      doc.text(transaction.user.email);
+      doc.moveDown(2);
+      doc.font('Helvetica-Bold').text('Description', 50, doc.y);
+      doc.text('Amount', 450, doc.y, { width: 100, align: 'right' });
+      doc.font('Helvetica');
+      doc.y += 20;
+      doc.lineCap('butt').moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+      doc.y += 10;
+      const desc = transaction.assignment
+        ? `Payment for Assignment: "${transaction.assignment.title}"`
+        : 'Credit Top-up';
+      doc.text(desc, 50, doc.y, { width: 400 });
+      doc.text(
+        new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+        }).format(transaction.amount),
+        450,
+        doc.y,
+        { width: 100, align: 'right' },
+      );
+      doc.y += 20;
+      doc.lineCap('butt').moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+      doc.y += 10;
+      doc.font('Helvetica-Bold').text('Total', 50, doc.y);
+      doc.text(
+        new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+        }).format(transaction.amount),
+        450,
+        doc.y,
+        { width: 100, align: 'right' },
+      );
+      doc.font('Helvetica');
+      doc.moveDown(2);
+      doc.text(`Status: ${transaction.status}`, { align: 'right' });
+      doc.end();
+    });
+
+    return { buffer, transactionData: transaction };
+  }
+
+  async downloadInvoice(transactionId: string, instructorId: string) {
+    const { buffer, transactionData } = await this.generateInvoicePdf(
+      transactionId,
+      instructorId,
+    );
+    const filename = `invoice-${transactionData.midtransTransactionId}.pdf`;
+    const cloudKey = `invoices/${filename}`;
+
+    await this.storageService.uploadRawBuffer(
+      buffer,
+      cloudKey,
+      'application/pdf',
+    );
+
+    const downloadUrl = await this.storageService.refreshDownloadUrl(
+      cloudKey,
+      filename,
+      3600, // 1 hour expiry
+    );
+
+    return {
+      downloadUrl,
+      expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+      filename,
+    };
+  }
+
+  async emailInvoice(transactionId: string, instructorId: string) {
+    const { buffer, transactionData } = await this.generateInvoicePdf(
+      transactionId,
+      instructorId,
+    );
+
+    await this.emailService.sendInvoiceEmail(
+      transactionData.user.email,
+      transactionData.user.fullName,
+      {
+        orderId: transactionData.midtransTransactionId,
+        amount: transactionData.amount,
+      },
+      buffer,
+    );
+
+    return { message: 'Invoice successfully sent to your email.' };
   }
 
   async getTransactionStatusByOrderId(orderId: string, instructorId: string) {
