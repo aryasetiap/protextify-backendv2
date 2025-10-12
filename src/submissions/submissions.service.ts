@@ -14,6 +14,7 @@ import { GradeSubmissionDto } from './dto/grade-submission.dto';
 import { BulkDownloadDto } from './dto/bulk-download.dto';
 import JSZip from 'jszip';
 import { nanoid } from 'nanoid';
+import { GetClassHistoryDto } from './dto/get-class-history.dto';
 
 @Injectable()
 export class SubmissionsService {
@@ -566,17 +567,77 @@ export class SubmissionsService {
     });
   }
 
-  async getClassHistory(classId: string, instructorId: string) {
+  async getClassHistory(
+    classId: string,
+    instructorId: string,
+    query: GetClassHistoryDto,
+  ) {
+    const {
+      page = 1,
+      limit = 15,
+      search,
+      status,
+      sortBy = 'updatedAt',
+      sortOrder = 'desc',
+    } = query;
+
+    const skip = (page - 1) * limit;
+
     const kelas = await this.prisma.class.findUnique({
       where: { id: classId },
     });
     if (!kelas || kelas.instructorId !== instructorId)
       throw new ForbiddenException('Not your class');
-    return this.prisma.submission.findMany({
-      where: { assignment: { classId } },
-      include: { student: true, assignment: true },
-      orderBy: { createdAt: 'desc' },
-    });
+
+    const where: any = {
+      assignment: { classId },
+      ...(status && { status }),
+      ...(search && {
+        OR: [
+          { student: { fullName: { contains: search, mode: 'insensitive' } } },
+          {
+            assignment: { title: { contains: search, mode: 'insensitive' } },
+          },
+        ],
+      }),
+    };
+
+    const orderBy = {
+      [sortBy]:
+        sortBy === 'studentName'
+          ? { student: { fullName: sortOrder } }
+          : sortBy === 'assignmentTitle'
+            ? { assignment: { title: sortOrder } }
+            : sortOrder,
+    };
+
+    const [total, submissions] = await this.prisma.$transaction([
+      this.prisma.submission.count({ where }),
+      this.prisma.submission.findMany({
+        where,
+        include: {
+          student: { select: { id: true, fullName: true } },
+          assignment: { select: { id: true, title: true } },
+          plagiarismChecks: {
+            select: {
+              score: true,
+              status: true,
+            },
+          },
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: submissions,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   // 🆕 Updated download method with storage integration

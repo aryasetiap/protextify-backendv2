@@ -28,6 +28,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { BulkGradeDto } from './dto/bulk-grade.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
 import { BulkDownloadDto } from './dto/bulk-download.dto';
+import { GetClassHistoryDto } from './dto/get-class-history.dto';
 
 @ApiTags('submissions')
 @ApiBearerAuth()
@@ -153,8 +154,9 @@ export class SubmissionsController {
   @Roles('INSTRUCTOR')
   @Get('/classes/:classId/history')
   @ApiOperation({
-    summary: 'Get class submission history',
-    description: 'Returns all submissions for a class (instructor only).',
+    summary: 'Get class submission history with pagination and filters',
+    description:
+      'Returns a paginated, filterable, and sortable list of all submissions for a class (instructor only).',
   })
   @ApiParam({
     name: 'classId',
@@ -162,19 +164,48 @@ export class SubmissionsController {
     description: 'Class ID',
     example: 'class-1',
   })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['DRAFT', 'SUBMITTED', 'GRADED'],
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['updatedAt', 'studentName', 'assignmentTitle'],
+  })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
   @ApiResponse({
     status: 200,
-    description: 'List of submissions for class',
+    description: 'Paginated list of submissions for the class',
     schema: {
-      example: [
-        {
-          id: 'submission-1',
-          student: { id: 'student-1', fullName: 'Nama Siswa' },
-          assignment: { id: 'assignment-1', title: 'Tugas 1' },
-          status: 'SUBMITTED',
-          createdAt: '2025-06-01T12:00:00.000Z',
-        },
-      ],
+      example: {
+        data: [
+          {
+            id: 'submission-1',
+            student: { id: 'student-1', fullName: 'Nama Siswa' },
+            assignment: { id: 'assignment-1', title: 'Tugas 1' },
+            status: 'SUBMITTED',
+            createdAt: '2025-06-01T12:00:00.000Z',
+            plagiarismChecks: { score: 15.5, status: 'completed' },
+          },
+          {
+            id: 'submission-2',
+            student: { id: 'student-2', fullName: 'Budi Doremi' },
+            assignment: { id: 'assignment-1', title: 'Tugas 1' },
+            status: 'GRADED',
+            createdAt: '2025-06-02T10:00:00.000Z',
+            plagiarismChecks: null,
+          },
+        ],
+        page: 1,
+        limit: 15,
+        total: 150,
+        totalPages: 10,
+      },
     },
   })
   @ApiResponse({
@@ -182,8 +213,16 @@ export class SubmissionsController {
     description: 'Not your class',
     schema: { example: { statusCode: 403, message: 'Not your class' } },
   })
-  async getClassHistory(@Param('classId') classId: string, @Req() req) {
-    return this.submissionsService.getClassHistory(classId, req.user.userId);
+  async getClassHistory(
+    @Param('classId') classId: string,
+    @Req() req,
+    @Query() query: GetClassHistoryDto,
+  ) {
+    return this.submissionsService.getClassHistory(
+      classId,
+      req.user.userId,
+      query,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
