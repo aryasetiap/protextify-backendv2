@@ -135,6 +135,8 @@ export class PlagiarismService {
       content: submission.content,
       instructorId,
       studentId: submission.studentId,
+      // Teruskan data dari DTO ke job
+      ...dto,
     };
 
     // Add job to queue

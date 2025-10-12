@@ -65,6 +65,9 @@ export interface PlagiarismJobData {
   content: string;
   instructorId: string;
   studentId: string;
+  excluded_sources?: string[];
+  language?: string;
+  country?: string;
 }
 
 export interface PlagiarismJobResult {

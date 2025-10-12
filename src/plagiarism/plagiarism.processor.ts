@@ -10,7 +10,8 @@ import {
   WinstonAIRequest,
   WinstonAIResponse,
 } from './interfaces/winston-ai.interface';
-import axios from 'axios';
+import axios from 'axios'; // 🔧 Hapus impor { AxiosRequestConfig, AxiosError }
+import * as https from 'https'; // 🔧 Import modul https
 
 @Processor('plagiarism')
 export class PlagiarismProcessor {
@@ -26,7 +27,15 @@ export class PlagiarismProcessor {
   async handlePlagiarismCheck(
     job: Job<PlagiarismJobData>,
   ): Promise<PlagiarismJobResult> {
-    const { submissionId, content, instructorId, studentId } = job.data;
+    const {
+      submissionId,
+      content,
+      instructorId,
+      studentId,
+      excluded_sources,
+      language,
+      country,
+    } = job.data;
 
     this.logger.log(
       `[PLAGIARISM JOB] Starting plagiarism check for submission: ${submissionId}`,
@@ -55,8 +64,9 @@ export class PlagiarismProcessor {
       // Prepare Winston AI request
       const winstonAIRequest: WinstonAIRequest = {
         text: content,
-        language: 'en',
-        country: 'us',
+        language: language || 'id', // Gunakan language dari job, atau default 'id'
+        country: country || 'id', // Gunakan country dari job, atau default 'id'
+        ...(excluded_sources && { excluded_sources }), // Tambahkan jika ada
       };
 
       // Call Winston AI API
@@ -73,16 +83,23 @@ export class PlagiarismProcessor {
 
       await job.progress(30);
 
+      // 🔧 Tambahkan httpsAgent untuk mengatasi masalah koneksi dan tingkatkan timeout
+      const httpsAgent = new https.Agent({ keepAlive: false });
+
+      // 🔧 Hapus type annotation, biarkan TypeScript yang menyimpulkan tipenya
+      const axiosConfig = {
+        headers: {
+          Authorization: `Bearer ${winstonAIToken}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 120000, // 🔧 Tingkatkan timeout menjadi 120 detik
+        httpsAgent, // 🔧 Gunakan httpsAgent
+      };
+
       const response = await axios.post<WinstonAIResponse>(
         winstonAIUrl,
         winstonAIRequest,
-        {
-          headers: {
-            Authorization: `Bearer ${winstonAIToken}`,
-            'Content-Type': 'application/json',
-          },
-          timeout: 60000, // 60 seconds timeout
-        },
+        axiosConfig, // 🔧 Gunakan config yang sudah didefinisikan
       );
 
       await job.progress(60);
@@ -158,10 +175,24 @@ export class PlagiarismProcessor {
         status: 'completed',
       };
     } catch (error) {
-      this.logger.error(
-        `[PLAGIARISM JOB] Failed to check plagiarism for submission: ${submissionId}`,
-        error,
-      );
+      // 🔧 Gunakan "duck typing" untuk memeriksa apakah ini error dari Axios
+      if (error && error.isAxiosError) {
+        if (error.response) {
+          this.logger.error(
+            `[PLAGIARISM JOB] Winston AI Response Error: Status ${error.response.status}, Data: ${JSON.stringify(
+              error.response.data,
+            )}`,
+          );
+        } else if (error.request) {
+          this.logger.error(
+            '[PLAGIARISM JOB] Winston AI request was made but no response was received.',
+          );
+        } else {
+          this.logger.error(
+            `[PLAGIARISM JOB] Axios error during setup: ${error.message}`,
+          );
+        }
+      }
 
       // Save error to database
       await this.prismaService.plagiarismCheck.upsert({
@@ -202,7 +233,7 @@ export class PlagiarismProcessor {
         score: 0,
         wordCount: 0,
         creditsUsed: 0,
-        rawResponse: undefined as any, // 🔧 Type assertion untuk error case
+        rawResponse: undefined,
         status: 'failed',
         error: error.message,
       };
