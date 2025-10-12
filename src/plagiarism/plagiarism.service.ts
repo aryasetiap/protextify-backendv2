@@ -10,6 +10,8 @@ import type { Queue, Job } from 'bull';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckPlagiarismDto, PlagiarismResultDto } from './dto';
 import { PlagiarismJobData } from './interfaces/winston-ai.interface';
+import { PDFReportService } from './services/pdf-report.service'; // 🔧 Import PDFReportService
+import { StorageService } from '../storage/storage.service'; // 🔧 Import StorageService
 
 @Injectable()
 export class PlagiarismService {
@@ -18,6 +20,8 @@ export class PlagiarismService {
   constructor(
     private readonly prismaService: PrismaService,
     @InjectQueue('plagiarism') private readonly plagiarismQueue: Queue,
+    private readonly pdfReportService: PDFReportService, // 🔧 Inject PDFReportService
+    private readonly storageService: StorageService, // 🔧 Inject StorageService
   ) {}
 
   async checkPlagiarism(
@@ -239,41 +243,54 @@ export class PlagiarismService {
     return result;
   }
 
-  // 🔧 New method to generate PDF report URL
+  // 🔧 Ganti implementasi mock dengan logika sebenarnya
   private async generatePDFReportUrl(
     submission: any,
     plagiarismCheck: any,
     role: string,
-  ): Promise<string> {
-    // This is a placeholder implementation
-    // In production, you would:
-    // 1. Generate PDF using libraries like puppeteer, jsPDF, or PDFKit
-    // 2. Store PDF in cloud storage (AWS S3, GCS, etc.)
-    // 3. Return pre-signed URL
+  ): Promise<string | null> {
+    try {
+      this.logger.log(
+        `[PLAGIARISM SERVICE] Generating PDF report for submission: ${submission.id}`,
+      );
 
-    const reportData = {
-      submissionId: submission.id,
-      studentName: submission.student.fullName,
-      assignmentTitle: submission.assignment.title,
-      className: submission.assignment.class.name,
-      plagiarismScore: plagiarismCheck.score,
-      wordCount: plagiarismCheck.wordCount,
-      creditsUsed: plagiarismCheck.creditsUsed,
-      checkedAt: plagiarismCheck.checkedAt,
-      ...(role === 'INSTRUCTOR' && {
-        detailedResults: plagiarismCheck.rawResponse,
-      }),
-    };
+      // 1. Generate PDF content as a Buffer
+      const includeDetailedResults = role === 'INSTRUCTOR';
+      const pdfBuffer = await this.pdfReportService.generatePlagiarismReport(
+        submission.id,
+        includeDetailedResults,
+      );
 
-    // For now, return a mock URL
-    // TODO: Implement actual PDF generation
-    const mockPDFUrl = `https://storage.protextify.com/reports/plagiarism/${submission.id}-${Date.now()}.pdf`;
+      // 2. Define file key for Cloudflare R2
+      const fileName = `plagiarism-report-${submission.id}.pdf`;
+      const fileKey = `reports/plagiarism/${fileName}`;
 
-    this.logger.log(
-      `[PLAGIARISM SERVICE] Generated PDF report URL for submission: ${submission.id}`,
-    );
+      // 3. Upload the PDF buffer to Cloudflare R2
+      await this.storageService.uploadRawBuffer(
+        pdfBuffer,
+        fileKey,
+        'application/pdf',
+      );
 
-    return mockPDFUrl;
+      // 4. Generate a pre-signed URL for secure download
+      const presignedUrl = await this.storageService.refreshDownloadUrl(
+        fileKey,
+        fileName, // This sets the filename on download
+      );
+
+      this.logger.log(
+        `[PLAGIARISM SERVICE] Generated pre-signed URL for submission: ${submission.id}`,
+      );
+
+      return presignedUrl;
+    } catch (error) {
+      this.logger.error(
+        `[PLAGIARISM SERVICE] Failed to generate PDF report for submission ${submission.id}`,
+        error.stack,
+      );
+      // Return null agar respons utama tidak gagal jika pembuatan PDF error
+      return null;
+    }
   }
 
   async getJobStatus(
