@@ -1,0 +1,470 @@
+{
+    "status": 200,
+    "scanInformation": {
+        "service": "plagiarism",
+        "scanTime": "2025-10-12T06:20:37.801Z",
+        "inputType": "text"
+    },
+    "result": {
+        "score": 100,
+        "sourceCounts": 17,
+        "textWordCounts": 152,
+        "totalPlagiarismWords": 152,
+        "identicalWordCounts": 150,
+        "similarWordCounts": 2
+    },
+    "sources": [
+        {
+            "score": 100,
+            "canAccess": true,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 152,
+            "identicalWordCounts": 152,
+            "similarWordCounts": 0,
+            "url": "https://blog.muhan.li/article/6535fafb63d1/",
+            "author": "Muhan Li",
+            "description": "Attention is All You NeedAbstract: The dominant sequence transduction models are based on complex re ...",
+            "title": "Paper Notes (1) · Attention Is All You Need",
+            "publishedDate": 1680998400000,
+            "source": "blog.muhan.li",
+            "citation": false,
+            "plagiarismFound": [
+                {
+                    "startIndex": 0,
+                    "endIndex": 975,
+                    "sequence": "the dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. the best performing models also connect the encoder and decoder through an attention mechanism. we propose a new simple network architecture, the transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. our model achieves 28.4 bleu on the wmt 2014 english-to-german translation task, improving over the existing best results, including ensembles, by over 2 bleu. on the wmt 2014 english-to-french translation task, our model establishes a new single-model state-of-the-art bleu score of 41.8 after training for 3.5 days on eight gpus, a small fraction of the training costs of the best models from the literature."
+                }
+            ],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 100,
+            "canAccess": true,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 152,
+            "identicalWordCounts": 152,
+            "similarWordCounts": 0,
+            "url": "https://arxiv.org/html/1706.03762v7",
+            "author": "unknown",
+            "description": "Provided proper attribution is provided, Google hereby grants permission to reproduce the tables and ...",
+            "title": "Attention Is All You Need",
+            "publishedDate": "unknown",
+            "source": "arxiv.org",
+            "citation": false,
+            "plagiarismFound": [
+                {
+                    "startIndex": 0,
+                    "endIndex": 975,
+                    "sequence": "the dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. the best performing models also connect the encoder and decoder through an attention mechanism. we propose a new simple network architecture, the transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. our model achieves 28.4 bleu on the wmt 2014 english-to-german translation task, improving over the existing best results, including ensembles, by over 2 bleu. on the wmt 2014 english-to-french translation task, our model establishes a new single-model state-of-the-art bleu score of 41.8 after training for 3.5 days on eight gpus, a small fraction of the training costs of the best models from the literature."
+                }
+            ],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 100,
+            "canAccess": true,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 152,
+            "identicalWordCounts": 152,
+            "similarWordCounts": 0,
+            "url": "https://windmissing.github.io/NLP-important-papers/AIAYN/Abstract.html",
+            "author": "windmissing",
+            "description": "The dominant sequence transduction models are based on complex recurrent or convolutional neural net ...",
+            "title": "Abstract · GitBook",
+            "publishedDate": "unknown",
+            "source": "windmissing.github.io",
+            "citation": false,
+            "plagiarismFound": [
+                {
+                    "startIndex": 0,
+                    "endIndex": 975,
+                    "sequence": "the dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. the best performing models also connect the encoder and decoder through an attention mechanism. we propose a new simple network architecture, the transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. our model achieves 28.4 bleu on the wmt 2014 english-to-german translation task, improving over the existing best results, including ensembles, by over 2 bleu. on the wmt 2014 english-to-french translation task, our model establishes a new single-model state-of-the-art bleu score of 41.8 after training for 3.5 days on eight gpus, a small fraction of the training costs of the best models from the literature."
+                }
+            ],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 99,
+            "canAccess": true,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 151,
+            "identicalWordCounts": 151,
+            "similarWordCounts": 0,
+            "url": "https://www.fakhruddinsaupe.com/blog/attention-is-all-you-need",
+            "author": "unknown",
+            "description": "Transformer, the first sequence transduction model based entirely on attention, replacing the recurr ...",
+            "title": "Attention Is All You Need",
+            "publishedDate": 1694908800000,
+            "source": "fakhruddinsaupe.com",
+            "citation": false,
+            "plagiarismFound": [
+                {
+                    "startIndex": 4,
+                    "endIndex": 975,
+                    "sequence": "dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. the best performing models also connect the encoder and decoder through an attention mechanism. we propose a new simple network architecture, the transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. our model achieves 28.4 bleu on the wmt 2014 english-to-german translation task, improving over the existing best results, including ensembles, by over 2 bleu. on the wmt 2014 english-to-french translation task, our model establishes a new single-model state-of-the-art bleu score of 41.8 after training for 3.5 days on eight gpus, a small fraction of the training costs of the best models from the literature."
+                }
+            ],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 95,
+            "canAccess": true,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 144,
+            "identicalWordCounts": 144,
+            "similarWordCounts": 0,
+            "url": "https://arxiv.org/abs/1706.03762",
+            "author": "unknown",
+            "description": "The dominant sequence transduction models are based on complex recurrent or convolutional neural net ...",
+            "title": "Attention Is All You Need",
+            "publishedDate": 1497225600000,
+            "source": "arxiv.org",
+            "citation": false,
+            "plagiarismFound": [
+                {
+                    "startIndex": 4,
+                    "endIndex": 105,
+                    "sequence": "dominant sequence transduction models are based on complex recurrent or convolutional neural networks"
+                },
+                {
+                    "startIndex": 145,
+                    "endIndex": 975,
+                    "sequence": "the best performing models also connect the encoder and decoder through an attention mechanism. we propose a new simple network architecture, the transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. our model achieves 28.4 bleu on the wmt 2014 english-to-german translation task, improving over the existing best results, including ensembles, by over 2 bleu. on the wmt 2014 english-to-french translation task, our model establishes a new single-model state-of-the-art bleu score of 41.8 after training for 3.5 days on eight gpus, a small fraction of the training costs of the best models from the literature."
+                }
+            ],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 95,
+            "canAccess": true,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 144,
+            "identicalWordCounts": 144,
+            "similarWordCounts": 0,
+            "url": "https://www.auroria.io/the-transformer-architecture/",
+            "author": "unknown",
+            "description": "Explore the Transformer architecture covering scaled dot-product attention, multi-head attention, an ...",
+            "title": "The Transformer Architecture",
+            "publishedDate": 1690156800000,
+            "source": "auroria.io",
+            "citation": false,
+            "plagiarismFound": [
+                {
+                    "startIndex": 4,
+                    "endIndex": 105,
+                    "sequence": "dominant sequence transduction models are based on complex recurrent or convolutional neural networks"
+                },
+                {
+                    "startIndex": 145,
+                    "endIndex": 975,
+                    "sequence": "the best performing models also connect the encoder and decoder through an attention mechanism. we propose a new simple network architecture, the transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. our model achieves 28.4 bleu on the wmt 2014 english-to-german translation task, improving over the existing best results, including ensembles, by over 2 bleu. on the wmt 2014 english-to-french translation task, our model establishes a new single-model state-of-the-art bleu score of 41.8 after training for 3.5 days on eight gpus, a small fraction of the training costs of the best models from the literature."
+                }
+            ],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 91,
+            "canAccess": true,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 138,
+            "identicalWordCounts": 137,
+            "similarWordCounts": 1,
+            "url": "https://medium.com/@sharaf/a-paper-a-day-24-attention-is-all-you-need-26eb2da90a91",
+            "author": "@amr_n_sharaf",
+            "description": "Today we discuss Google brains paper by Ashish Vaswani, Noam Shazeer, Llion Jones, Niki Parmar, Jak ...",
+            "title": "A Paper A Day: #24 Attention Is All You Need",
+            "publishedDate": "unknown",
+            "source": "medium.com",
+            "citation": false,
+            "plagiarismFound": [
+                {
+                    "startIndex": 35,
+                    "endIndex": 105,
+                    "sequence": "models are based on complex recurrent or convolutional neural networks"
+                },
+                {
+                    "startIndex": 145,
+                    "endIndex": 240,
+                    "sequence": "the best performing models also connect the encoder and decoder through an attention mechanism."
+                },
+                {
+                    "startIndex": 244,
+                    "endIndex": 564,
+                    "sequence": "propose a new simple network architecture, the transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train."
+                },
+                {
+                    "startIndex": 569,
+                    "endIndex": 776,
+                    "sequence": "model achieves 28.4 bleu on the wmt 2014 english-to-german translation task, improving over the existing best results, including ensembles, by over 2 bleu. on the wmt 2014 english-to-french translation task,"
+                },
+                {
+                    "startIndex": 781,
+                    "endIndex": 975,
+                    "sequence": "model establishes a new single-model state-of-the-art bleu score of 41.8 after training for 3.5 days on eight gpus, a small fraction of the training costs of the best models from the literature."
+                }
+            ],
+            "is_excluded": false,
+            "similarWords": [
+                {
+                    "word": "propose",
+                    "index": 244
+                }
+            ]
+        },
+        {
+            "score": 52,
+            "canAccess": true,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 79,
+            "identicalWordCounts": 78,
+            "similarWordCounts": 1,
+            "url": "https://andrewclark.co.uk/all-media/attention-is-all-you-need",
+            "author": "unknown",
+            "description": "Attention Is All You NeedAshish Vaswani, Llion Jones, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Ai ...",
+            "title": "Attention Is All You Need",
+            "publishedDate": "unknown",
+            "source": "andrewclark.co.uk",
+            "citation": false,
+            "plagiarismFound": [
+                {
+                    "startIndex": 0,
+                    "endIndex": 557,
+                    "sequence": "the dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. the best performing models also connect the encoder and decoder through an attention mechanism. we propose a new simple network architecture, the transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to"
+                }
+            ],
+            "is_excluded": false,
+            "similarWords": [
+                {
+                    "word": "parallelizable",
+                    "index": 502
+                }
+            ]
+        },
+        {
+            "score": 36,
+            "canAccess": true,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 54,
+            "identicalWordCounts": 54,
+            "similarWordCounts": 0,
+            "url": "https://dsmilab.github.io/dsmi-lab-website/2021/01/25/Attention%20Is%20All%20You%20Need/",
+            "author": "DSMI members",
+            "description": "paper : Attention Is All You Need AbstractThe dominant sequence transduction models are based on com ...",
+            "title": "Attention Is All You Need?",
+            "publishedDate": 1611532800000,
+            "source": "dsmilab.github.io",
+            "citation": false,
+            "plagiarismFound": [
+                {
+                    "startIndex": 4,
+                    "endIndex": 395,
+                    "sequence": "dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. the best performing models also connect the encoder and decoder through an attention mechanism. we propose a new simple network architecture, the transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely."
+                }
+            ],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 35,
+            "canAccess": true,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 53,
+            "identicalWordCounts": 53,
+            "similarWordCounts": 0,
+            "url": "https://medium.com/@pragyansubedi/transformer-models-by-google-brain-explained-with-pytorch-implementation-7eeb62cceeaa",
+            "author": "Pragyan Subedi",
+            "description": "This article is a concise explanation of the Transformer model by Google Brain with a side-by-side i ...",
+            "title": "Transformer Models by Google Brain Explained With PyTorch Implementation",
+            "publishedDate": "unknown",
+            "source": "medium.com",
+            "citation": false,
+            "plagiarismFound": [
+                {
+                    "startIndex": 4,
+                    "endIndex": 229,
+                    "sequence": "dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. the best performing models also connect the encoder and decoder through an attention"
+                },
+                {
+                    "startIndex": 241,
+                    "endIndex": 395,
+                    "sequence": "we propose a new simple network architecture, the transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely."
+                }
+            ],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 26,
+            "canAccess": true,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 39,
+            "identicalWordCounts": 39,
+            "similarWordCounts": 0,
+            "url": "https://medium.com/thedeephub/what-is-the-revolutional-ai-model-transformer-bc899a56afb6",
+            "author": "Yuma Ueno",
+            "description": "Hello! Im Yuma Ueno(https://twitter.com/stat_biz), from Japan. Im into AI Industry, and runnning m ...",
+            "title": "What is the revolutional AI model Transformer",
+            "publishedDate": "unknown",
+            "source": "medium.com",
+            "citation": false,
+            "plagiarismFound": [
+                {
+                    "startIndex": 4,
+                    "endIndex": 144,
+                    "sequence": "dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder."
+                },
+                {
+                    "startIndex": 241,
+                    "endIndex": 385,
+                    "sequence": "we propose a new simple network architecture, the transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions"
+                }
+            ],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 14,
+            "canAccess": true,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 21,
+            "identicalWordCounts": 21,
+            "similarWordCounts": 0,
+            "url": "https://ai.plainenglish.io/brief-summary-attention-is-all-you-need-2fa08536fd45",
+            "author": "Ganesh Bajaj",
+            "description": "The dominant sequence transduction models are based on complex recurrent or convolutional neural net ...",
+            "title": "Brief Summary: Attention Is All You Need",
+            "publishedDate": 1727136000000,
+            "source": "ai.plainenglish.io",
+            "citation": false,
+            "plagiarismFound": [
+                {
+                    "startIndex": 0,
+                    "endIndex": 144,
+                    "sequence": "the dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder."
+                }
+            ],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 0,
+            "canAccess": false,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 0,
+            "identicalWordCounts": 0,
+            "similarWordCounts": 0,
+            "url": "https://dl.acm.org/doi/10.5555/3295222.3295349",
+            "author": "unknown",
+            "description": "unknown",
+            "title": "Attention is all you need | Proceedings of the 31st ...",
+            "publishedDate": "unknown",
+            "source": "unknown",
+            "citation": false,
+            "plagiarismFound": [],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 0,
+            "canAccess": false,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 0,
+            "identicalWordCounts": 0,
+            "similarWordCounts": 0,
+            "url": "https://www.paper2audio.com/paper/Attention-Is-All-You-Need-Full-text-06638581-c667-4a09-a15e-905f4927ce2a",
+            "author": "unknown",
+            "description": "unknown",
+            "title": "Attention Is All You Need",
+            "publishedDate": "unknown",
+            "source": "unknown",
+            "citation": false,
+            "plagiarismFound": [],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 0,
+            "canAccess": false,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 0,
+            "identicalWordCounts": 0,
+            "similarWordCounts": 0,
+            "url": "https://benchmarks.ai/wmt-en-fr",
+            "author": "unknown",
+            "description": "unknown",
+            "title": "WMT English-French on Benchmarks.AI",
+            "publishedDate": "unknown",
+            "source": "unknown",
+            "citation": false,
+            "plagiarismFound": [],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 0,
+            "canAccess": false,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 0,
+            "identicalWordCounts": 0,
+            "similarWordCounts": 0,
+            "url": "https://huggingface.co/RJuro/SciNERTopic/resolve/977c7e668ee78cdd5964bf9a2b4f29842f6a4f4e/README.md?download=true",
+            "author": "unknown",
+            "description": "unknown",
+            "title": "https://huggingface.co/RJuro/SciNERTopic/resolve/9...",
+            "publishedDate": "unknown",
+            "source": "unknown",
+            "citation": false,
+            "plagiarismFound": [],
+            "is_excluded": false,
+            "similarWords": []
+        },
+        {
+            "score": 0,
+            "canAccess": false,
+            "totalNumberOfWords": 152,
+            "plagiarismWords": 0,
+            "identicalWordCounts": 0,
+            "similarWordCounts": 0,
+            "url": "https://inspirehep.net/literature/2702854",
+            "author": "unknown",
+            "description": "unknown",
+            "title": "Attention Is All You Need",
+            "publishedDate": "unknown",
+            "source": "unknown",
+            "citation": false,
+            "plagiarismFound": [],
+            "is_excluded": false,
+            "similarWords": []
+        }
+    ],
+    "similarWords": [
+        {
+            "word": "propose",
+            "index": 244
+        },
+        {
+            "word": "parallelizable",
+            "index": 502
+        }
+    ],
+    "indexes": [
+        {
+            "startIndex": 0,
+            "endIndex": 975
+        }
+    ],
+    "citations": [],
+    "attackDetected": {
+        "zero_width_space": false,
+        "homoglyph_attack": false
+    },
+    "text": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task, improving over the existing best results, including ensembles, by over 2 BLEU. On the WMT 2014 English-to-French translation task, our model establishes a new single-model state-of-the-art BLEU score of 41.8 after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature.",
+    "credits_used": 288,
+    "credits_remaining": 1102
+}
