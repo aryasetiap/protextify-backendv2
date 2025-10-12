@@ -16,6 +16,8 @@ import { StorageService } from '../storage/storage.service';
 import { EmailService } from '../email/email.service';
 import PDFDocument from 'pdfkit';
 import { ExportTransactionsDto } from './dto/export-transactions.dto';
+import * as path from 'path';
+import * as fs from 'fs';
 
 // 🔧 Interface untuk response Midtrans
 interface MidtransSnapResponse {
@@ -447,55 +449,173 @@ export class PaymentsService {
     }
 
     const buffer = await new Promise<Buffer>((resolve) => {
-      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const doc = new PDFDocument({ size: 'A4', margin: 40 });
       const chunks: Buffer[] = [];
       doc.on('data', (chunk) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
 
-      doc.fontSize(20).text('INVOICE', { align: 'center' });
-      doc.moveDown();
-      doc.fontSize(12).text(`Order ID: ${transaction.midtransTransactionId}`);
-      doc.text(`Date: ${transaction.createdAt.toLocaleDateString('id-ID')}`);
-      doc.moveDown();
-      doc.text('Billed To:');
-      doc.text(transaction.user.fullName);
-      doc.text(transaction.user.email);
-      doc.moveDown(2);
-      doc.font('Helvetica-Bold').text('Description', 50, doc.y);
-      doc.text('Amount', 450, doc.y, { width: 100, align: 'right' });
-      doc.font('Helvetica');
-      doc.y += 20;
-      doc.lineCap('butt').moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-      doc.y += 10;
+      // Header dengan background color dan logo area
+      const headerHeight = 80;
+      doc.rect(0, 0, 595, headerHeight) // 595 adalah lebar A4
+         .fill('#2563eb'); // Blue background
+      
+      // Logo area - try multiple paths
+      const possiblePaths = [
+        path.join(process.cwd(), 'src/assets/logo-protextify-putih.png'),
+        path.join(__dirname, '../assets/logo-protextify-putih.png'),
+        path.join(__dirname, '../../assets/logo-protextify-putih.png'),
+        path.join(process.cwd(), 'dist/src/assets/logo-protextify-putih.png'),
+        path.join(process.cwd(), 'assets/logo-protextify-putih.png')
+      ];
+      
+      let logoFound = false;
+      for (const logoPath of possiblePaths) {
+        if (fs.existsSync(logoPath)) {
+          try {
+            doc.image(logoPath, 40, 20, { width: 70 });
+            console.log('Logo loaded successfully from:', logoPath);
+            logoFound = true;
+            break;
+          } catch (error) {
+            console.log('Error loading logo from', logoPath, ':', error.message);
+          }
+        }
+      }
+      
+      if (!logoFound) {
+        console.log('Logo not found in any of the expected paths');
+      }
+      
+      // Logo/Title area
+      doc.fillColor('#ffffff')
+         .fontSize(28)
+         .font('Helvetica-Bold')
+         .text('PROTEXTIFY', 120, 25, { align: 'left' });
+      
+      doc.fontSize(12)
+         .text('Plagiarism Detection Platform', 120, 50, { align: 'left' });
+      
+      // Invoice title
+      doc.fontSize(24)
+         .font('Helvetica-Bold')
+         .text('INVOICE', 400, 30, { align: 'right' });
+      
+      doc.fontSize(10)
+         .font('Helvetica')
+         .text('Payment Receipt', 400, 55, { align: 'right' });
+
+      // Reset color
+      doc.fillColor('#000000');
+
+      // Invoice details section
+      const startY = headerHeight + 30;
+      doc.fontSize(14)
+         .font('Helvetica-Bold')
+         .text('Invoice Details', 40, startY);
+      
+      doc.fontSize(10)
+         .font('Helvetica')
+         .text(`Invoice #: ${transaction.midtransTransactionId}`, 40, startY + 25)
+         .text(`Date: ${transaction.createdAt.toLocaleDateString('id-ID', {
+           year: 'numeric',
+           month: 'long',
+           day: 'numeric'
+         })}`, 40, startY + 40)
+         .text(`Time: ${transaction.createdAt.toLocaleTimeString('id-ID', {
+           hour: '2-digit',
+           minute: '2-digit'
+         })}`, 40, startY + 55);
+
+      // Billed to section
+      const billedToY = startY + 90;
+      doc.fontSize(14)
+         .font('Helvetica-Bold')
+         .text('Billed To', 40, billedToY);
+      
+      doc.fontSize(11)
+         .font('Helvetica')
+         .text(transaction.user.fullName, 40, billedToY + 20)
+         .text(transaction.user.email, 40, billedToY + 35);
+
+      // Service details section
+      const serviceY = billedToY + 70;
+      doc.fontSize(14)
+         .font('Helvetica-Bold')
+         .text('Service Details', 40, serviceY);
+
+      // Table header
+      const tableY = serviceY + 25;
+      doc.rect(40, tableY, 515, 25)
+         .fill('#f8fafc'); // Light gray background
+      
+      doc.fillColor('#374151')
+         .fontSize(11)
+         .font('Helvetica-Bold')
+         .text('Description', 50, tableY + 8)
+         .text('Amount', 450, tableY + 8, { align: 'right' });
+
+      // Table content
+      const contentY = tableY + 25;
+      doc.fillColor('#000000')
+         .font('Helvetica')
+         .fontSize(10);
+      
       const desc = transaction.assignment
         ? `Payment for Assignment: "${transaction.assignment.title}"`
         : 'Credit Top-up';
-      doc.text(desc, 50, doc.y, { width: 400 });
-      doc.text(
-        new Intl.NumberFormat('id-ID', {
-          style: 'currency',
-          currency: 'IDR',
-        }).format(transaction.amount),
-        450,
-        doc.y,
-        { width: 100, align: 'right' },
-      );
-      doc.y += 20;
-      doc.lineCap('butt').moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-      doc.y += 10;
-      doc.font('Helvetica-Bold').text('Total', 50, doc.y);
-      doc.text(
-        new Intl.NumberFormat('id-ID', {
-          style: 'currency',
-          currency: 'IDR',
-        }).format(transaction.amount),
-        450,
-        doc.y,
-        { width: 100, align: 'right' },
-      );
-      doc.font('Helvetica');
-      doc.moveDown(2);
-      doc.text(`Status: ${transaction.status}`, { align: 'right' });
+      
+      // Wrap long descriptions
+      const wrappedDesc = doc.text(desc, 50, contentY + 8, {
+        width: 380,
+        height: 30,
+        ellipsis: true
+      });
+      
+      const amount = new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+      }).format(transaction.amount);
+      
+      doc.text(amount, 450, contentY + 8, { align: 'right' });
+
+      // Total section
+      const totalY = contentY + 50;
+      doc.rect(40, totalY, 515, 30)
+         .fill('#1f2937'); // Dark background
+      
+      doc.fillColor('#ffffff')
+         .fontSize(12)
+         .font('Helvetica-Bold')
+         .text('TOTAL', 50, totalY + 10)
+         .text(amount, 450, totalY + 10, { align: 'right' });
+
+      // Status section
+      const statusY = totalY + 50;
+      doc.fillColor('#000000')
+         .fontSize(11)
+         .font('Helvetica-Bold');
+      
+      const statusColor = transaction.status === 'SUCCESS' ? '#10b981' : 
+                         transaction.status === 'PENDING' ? '#f59e0b' : '#ef4444';
+      
+      doc.fillColor(statusColor)
+         .text(`Status: ${transaction.status}`, 40, statusY, { align: 'right' });
+
+      // Footer
+      const footerY = 750;
+      doc.fillColor('#6b7280')
+         .fontSize(8)
+         .font('Helvetica')
+         .text('Thank you for using Protextify!', 40, footerY, { align: 'center' })
+         .text('This is an automated invoice generated by our system.', 40, footerY + 15, { align: 'center' })
+         .text('For support, contact us at support@protextify.com', 40, footerY + 30, { align: 'center' });
+
+      // Add decorative border
+      doc.strokeColor('#e5e7eb')
+         .lineWidth(1)
+         .rect(20, 20, 555, 755)
+         .stroke();
+
       doc.end();
     });
 
