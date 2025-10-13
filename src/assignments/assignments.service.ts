@@ -159,7 +159,7 @@ export class AssignmentsService {
         submissions: {
           include: {
             student: {
-              select: { fullName: true },
+              select: { id: true, fullName: true },
             },
             plagiarismChecks: {
               select: { score: true },
@@ -218,12 +218,12 @@ export class AssignmentsService {
     // Format submissions
     const formattedSubmissions = submissions.map((s) => ({
       id: s.id,
-      student: { fullName: s.student.fullName },
+      student: { id: s.student.id, fullName: s.student.fullName },
       status: s.status,
       grade: s.grade,
-      plagiarismChecks: s.plagiarismChecks
-        ? { score: s.plagiarismChecks.score }
-        : null,
+      plagiarismChecks: {
+        score: s.plagiarismChecks?.score ?? null,
+      },
       updatedAt: s.updatedAt.toISOString(),
     }));
 
@@ -311,7 +311,7 @@ export class AssignmentsService {
         };
       } else {
         return {
-          id: null,
+          id: `pending-${student.id}`,
           student: {
             id: student.id,
             fullName: student.fullName,

@@ -281,10 +281,7 @@ export class AnalyticsService {
       pendingGrading,
       activeClasses,
       trend: {
-        completionRate: {
-          change: Math.abs(rateChange),
-          isPositive: rateChange >= 0,
-        },
+        completionRate: `${rateChange >= 0 ? '+' : ''}${rateChange.toFixed(1)}`,
       },
     };
   }
@@ -355,14 +352,14 @@ export class AnalyticsService {
   }
 
   private getPlagiarismDistribution(submissions: any[]) {
-    const dist = { '0-10%': 0, '10-20%': 0, '20-40%': 0, '>40%': 0 };
+    const dist = { '0-10%': 0, '11-30%': 0, '31-50%': 0, '>50%': 0 };
     submissions.forEach((s) => {
       const score = s.plagiarismChecks?.score;
       if (score != null) {
         if (score <= 10) dist['0-10%']++;
-        else if (score <= 20) dist['10-20%']++;
-        else if (score <= 40) dist['20-40%']++;
-        else dist['>40%']++;
+        else if (score <= 30) dist['11-30%']++;
+        else if (score <= 50) dist['31-50%']++;
+        else dist['>50%']++;
       }
     });
     return Object.entries(dist).map(([range, count]) => ({ range, count }));
@@ -377,7 +374,7 @@ export class AnalyticsService {
         gradedSubmissions: 0,
         pendingGrading: 0,
         activeClasses: 0,
-        trend: { completionRate: { change: 0, isPositive: true } },
+        trend: { completionRate: '+0.0' },
       },
       charts: {
         submissionTrends: [],
@@ -385,9 +382,9 @@ export class AnalyticsService {
         classActivity: [],
         plagiarismDistribution: [
           { range: '0-10%', count: 0 },
-          { range: '10-20%', count: 0 },
-          { range: '20-40%', count: 0 },
-          { range: '>40%', count: 0 },
+          { range: '11-30%', count: 0 },
+          { range: '31-50%', count: 0 },
+          { range: '>50%', count: 0 },
         ],
       },
     };
