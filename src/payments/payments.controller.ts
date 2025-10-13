@@ -49,7 +49,7 @@ export class PaymentsController {
       assignment: {
         summary: 'Assignment Payment',
         value: {
-          amount: 25000,
+          amount: 27000,
           assignmentId: 'assignment-xyz',
         },
       },
@@ -112,7 +112,7 @@ export class PaymentsController {
           transaction_status: 'settlement',
           signature_key: 'valid_signature',
           status_code: '200',
-          gross_amount: '25000.00',
+          gross_amount: '27000.00',
           fraud_status: 'accept',
         },
       },
@@ -123,7 +123,7 @@ export class PaymentsController {
           transaction_status: 'expire',
           signature_key: 'valid_signature',
           status_code: '407',
-          gross_amount: '25000.00',
+          gross_amount: '27000.00',
         },
       },
     },
@@ -336,7 +336,7 @@ export class PaymentsController {
           {
             id: 'transaction-id',
             orderId: 'PROTEXTIFY-xxx',
-            amount: 25000,
+            amount: 27000,
             status: 'SUCCESS',
             paymentMethod: 'bank_transfer',
             createdAt: '2025-01-XX',

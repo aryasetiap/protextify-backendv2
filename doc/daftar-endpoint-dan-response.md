@@ -376,7 +376,7 @@
                 },
                 "paymentRequired": true,
                 "totalPrice": "number",
-                "pricePerStudent": 2500,
+                "pricePerStudent": 2700,
                 "expectedStudentCount": "number",
                 "message": "Assignment created. Please complete payment to activate.",
                 "paymentData": {

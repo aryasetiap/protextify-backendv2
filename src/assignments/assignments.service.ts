@@ -27,7 +27,7 @@ export class AssignmentsService {
       throw new ForbiddenException('Not your class');
 
     // Harga assignment berdasarkan input instruktur
-    const pricePerStudent = 2500;
+    const pricePerStudent = 2700;
     const totalPrice = dto.expectedStudentCount * pricePerStudent;
 
     // Buat assignment (tidak aktif sampai pembayaran selesai)

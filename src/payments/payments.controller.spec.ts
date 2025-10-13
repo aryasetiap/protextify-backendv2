@@ -46,7 +46,7 @@ describe('PaymentsController', () => {
   describe('createTransaction', () => {
     it('should call service.createTransaction with correct parameters', async () => {
       // Arrange
-      const dto: CreateTransactionDto = { amount: 25000 };
+      const dto: CreateTransactionDto = { amount: 27000 };
       const req = { user: { userId: 'instructor-123' } };
       const mockResult = { snapToken: 'some-token' };
       service.createTransaction.mockResolvedValue(mockResult);

@@ -6,7 +6,7 @@ export class CreateTransactionDto {
     description: 'Amount to pay (in IDR)',
     minimum: 1000,
     maximum: 50000000, // 50 juta rupiah
-    example: 12500,
+    example: 12700,
   })
   @IsNumber()
   @Min(1000, { message: 'Minimum amount is Rp 1.000' })

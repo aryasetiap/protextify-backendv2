@@ -289,7 +289,7 @@ async function seedTransactions() {
     {
       id: 'transaction-1',
       userId: instructors[0].id,
-      amount: 25000,
+      amount: 27000,
       status: 'SUCCESS' as const,
       midtransTransactionId: `PROTEXTIFY-${Date.now()}-1`,
       assignmentId: assignments[0].id,
@@ -305,7 +305,7 @@ async function seedTransactions() {
     {
       id: 'transaction-3',
       userId: instructors[0].id,
-      amount: 12500,
+      amount: 12700,
       status: 'PENDING' as const,
       midtransTransactionId: `PROTEXTIFY-${Date.now()}-3`,
       assignmentId: assignments[4].id, // For the inactive assignment

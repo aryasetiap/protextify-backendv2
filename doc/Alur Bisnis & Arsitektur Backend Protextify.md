@@ -153,7 +153,7 @@ Dokumen ini merinci **alur bisnis**, **arsitektur**, dan **teknologi** yang dire
 - **Endpoint:** `POST /classes/:classId/assignments`
 - **Proses:**
   1. Instruktur mengisi jumlah siswa yang akan mengerjakan assignment (`expectedStudentCount`) saat membuat assignment.
-  2. Backend menghitung harga (`expectedStudentCount × 2500`).
+  2. Backend menghitung harga (`expectedStudentCount × 2700`).
   3. Request ke Midtrans API.
   4. Simpan transaksi (status: PENDING).
   5. Kirim `snapToken`/`paymentUrl` ke frontend.

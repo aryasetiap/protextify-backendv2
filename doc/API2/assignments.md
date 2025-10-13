@@ -46,12 +46,12 @@ Instructor membuat assignment baru di kelas. Assignment akan berstatus inaktif s
     "active": false
   },
   "paymentRequired": true,
-  "totalPrice": 25000,
-  "pricePerStudent": 2500,
+  "totalPrice": 27000,
+  "pricePerStudent": 2700,
   "expectedStudentCount": 10,
   "message": "Assignment created. Please complete payment to activate.",
   "paymentData": {
-    "amount": 25000,
+    "amount": 27000,
     "assignmentId": "assignment-xyz"
   }
 }

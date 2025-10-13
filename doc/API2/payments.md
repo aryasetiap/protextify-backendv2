@@ -26,7 +26,7 @@ Mengembalikan Snap token dan payment URL dari Midtrans.
 
 ```json
 {
-  "amount": 25000,
+  "amount": 27000,
   "assignmentId": "assignment-xyz"
 }
 ```
@@ -66,7 +66,7 @@ Validasi signature dan update status transaksi/assignment.
   "transaction_status": "settlement",
   "signature_key": "valid_signature",
   "status_code": "200",
-  "gross_amount": "25000.00",
+  "gross_amount": "27000.00",
   "fraud_status": "accept"
 }
 ```
@@ -106,7 +106,7 @@ Tidak ada.
     {
       "id": "transaction-id",
       "orderId": "PROTEXTIFY-xxx",
-      "amount": 25000,
+      "amount": 27000,
       "status": "SUCCESS",
       "paymentMethod": "bank_transfer",
       "createdAt": "2025-01-XX",

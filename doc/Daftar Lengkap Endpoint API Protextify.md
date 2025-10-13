@@ -523,12 +523,12 @@ Instructor membuat tugas baru di kelas.
     "active": false
   },
   "paymentRequired": true,
-  "totalPrice": 25000,
-  "pricePerStudent": 2500,
+  "totalPrice": 27000,
+  "pricePerStudent": 2700,
   "expectedStudentCount": 10,
   "message": "Assignment created. Please complete payment to activate.",
   "paymentData": {
-    "amount": 25000,
+    "amount": 27000,
     "assignmentId": "assignment-xyz"
   }
 }
@@ -902,7 +902,7 @@ Instructor membuat transaksi Midtrans.
 
 ```json
 {
-  "amount": 25000,
+  "amount": 27000,
   "assignmentId": "assignment-xyz"
 }
 ```
@@ -936,7 +936,7 @@ Menerima notifikasi status pembayaran dari Midtrans.
   "transaction_status": "settlement",
   "signature_key": "valid_signature",
   "status_code": "200",
-  "gross_amount": "25000.00",
+  "gross_amount": "27000.00",
   "fraud_status": "accept"
 }
 ```
@@ -972,7 +972,7 @@ Mendapat riwayat transaksi pembayaran instruktur (dengan pagination & filter).
     {
       "id": "transaction-id",
       "orderId": "PROTEXTIFY-xxx",
-      "amount": 25000,
+      "amount": 27000,
       "status": "SUCCESS",
       "paymentMethod": "bank_transfer",
       "createdAt": "2025-01-XX",

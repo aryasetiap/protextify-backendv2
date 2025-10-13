@@ -66,7 +66,7 @@ describe('AssignmentsService', () => {
       prisma.class.findUnique.mockResolvedValue(mockClass);
       prisma.assignment.create.mockResolvedValue(mockAssignment);
 
-      const pricePerStudent = 2500;
+      const pricePerStudent = 2700;
       const totalPrice = dto.expectedStudentCount * pricePerStudent;
 
       // Act: panggil method yang akan diuji
