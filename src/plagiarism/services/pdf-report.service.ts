@@ -3,10 +3,25 @@ import { ConfigService } from '@nestjs/config';
 import PDFDocument from 'pdfkit';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WinstonAIResponse } from '../interfaces/winston-ai.interface';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class PDFReportService {
   private readonly logger = new Logger(PDFReportService.name);
+
+  // Palet warna modern & pastel
+  private readonly COLORS = {
+    PRIMARY: '#4A90E2', // Biru lembut
+    TEXT: '#333333',
+    SUBTLE_TEXT: '#777777',
+    BACKGROUND: '#F7F9FC',
+    BORDER: '#E0E6ED',
+    HIGHLIGHT: '#E57373', // Merah pastel untuk teks plagiat
+    SCORE_GREEN: '#66BB6A',
+    SCORE_YELLOW: '#FFCA28',
+    SCORE_RED: '#EF5350',
+  };
 
   constructor(
     private readonly configService: ConfigService,
@@ -14,54 +29,80 @@ export class PDFReportService {
   ) {}
 
   /**
-   * Helper to determine color based on plagiarism score.
+   * Helper untuk membersihkan tag HTML dari teks.
    */
-  private getScoreColor(score: number): string {
-    if (score < 15) return '#28a745'; // Green
-    if (score < 40) return '#ffc107'; // Yellow
-    return '#dc3545'; // Red
+  private _stripHtml(html: string): string {
+    if (!html) return '';
+    return html.replace(/<[^>]*>/g, '');
   }
 
   /**
-   * Renders the full text with plagiarized segments highlighted in red.
+   * Helper untuk mencari path logo Protextify.
+   */
+  private _getLogoPath(): string | null {
+    const possiblePaths = [
+      path.join(process.cwd(), 'src/assets/logo-protextify-warna.png'),
+      path.join(__dirname, '../../assets/logo-protextify-warna.png'),
+      path.join(process.cwd(), 'dist/assets/logo-protextify-warna.png'),
+    ];
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) return p;
+    }
+    this.logger.warn('Logo file not found in any expected paths.');
+    return null;
+  }
+
+  /**
+   * Menentukan warna skor berdasarkan persentase.
+   */
+  private getScoreColor(score: number): string {
+    if (score < 15) return this.COLORS.SCORE_GREEN;
+    if (score < 40) return this.COLORS.SCORE_YELLOW;
+    return this.COLORS.SCORE_RED;
+  }
+
+  /**
+   * Merender teks dengan segmen plagiat yang ditandai warna.
    */
   private renderHighlightedText(
     doc: PDFKit.PDFDocument,
     fullText: string,
     indexes: { startIndex: number; endIndex: number }[],
   ) {
-    doc.fontSize(11).fillColor('black');
+    doc.fontSize(10.5).fillColor(this.COLORS.TEXT).lineGap(4);
     let lastIndex = 0;
 
-    // Sort indexes to process them in order
     const sortedIndexes = [...indexes].sort(
       (a, b) => a.startIndex - b.startIndex,
     );
 
     for (const segment of sortedIndexes) {
-      // Render non-plagiarized text before the current segment
       if (segment.startIndex > lastIndex) {
         const nonPlagiarizedText = fullText.substring(
           lastIndex,
           segment.startIndex,
         );
-        doc.fillColor('black').text(nonPlagiarizedText, { continued: true });
+        doc.fillColor(this.COLORS.TEXT).text(nonPlagiarizedText, {
+          continued: true,
+          align: 'justify',
+        });
       }
 
-      // Render plagiarized text in red
       const plagiarizedText = fullText.substring(
         segment.startIndex,
         segment.endIndex,
       );
-      doc.fillColor('#dc3545').text(plagiarizedText, { continued: true });
+      doc.fillColor(this.COLORS.HIGHLIGHT).text(plagiarizedText, {
+        continued: true,
+        align: 'justify',
+      });
 
       lastIndex = segment.endIndex;
     }
 
-    // Render the remaining text after the last plagiarized segment
     if (lastIndex < fullText.length) {
       const remainingText = fullText.substring(lastIndex);
-      doc.fillColor('black').text(remainingText);
+      doc.fillColor(this.COLORS.TEXT).text(remainingText, { align: 'justify' });
     }
   }
 
@@ -85,134 +126,174 @@ export class PDFReportService {
     const { plagiarismChecks } = submission;
     const rawData =
       plagiarismChecks.rawResponse as unknown as WinstonAIResponse;
+    const cleanContent = this._stripHtml(submission.content);
+    const logoPath = this._getLogoPath();
 
     return new Promise((resolve, reject) => {
       try {
-        const doc = new PDFDocument({ margin: 50 });
+        const doc = new PDFDocument({
+          size: 'A4',
+          margins: { top: 50, bottom: 50, left: 50, right: 50 },
+          bufferPages: true,
+        });
         const buffers: Buffer[] = [];
 
         doc.on('data', buffers.push.bind(buffers));
         doc.on('end', () => resolve(Buffer.concat(buffers)));
 
-        // ===== HEADER =====
+        // ===== HALAMAN 1: RINGKASAN =====
+        // Header
+        if (logoPath) {
+          doc.image(logoPath, 50, 45, { width: 120 });
+        }
         doc
+          .fillColor(this.COLORS.SUBTLE_TEXT)
+          .fontSize(10)
+          .text('Plagiarism Analysis Report', { align: 'right' });
+        doc.moveDown(4);
+
+        // Judul
+        doc
+          .fillColor(this.COLORS.TEXT)
           .fontSize(22)
           .font('Helvetica-Bold')
-          .text('Plagiarism Analysis Report', { align: 'center' });
-        doc.moveDown(2);
-
-        // ===== SUMMARY SECTION =====
-        doc
-          .fontSize(16)
-          .font('Helvetica-Bold')
-          .text('Submission Summary', { underline: true });
-        doc.moveDown();
+          .text(submission.assignment.title, { align: 'left' });
+        doc.moveDown(0.5);
         doc
           .fontSize(12)
           .font('Helvetica')
-          .text(`Student: ${submission.student.fullName}`)
-          .text(`Assignment: ${submission.assignment.title}`)
-          .text(`Class: ${submission.assignment.class.name}`)
-          .text(`Checked On: ${plagiarismChecks.checkedAt.toLocaleString()}`);
+          .text(`Submission by: ${submission.student.fullName}`);
         doc.moveDown(2);
 
-        // Visual Score Display
+        // Kartu Skor
         const scoreColor = this.getScoreColor(plagiarismChecks.score);
         doc
-          .fontSize(16)
-          .font('Helvetica-Bold')
-          .text('Overall Plagiarism Score:', { continued: true });
+          .roundedRect(50, doc.y, doc.page.width - 100, 90, 5)
+          .fillAndStroke(this.COLORS.BACKGROUND, this.COLORS.BORDER);
         doc
+          .fillColor(this.COLORS.TEXT)
+          .font('Helvetica-Bold')
+          .fontSize(14)
+          .text(
+            'Overall Plagiarism Score',
+            70,
+            doc.y + 20,
+            { continued: false }, // Reset continued
+          );
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(36)
           .fillColor(scoreColor)
-          .text(` ${plagiarismChecks.score.toFixed(2)}%`);
-        doc.fillColor('black').moveDown();
-
-        // Key Metrics
-        if (rawData && rawData.result) {
-          doc
-            .fontSize(12)
-            .font('Helvetica')
-            .text(`Total Words: ${rawData.result.textWordCounts}`)
-            .text(`Plagiarized Words: ${rawData.result.totalPlagiarismWords}`)
-            .text(`Identical Words: ${rawData.result.identicalWordCounts}`)
-            .text(`Sources Found: ${rawData.result.sourceCounts}`);
-        }
+          .text(`${plagiarismChecks.score.toFixed(2)}%`, { align: 'right' });
         doc.moveDown(2);
 
-        // ===== FULL CONTENT WITH HIGHLIGHTS =====
+        // Detail Submission & Metrik
+        const detailsY = doc.y;
+        doc
+          .fillColor(this.COLORS.TEXT)
+          .font('Helvetica-Bold')
+          .fontSize(12)
+          .text('Submission Details', 70, detailsY);
+        doc
+          .font('Helvetica')
+          .fontSize(10)
+          .fillColor(this.COLORS.SUBTLE_TEXT)
+          .text(`Class: ${submission.assignment.class.name}`, 70, doc.y + 5)
+          .text(
+            `Checked On: ${plagiarismChecks.checkedAt.toLocaleString('id-ID')}`,
+          );
+
+        if (rawData && rawData.result) {
+          doc
+            .fillColor(this.COLORS.TEXT)
+            .font('Helvetica-Bold')
+            .fontSize(12)
+            .text('Key Metrics', 320, detailsY);
+          doc
+            .font('Helvetica')
+            .fontSize(10)
+            .fillColor(this.COLORS.SUBTLE_TEXT)
+            .text(
+              `Total Words: ${rawData.result.textWordCounts}`,
+              320,
+              doc.y + 5,
+            )
+            .text(`Plagiarized Words: ${rawData.result.totalPlagiarismWords}`)
+            .text(`Sources Found: ${rawData.result.sourceCounts}`);
+        }
+        doc.moveDown(3);
+
+        // ===== HALAMAN 2: ANALISIS KONTEN =====
         doc.addPage();
         doc
-          .fontSize(16)
           .font('Helvetica-Bold')
+          .fontSize(16)
           .text('Submission Content Analysis', { underline: true });
         doc.moveDown();
 
         if (rawData && rawData.indexes && rawData.indexes.length > 0) {
-          this.renderHighlightedText(doc, submission.content, rawData.indexes);
+          this.renderHighlightedText(doc, cleanContent, rawData.indexes);
         } else {
-          // If no plagiarism, just render the full text normally
           doc
-            .fontSize(11)
-            .fillColor('black')
-            .text(submission.content, { align: 'justify' });
+            .fontSize(10.5)
+            .fillColor(this.COLORS.TEXT)
+            .lineGap(4)
+            .text(cleanContent, { align: 'justify' });
         }
 
-        // ===== DETAILED SOURCES (INSTRUCTOR ONLY) =====
+        // ===== HALAMAN 3: SUMBER TERDETEKSI (JIKA ADA) =====
         if (
           includeDetailedResults &&
           rawData &&
           rawData.sources &&
-          rawData.sources.length > 0
+          rawData.sources.filter((s) => s.score > 0).length > 0
         ) {
           doc.addPage();
           doc
-            .fontSize(16)
             .font('Helvetica-Bold')
+            .fontSize(16)
             .text('Detected Sources', { underline: true });
           doc.moveDown();
 
           const relevantSources = rawData.sources.filter((s) => s.score > 0);
-
-          if (relevantSources.length > 0) {
-            relevantSources.forEach((source, index) => {
-              doc
-                .fontSize(12)
-                .font('Helvetica-Bold')
-                .text(`${index + 1}. ${source.title || 'Unknown Title'}`);
-              doc
-                .fontSize(10)
-                .font('Helvetica')
-                .fillColor('blue')
-                .text(source.url, { link: source.url, underline: true })
-                .fillColor('black')
-                .text(`Match Score: ${source.score.toFixed(2)}%`)
-                .text(`Plagiarized Words: ${source.plagiarismWords}`);
-
-              if (source.plagiarismFound && source.plagiarismFound.length > 0) {
-                const preview = source.plagiarismFound[0].sequence.substring(
-                  0,
-                  150,
-                );
-                doc.fillColor('#555').text(`Snippet: "${preview}..."`);
-              }
-              doc.moveDown(1.5);
-            });
-          } else {
+          relevantSources.forEach((source) => {
             doc
-              .fontSize(12)
+              .roundedRect(doc.x, doc.y, doc.page.width - 100, 1, 0)
+              .fill(this.COLORS.BORDER);
+            doc.moveDown(1.5);
+            doc
+              .fillColor(this.COLORS.TEXT)
+              .font('Helvetica-Bold')
+              .fontSize(11)
+              .text(source.title || 'Unknown Title');
+            doc
+              .fillColor(this.COLORS.PRIMARY)
+              .fontSize(9)
+              .text(source.url, { link: source.url, underline: true });
+            doc.moveDown(0.5);
+            doc
+              .fillColor(this.COLORS.TEXT)
               .font('Helvetica')
-              .text('No significant matching sources found.');
-          }
+              .text(
+                `Match Score: ${source.score.toFixed(
+                  2,
+                )}%  |  Plagiarized Words: ${source.plagiarismWords}`,
+              );
+            doc.moveDown(2);
+          });
         }
 
-        // ===== FOOTER on every page =====
+        // ===== FOOTER UNTUK SEMUA HALAMAN =====
         const range = doc.bufferedPageRange();
-        for (let i = range.start; i <= range.start + range.count - 1; i++) {
+        for (let i = 0; i < range.count; i++) {
           doc.switchToPage(i);
+          if (i > 0 && logoPath) {
+            // Header untuk halaman selanjutnya
+            doc.image(logoPath, 50, 45, { width: 80 });
+          }
           doc
             .fontSize(8)
-            .font('Helvetica')
-            .fillColor('grey')
+            .fillColor(this.COLORS.SUBTLE_TEXT)
             .text(
               'Generated by Protextify Platform',
               50,
