@@ -295,9 +295,12 @@ export class AssignmentsService {
       pendingCount,
     };
 
+    // Pada bagian submissionsOverview:
     const submissionsOverview = allStudents.map((student) => {
-      const submission = submissionsMap.get(student.id);
-      if (submission) {
+      const submission = submissionsMap.get(student.id) as
+        | (typeof assignment.submissions[number])
+        | undefined;
+      if (submission && typeof submission === 'object' && 'id' in submission) {
         return {
           id: submission.id,
           student: {
@@ -305,9 +308,12 @@ export class AssignmentsService {
             fullName: student.fullName,
           },
           status: submission.status,
-          submittedAt: submission.submittedAt?.toISOString() || null,
+          submittedAt: submission.submittedAt
+            ? submission.submittedAt.toISOString()
+            : null,
           grade: submission.grade,
-          plagiarismScore: submission.plagiarismChecks?.score ?? null,
+          plagiarismScore:
+            submission.plagiarismChecks?.score ?? null,
         };
       } else {
         return {

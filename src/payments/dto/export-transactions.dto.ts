@@ -1,18 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString, IsDateString, IsIn } from 'class-validator';
-import { TransactionStatus } from '@prisma/client';
 
 export class ExportTransactionsDto {
   @ApiProperty({
     required: false,
     description: 'Filter by transaction status',
-    enum: TransactionStatus,
+    enum: ['SUCCESS', 'FAILED', 'PENDING'],
     example: 'SUCCESS',
   })
   @IsOptional()
   @IsString()
-  @IsIn(Object.values(TransactionStatus))
-  status?: TransactionStatus;
+  @IsIn(['SUCCESS', 'FAILED', 'PENDING'])
+  status?: string;
 
   @ApiProperty({
     required: false,

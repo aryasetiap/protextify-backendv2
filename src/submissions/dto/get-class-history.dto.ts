@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { SubmissionStatus } from '@prisma/client';
 import {
   IsEnum,
   IsIn,
@@ -41,12 +40,12 @@ export class GetClassHistoryDto {
 
   @ApiProperty({
     required: false,
-    enum: SubmissionStatus,
+    enum: ['SUBMITTED', 'GRADED', 'DRAFT', 'PENDING'],
     description: 'Filter by submission status',
   })
   @IsOptional()
-  @IsEnum(SubmissionStatus)
-  status?: SubmissionStatus;
+  @IsIn(['SUBMITTED', 'GRADED', 'DRAFT', 'PENDING'])
+  status?: string;
 
   @ApiProperty({
     required: false,

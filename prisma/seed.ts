@@ -408,7 +408,7 @@ async function seedPlagiarismChecks() {
       status: 'completed',
       wordCount: 150,
       creditsUsed: 1,
-      rawResponse: { result: 'low plagiarism' } as Prisma.JsonObject,
+      rawResponse: { result: 'low plagiarism' },
     },
     {
       submissionId: submissions.find((s) => s.id === 'submission-3')?.id,
@@ -416,7 +416,7 @@ async function seedPlagiarismChecks() {
       status: 'completed',
       wordCount: 450,
       creditsUsed: 1,
-      rawResponse: { result: 'medium plagiarism' } as Prisma.JsonObject,
+      rawResponse: { result: 'medium plagiarism' },
     },
     {
       submissionId: submissions.find((s) => s.id === 'submission-4')?.id,
@@ -424,7 +424,7 @@ async function seedPlagiarismChecks() {
       status: 'completed',
       wordCount: 300,
       creditsUsed: 1,
-      rawResponse: { result: 'high plagiarism' } as Prisma.JsonObject,
+      rawResponse: { result: 'high plagiarism' },
     },
   ];
   const validChecks = plagiarismChecks.filter((c) => c.submissionId);
@@ -483,7 +483,7 @@ async function seedSubmissionVersions() {
  */
 async function seedClassActivities() {
   console.log('📰 Seeding class activities...');
-  const activities: Prisma.ClassActivityCreateInput[] = [];
+  const activities: any[] = [];
 
   // 1. Student Joined Activities
   const enrollments = await prisma.classEnrollment.findMany({

@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { SubmissionStatus } from '@prisma/client';
 
 @Injectable()
 export class AnalyticsService {
@@ -57,7 +56,7 @@ export class AnalyticsService {
       this.prisma.submission.findMany({
         where: {
           assignment: { classId: { in: classIds } },
-          status: { in: [SubmissionStatus.SUBMITTED, SubmissionStatus.GRADED] },
+          status: { in: ['SUBMITTED', 'GRADED'] },
           submittedAt: { gte: startDate },
         },
         include: {
@@ -68,7 +67,7 @@ export class AnalyticsService {
       this.prisma.submission.findMany({
         where: {
           assignment: { classId: { in: classIds } },
-          status: { in: [SubmissionStatus.SUBMITTED, SubmissionStatus.GRADED] },
+          status: { in: ['SUBMITTED', 'GRADED'] },
           submittedAt: { gte: previousStartDate, lt: startDate },
         },
       }),
@@ -242,7 +241,7 @@ export class AnalyticsService {
   private calculateStats(submissions: any[], previousSubmissions: any[]) {
     const totalSubmissions = submissions.length;
     const gradedSubmissions = submissions.filter(
-      (s) => s.status === SubmissionStatus.GRADED,
+      (s) => s.status === 'GRADED',
     ).length;
     const pendingGrading = totalSubmissions - gradedSubmissions;
     const completionRate =
@@ -267,7 +266,7 @@ export class AnalyticsService {
 
     const prevTotal = previousSubmissions.length;
     const prevGraded = previousSubmissions.filter(
-      (s) => s.status === SubmissionStatus.GRADED,
+      (s) => s.status === 'GRADED',
     ).length;
     const prevCompletionRate =
       prevTotal > 0 ? Math.round((prevGraded / prevTotal) * 100) : 0;
@@ -316,7 +315,7 @@ export class AnalyticsService {
       // Tambahkan pengecekan untuk memastikan 'day' tidak undefined
       if (day) {
         day.submissions++;
-        if (s.status === SubmissionStatus.GRADED) {
+        if (s.status === 'GRADED') {
           day.graded++;
         }
       }
