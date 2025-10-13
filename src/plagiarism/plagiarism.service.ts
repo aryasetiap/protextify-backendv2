@@ -282,7 +282,7 @@ export class PlagiarismService {
         `[PLAGIARISM SERVICE] Generated pre-signed URL for submission: ${submission.id}`,
       );
 
-      return presignedUrl;
+      return presignedUrl.url;
     } catch (error) {
       this.logger.error(
         `[PLAGIARISM SERVICE] Failed to generate PDF report for submission ${submission.id}`,

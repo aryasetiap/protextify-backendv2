@@ -1,19 +1,20 @@
 import {
   Injectable,
-  Logger,
   NotFoundException,
-  BadRequestException,
   InternalServerErrorException,
+  BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { CloudStorageProvider } from './providers/cloud-storage.provider';
 import { UploadFileDto, UploadResponseDto } from './dto/upload-file.dto';
-import * as path from 'path';
-import PDFDocument from 'pdfkit';
-import * as DOCX from 'docx';
 import { nanoid } from 'nanoid';
+import * as DOCX from 'docx';
+import PDFDocument from 'pdfkit';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface GeneratedFileResult {
   filename: string;
@@ -27,20 +28,28 @@ export interface GeneratedFileResult {
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
 
-  // Allowed file types and their MIME types
-  private readonly ALLOWED_FILE_TYPES = {
-    // Documents
-    'application/pdf': { ext: 'pdf', maxSize: 10 * 1024 * 1024 }, // 10MB
+  // Palet warna yang konsisten dengan PDF Report Service
+  private readonly COLORS = {
+    PRIMARY: '#4A90E2',
+    TEXT: '#333333',
+    SUBTLE_TEXT: '#777777',
+    BACKGROUND: '#F7F9FC',
+    BORDER: '#E0E6ED',
+    SCORE_GREEN: '#66BB6A',
+    SCORE_YELLOW: '#FFCA28',
+    SCORE_RED: '#EF5350',
+  };
+
+  private readonly SUPPORTED_MIME_TYPES = {
+    'application/pdf': { ext: 'pdf', maxSize: 10 * 1024 * 1024 },
     'application/msword': { ext: 'doc', maxSize: 10 * 1024 * 1024 },
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
       ext: 'docx',
       maxSize: 10 * 1024 * 1024,
     },
-    // Images
-    'image/jpeg': { ext: 'jpg', maxSize: 5 * 1024 * 1024 }, // 5MB
+    'image/jpeg': { ext: 'jpg', maxSize: 5 * 1024 * 1024 },
     'image/png': { ext: 'png', maxSize: 5 * 1024 * 1024 },
-    // Archives
-    'application/zip': { ext: 'zip', maxSize: 20 * 1024 * 1024 }, // 20MB
+    'application/zip': { ext: 'zip', maxSize: 20 * 1024 * 1024 },
     'application/x-zip-compressed': { ext: 'zip', maxSize: 20 * 1024 * 1024 },
   };
 
@@ -49,8 +58,22 @@ export class StorageService {
     private readonly prismaService: PrismaService,
     private readonly realtimeGateway: RealtimeGateway,
     private readonly cloudStorageProvider: CloudStorageProvider,
-  ) {
-    this.logger.log('[STORAGE] Service initialized with cloud storage');
+  ) {}
+
+  /**
+   * Helper untuk mencari path logo Protextify.
+   */
+  private _getLogoPath(): string | null {
+    const possiblePaths = [
+      path.join(process.cwd(), 'src/assets/logo-protextify-warna.png'),
+      path.join(__dirname, '../../assets/logo-protextify-warna.png'),
+      path.join(process.cwd(), 'dist/assets/logo-protextify-warna.png'),
+    ];
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) return p;
+    }
+    this.logger.warn('Logo file not found in any expected paths.');
+    return null;
   }
 
   /**
@@ -63,26 +86,26 @@ export class StorageService {
   ): Promise<GeneratedFileResult> {
     this.logger.log(`[STORAGE] Generating PDF for submission: ${submissionId}`);
 
-    // Get submission data
     const submission = await this.getSubmissionWithPermissions(
       submissionId,
       userId,
       role,
     );
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
         const filename = `submission-${submissionId}-${nanoid(8)}.pdf`;
-        const doc = new PDFDocument();
+        const doc = new PDFDocument({
+          size: 'A4',
+          margins: { top: 50, bottom: 50, left: 50, right: 50 },
+          bufferPages: true,
+        });
         const chunks: Buffer[] = [];
 
-        // Collect PDF data in memory
         doc.on('data', (chunk) => chunks.push(chunk));
         doc.on('end', async () => {
           try {
             const pdfBuffer = Buffer.concat(chunks);
-
-            // Upload to cloud storage
             const cloudKey = this.cloudStorageProvider.generateFileKey(
               'submissions',
               filename,
@@ -99,7 +122,6 @@ export class StorageService {
               },
             );
 
-            // Generate pre-signed URL for secure download
             const presignedUrl =
               await this.cloudStorageProvider.generatePresignedUrl(cloudKey, {
                 expiresIn: 86400, // 24 hours
@@ -118,7 +140,6 @@ export class StorageService {
               `[STORAGE] PDF generated and uploaded successfully: ${filename}`,
             );
 
-            // Send notification
             await this.sendDownloadNotification(
               userId,
               role,
@@ -135,7 +156,36 @@ export class StorageService {
         });
 
         // Generate PDF content
-        this.generatePDFContent(doc, submission);
+        this.generateStyledPDFContent(doc, submission);
+
+        // Add headers and footers to all pages
+        const logoPath = this._getLogoPath();
+        const range = doc.bufferedPageRange();
+        for (let i = 0; i < range.count; i++) {
+          doc.switchToPage(i);
+          if (i > 0 && logoPath) {
+            doc.image(logoPath, 50, 45, { width: 80 });
+          }
+          doc
+            .fontSize(8)
+            .fillColor(this.COLORS.SUBTLE_TEXT)
+            .text(
+              'Dihasilkan oleh Platform Protextify',
+              50,
+              doc.page.height - 60,
+              { align: 'left' },
+            )
+            .text(
+              `Halaman ${i + 1} dari ${range.count}`,
+              50,
+              doc.page.height - 60,
+              {
+                align: 'right',
+                width: doc.page.width - 100,
+              },
+            );
+        }
+
         doc.end();
       } catch (error) {
         this.logger.error('PDF generation failed:', error);
@@ -156,7 +206,6 @@ export class StorageService {
       `[STORAGE] Generating DOCX for submission: ${submissionId}`,
     );
 
-    // Get submission data
     const submission = await this.getSubmissionWithPermissions(
       submissionId,
       userId,
@@ -165,14 +214,8 @@ export class StorageService {
 
     try {
       const filename = `submission-${submissionId}-${nanoid(8)}.docx`;
-
-      // Create DOCX document
       const doc = this.createDOCXDocument(submission);
-
-      // Convert to buffer
       const docxBuffer = await DOCX.Packer.toBuffer(doc);
-
-      // Upload to cloud storage
       const cloudKey = this.cloudStorageProvider.generateFileKey(
         'submissions',
         filename,
@@ -189,7 +232,6 @@ export class StorageService {
         },
       );
 
-      // Generate pre-signed URL for secure download
       const presignedUrl = await this.cloudStorageProvider.generatePresignedUrl(
         cloudKey,
         {
@@ -210,7 +252,6 @@ export class StorageService {
         `[STORAGE] DOCX generated and uploaded successfully: ${filename}`,
       );
 
-      // Send notification
       await this.sendDownloadNotification(
         userId,
         role,
@@ -243,94 +284,46 @@ export class StorageService {
   }
 
   /**
-   * Upload a raw buffer to cloud storage.
-   * Used for generated files like exports.
+   * Upload raw buffer to cloud storage
    */
   async uploadRawBuffer(
     buffer: Buffer,
     cloudKey: string,
     mimeType: string,
   ): Promise<void> {
-    try {
-      await this.cloudStorageProvider.uploadFile(buffer, cloudKey, mimeType);
-      this.logger.log(
-        `[STORAGE] Raw buffer uploaded successfully: ${cloudKey}`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `[STORAGE] Raw buffer upload failed for key: ${cloudKey}`,
-        error,
-      );
-      throw new InternalServerErrorException('Failed to upload generated file');
-    }
+    await this.cloudStorageProvider.uploadFile(buffer, cloudKey, mimeType);
   }
 
   /**
-   * Generate new pre-signed URL for existing file
+   * Refresh or generate a new pre-signed URL for an existing file
    */
   async refreshDownloadUrl(
     cloudKey: string,
     filename: string,
     expiresIn: number = 3600,
-  ): Promise<string> {
-    try {
-      return await this.cloudStorageProvider.generatePresignedUrl(cloudKey, {
-        expiresIn,
-        filename,
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to refresh download URL for: ${cloudKey}`,
-        error,
-      );
-      throw new BadRequestException('Failed to generate download URL');
-    }
+  ) {
+    const url = await this.cloudStorageProvider.generatePresignedUrl(cloudKey, {
+      expiresIn,
+      filename,
+    });
+    return {
+      url,
+      expiresIn,
+      expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+    };
   }
 
   /**
-   * Delete file from cloud storage
+   * Health check for the storage service
    */
-  async deleteFile(cloudKey: string): Promise<void> {
+  async healthCheck() {
     try {
-      await this.cloudStorageProvider.deleteFile(cloudKey);
-      this.logger.log(`[STORAGE] File deleted from cloud: ${cloudKey}`);
-    } catch (error) {
-      this.logger.error(`Failed to delete file: ${cloudKey}`, error);
-      throw new InternalServerErrorException('Failed to delete file');
-    }
-  }
-
-  /**
-   * Clean up old files (run periodically)
-   */
-  async cleanupOldFiles(maxAgeDays: number = 7): Promise<number> {
-    // Note: This would require listing objects in R2 and checking their metadata
-    // For now, we'll implement a simple log message
-    this.logger.log(
-      `[STORAGE] Cleanup would delete files older than ${maxAgeDays} days`,
-    );
-
-    // TODO: Implement actual cleanup logic by:
-    // 1. List objects in R2 bucket
-    // 2. Check object metadata or last modified date
-    // 3. Delete objects older than maxAgeDays
-    // 4. Return count of deleted files
-
-    return 0;
-  }
-
-  /**
-   * Health check for storage service
-   */
-  async healthCheck(): Promise<any> {
-    try {
-      const cloudHealth = await this.cloudStorageProvider.healthCheck();
-
+      const cloudStatus = await this.cloudStorageProvider.healthCheck();
       return {
         status: 'healthy',
         timestamp: new Date().toISOString(),
         service: 'storage',
-        cloudStorage: cloudHealth,
+        cloudStorage: cloudStatus,
         features: {
           pdfGeneration: 'enabled',
           docxGeneration: 'enabled',
@@ -350,149 +343,226 @@ export class StorageService {
   }
 
   /**
-   * Generate PDF content (private helper)
+   * Cleanup old files from storage
    */
-  private generatePDFContent(doc: PDFKit.PDFDocument, submission: any): void {
-    // Header
-    doc.fontSize(20).text('Submission Report', 50, 50);
-    doc.moveDown();
+  async cleanupOldFiles(days: number): Promise<number> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
 
-    // Submission Info
-    doc.fontSize(14).text('Submission Details', 50, doc.y + 20);
-    doc
-      .fontSize(12)
-      .text(`Student: ${submission.student.fullName}`, 50, doc.y + 20)
-      .text(`Assignment: ${submission.assignment.title}`, 50, doc.y + 15)
-      .text(`Class: ${submission.assignment.class.name}`, 50, doc.y + 15)
-      .text(`Status: ${submission.status}`, 50, doc.y + 15)
-      .text(
-        `Last Updated: ${submission.updatedAt.toLocaleString()}`,
-        50,
-        doc.y + 15,
-      );
+    this.logger.log(
+      `[STORAGE] Cleaning up files older than ${cutoffDate.toISOString()}`,
+    );
 
-    if (submission.grade !== null) {
-      doc.text(`Grade: ${submission.grade}`, 50, doc.y + 15);
+    const oldAttachments = await this.prismaService.attachment.findMany({
+      where: {
+        uploadedAt: {
+          lt: cutoffDate,
+        },
+      },
+    });
+
+    if (oldAttachments.length === 0) {
+      this.logger.log('[STORAGE] No old files to clean up.');
+      return 0;
     }
 
-    doc.moveDown();
+    const keysToDelete = oldAttachments.map((att) => att.cloudKey);
 
-    // Plagiarism info (if available and user has permission)
+    try {
+      // FIX: Call deleteFile in a loop as deleteFiles is not available
+      await Promise.all(
+        keysToDelete.map((key) => this.cloudStorageProvider.deleteFile(key)),
+      );
+      const { count } = await this.prismaService.attachment.deleteMany({
+        where: {
+          id: {
+            in: oldAttachments.map((att) => att.id),
+          },
+        },
+      });
+
+      this.logger.log(`[STORAGE] Successfully deleted ${count} old files.`);
+      return count;
+    } catch (error) {
+      this.logger.error('[STORAGE] Error during file cleanup:', error);
+      throw new InternalServerErrorException('Failed to clean up old files');
+    }
+  }
+
+  /**
+   * Generate styled PDF content (private helper)
+   */
+  private generateStyledPDFContent(
+    doc: PDFKit.PDFDocument,
+    submission: any,
+  ): void {
+    const logoPath = this._getLogoPath();
+    if (logoPath) {
+      doc.image(logoPath, 50, 45, { width: 120 });
+    }
+    doc
+      .fillColor(this.COLORS.SUBTLE_TEXT)
+      .fontSize(10)
+      .text('Laporan Submission', { align: 'right' });
+    doc.y = 100;
+
+    doc
+      .fillColor(this.COLORS.TEXT)
+      .fontSize(22)
+      .font('Helvetica-Bold')
+      .text(submission.assignment.title, { align: 'left' });
+    doc.moveDown(0.5);
+    doc
+      .fontSize(12)
+      .font('Helvetica')
+      .text(`Oleh: ${submission.student.fullName}`);
+    doc.moveDown(2);
+
+    // --- Card Detail Submission ---
+    const card1Y = doc.y;
+    doc
+      .roundedRect(50, card1Y, doc.page.width - 100, 100, 5)
+      .fillAndStroke(this.COLORS.BACKGROUND, this.COLORS.BORDER);
+    doc
+      .fillColor(this.COLORS.TEXT)
+      .font('Helvetica-Bold')
+      .fontSize(12)
+      .text('Detail Submission', 70, card1Y + 15);
+
+    doc.font('Helvetica').fontSize(10).fillColor(this.COLORS.SUBTLE_TEXT);
+    doc.text(`Kelas: ${submission.assignment.class.name}`, 70, card1Y + 40);
+    doc.text(`Status: ${submission.status}`, 70, card1Y + 55);
+    doc.text(
+      `Terakhir Diperbarui: ${submission.updatedAt.toLocaleString('id-ID')}`,
+      70,
+      card1Y + 70,
+    );
+    if (submission.grade !== null) {
+      doc
+        .font('Helvetica-Bold')
+        .fillColor(this.COLORS.PRIMARY)
+        .text(`Nilai: ${submission.grade}`, 70, card1Y + 85);
+    }
+    doc.y = card1Y + 115;
+
+    // --- Card Hasil Plagiarisme (jika ada) ---
     if (
       submission.plagiarismChecks &&
       submission.plagiarismChecks.status === 'completed'
     ) {
-      doc.fontSize(14).text('Plagiarism Check Results', 50, doc.y + 20);
+      const card2Y = doc.y;
       doc
+        .roundedRect(50, card2Y, doc.page.width - 100, 70, 5)
+        .fillAndStroke(this.COLORS.BACKGROUND, this.COLORS.BORDER);
+      doc
+        .fillColor(this.COLORS.TEXT)
+        .font('Helvetica-Bold')
         .fontSize(12)
-        .text(
-          `Plagiarism Score: ${submission.plagiarismChecks.score}%`,
-          50,
-          doc.y + 20,
-        )
-        .text(
-          `Word Count: ${submission.plagiarismChecks.wordCount}`,
-          50,
-          doc.y + 15,
-        )
-        .text(
-          `Checked At: ${submission.plagiarismChecks.checkedAt.toLocaleString()}`,
-          50,
-          doc.y + 15,
-        );
+        .text('Hasil Pengecekan Plagiarisme', 70, card2Y + 15);
 
-      doc.moveDown();
+      doc.font('Helvetica').fontSize(10).fillColor(this.COLORS.SUBTLE_TEXT);
+      doc.text(
+        `Skor Plagiarisme: ${submission.plagiarismChecks.score}%`,
+        70,
+        card2Y + 40,
+      );
+      doc.text(
+        `Jumlah Kata: ${submission.plagiarismChecks.wordCount}`,
+        70,
+        card2Y + 55,
+      );
+      doc.y = card2Y + 85;
     }
 
-    // Content
-    doc.fontSize(14).text('Submission Content', 50, doc.y + 20);
-    doc.fontSize(11).text(submission.content, 50, doc.y + 15, {
-      width: 500,
-      align: 'justify',
-    });
-
-    // Footer
+    // --- Konten Submission ---
+    doc.addPage();
+    doc.y = 100; // Space for header on new page
     doc
-      .fontSize(8)
-      .text('Generated by Protextify Platform', 50, doc.page.height - 50)
-      .text(
-        `Generated at: ${new Date().toLocaleString()}`,
-        50,
-        doc.page.height - 35,
-      );
+      .fillColor(this.COLORS.TEXT)
+      .font('Helvetica-Bold')
+      .fontSize(16)
+      .text('Konten Submission', { underline: true });
+    doc.moveDown();
+    doc
+      .font('Helvetica')
+      .fontSize(10.5)
+      .lineGap(4)
+      .text(submission.content, { align: 'justify' });
   }
 
   /**
    * Create DOCX document (private helper)
    */
   private createDOCXDocument(submission: any): DOCX.Document {
+    const plagiarismInfo =
+      submission.plagiarismChecks &&
+      submission.plagiarismChecks.status === 'completed'
+        ? [
+            new DOCX.TextRun({
+              text: `Skor Plagiarisme: ${submission.plagiarismChecks.score}%`,
+              break: 1,
+            }),
+          ]
+        : [];
+
     return new DOCX.Document({
       sections: [
         {
-          properties: {},
+          headers: {
+            default: new DOCX.Header({
+              children: [
+                new DOCX.Paragraph({
+                  children: [
+                    new DOCX.TextRun(
+                      `Submission: ${submission.student.fullName} - ${submission.assignment.title}`,
+                    ),
+                  ],
+                }),
+              ],
+            }),
+          },
+          footers: {
+            default: new DOCX.Footer({
+              children: [
+                new DOCX.Paragraph({
+                  alignment: DOCX.AlignmentType.CENTER,
+                  children: [
+                    new DOCX.TextRun({
+                      children: [
+                        'Generated by Protextify Platform on ',
+                        new Date().toLocaleString('id-ID'),
+                      ],
+                      size: 16,
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          },
           children: [
-            // Title
             new DOCX.Paragraph({
-              text: 'Submission Report',
-              heading: DOCX.HeadingLevel.TITLE,
-            }),
-
-            // Submission details
-            new DOCX.Paragraph({
-              text: 'Submission Details',
+              text: submission.assignment.title,
               heading: DOCX.HeadingLevel.HEADING_1,
             }),
             new DOCX.Paragraph({
-              text: `Student: ${submission.student.fullName}`,
+              children: [
+                new DOCX.TextRun({
+                  text: `Siswa: ${submission.student.fullName}`,
+                  bold: true,
+                }),
+                new DOCX.TextRun({
+                  text: `Kelas: ${submission.assignment.class.name}`,
+                  break: 1,
+                }),
+                new DOCX.TextRun({
+                  text: `Status: ${submission.status}`,
+                  break: 1,
+                }),
+                ...plagiarismInfo,
+              ],
             }),
-            new DOCX.Paragraph({
-              text: `Assignment: ${submission.assignment.title}`,
-            }),
-            new DOCX.Paragraph({
-              text: `Class: ${submission.assignment.class.name}`,
-            }),
-            new DOCX.Paragraph({ text: `Status: ${submission.status}` }),
-            new DOCX.Paragraph({
-              text: `Last Updated: ${submission.updatedAt.toLocaleString()}`,
-            }),
-
-            ...(submission.grade !== null
-              ? [new DOCX.Paragraph({ text: `Grade: ${submission.grade}` })]
-              : []),
-
-            // Plagiarism results (if available)
-            ...(submission.plagiarismChecks &&
-            submission.plagiarismChecks.status === 'completed'
-              ? [
-                  new DOCX.Paragraph({
-                    text: 'Plagiarism Check Results',
-                    heading: DOCX.HeadingLevel.HEADING_1,
-                  }),
-                  new DOCX.Paragraph({
-                    text: `Plagiarism Score: ${submission.plagiarismChecks.score}%`,
-                  }),
-                  new DOCX.Paragraph({
-                    text: `Word Count: ${submission.plagiarismChecks.wordCount}`,
-                  }),
-                  new DOCX.Paragraph({
-                    text: `Checked At: ${submission.plagiarismChecks.checkedAt.toLocaleString()}`,
-                  }),
-                ]
-              : []),
-
-            // Content
-            new DOCX.Paragraph({
-              text: 'Submission Content',
-              heading: DOCX.HeadingLevel.HEADING_1,
-            }),
+            new DOCX.Paragraph({ text: '' }),
             new DOCX.Paragraph({ text: submission.content }),
-
-            // Footer
-            new DOCX.Paragraph({ text: '' }), // Space
-            new DOCX.Paragraph({
-              text: `Generated by Protextify Platform at ${new Date().toLocaleString()}`,
-              style: 'footer',
-            }),
           ],
         },
       ],
@@ -522,7 +592,6 @@ export class StorageService {
       throw new NotFoundException('Submission not found');
     }
 
-    // Check permissions
     const isStudent = role === 'STUDENT' && submission.studentId === userId;
     const isInstructor =
       role === 'INSTRUCTOR' &&
@@ -545,26 +614,22 @@ export class StorageService {
     downloadUrl: string,
     submission: any,
   ): Promise<void> {
-    try {
-      this.realtimeGateway.sendNotification(userId, {
-        type: 'file_ready',
-        message: `Your ${format.toUpperCase()} file is ready for download!`,
-        data: {
-          submissionId: submission.id,
-          format,
-          downloadUrl,
-          filename: path.basename(downloadUrl),
-          expiresAt: new Date(Date.now() + 86400 * 1000).toISOString(), // 24 hours from now
-        },
-        createdAt: new Date().toISOString(),
-      });
+    const targetUserId =
+      role === 'STUDENT' ? userId : submission.assignment.class.instructorId;
 
-      this.logger.log(
-        `[STORAGE] Download notification sent to user: ${userId}`,
-      );
-    } catch (error) {
-      this.logger.error('Failed to send download notification:', error);
-    }
+    this.realtimeGateway.sendNotification(targetUserId, {
+      type: 'file_ready',
+      message: `File ${format.toUpperCase()} untuk '${
+        submission.assignment.title
+      }' siap diunduh.`,
+      // FIX: Rename 'payload' to 'data' and add 'createdAt' to match NotificationDto
+      data: {
+        submissionId: submission.id,
+        downloadUrl,
+        format,
+      },
+      createdAt: new Date().toISOString(),
+    });
   }
 
   /**
@@ -575,149 +640,53 @@ export class StorageService {
     userId: string,
     dto: UploadFileDto,
   ): Promise<UploadResponseDto> {
-    this.logger.log(`[STORAGE] Uploading file: ${file.originalname}`);
+    const { assignmentId, submissionId, description } = dto;
+    const mimeTypeInfo = this.SUPPORTED_MIME_TYPES[file.mimetype];
 
-    // Validate file
-    this.validateUploadedFile(file);
-
-    try {
-      // Generate unique filename
-      const fileExtension = this.getFileExtension(file.originalname);
-      const uniqueFilename = `${nanoid(12)}-${Date.now()}${fileExtension}`;
-
-      // Generate cloud storage key
-      const cloudKey = this.cloudStorageProvider.generateFileKey(
-        'attachments',
-        uniqueFilename,
+    if (!mimeTypeInfo) {
+      throw new BadRequestException('Unsupported file type');
+    }
+    if (file.size > mimeTypeInfo.maxSize) {
+      throw new BadRequestException(
+        `File size exceeds limit of ${mimeTypeInfo.maxSize / 1024 / 1024}MB`,
       );
+    }
 
-      // Upload to cloud storage
-      const uploadResult = await this.cloudStorageProvider.uploadFile(
-        file.buffer,
-        cloudKey,
-        file.mimetype,
-        {
-          userId,
-          originalName: file.originalname,
-          uploadedAt: new Date().toISOString(),
-          ...dto,
-        },
-      );
+    const fileId = nanoid();
+    const cloudKey = `attachments/${fileId}.${mimeTypeInfo.ext}`;
 
-      // Save file metadata to database (optional - create FileAttachment model)
-      const fileRecord = await this.saveFileMetadata({
-        id: nanoid(),
-        filename: file.originalname,
-        uniqueFilename,
-        size: file.size,
-        mimeType: file.mimetype,
-        cloudKey,
-        userId,
-        assignmentId: dto.assignmentId,
-        submissionId: dto.submissionId,
-        description: dto.description,
-      });
+    await this.cloudStorageProvider.uploadFile(
+      file.buffer,
+      cloudKey,
+      file.mimetype,
+      {
+        originalName: file.originalname,
+        uploaderId: userId,
+        ...dto,
+      },
+    );
 
-      this.logger.log(
-        `[STORAGE] File uploaded successfully: ${file.originalname}`,
-      );
-
-      // Send notification
-      await this.sendUploadNotification(userId, file.originalname);
-
-      return {
-        id: fileRecord.id,
+    const attachment = await this.prismaService.attachment.create({
+      data: {
+        id: fileId,
         filename: file.originalname,
         size: file.size,
         mimeType: file.mimetype,
         cloudKey,
-        uploadedAt: new Date().toISOString(),
-      };
-    } catch (error) {
-      this.logger.error('[STORAGE] File upload failed:', error);
-      throw new InternalServerErrorException('Failed to upload file');
-    }
-  }
+        description,
+        uploaderId: userId,
+        assignmentId,
+        submissionId,
+      },
+    });
 
-  /**
-   * Validate uploaded file
-   */
-  private validateUploadedFile(file: Express.Multer.File): void {
-    if (!file) {
-      throw new BadRequestException('No file provided');
-    }
-
-    // Check file type
-    const allowedType = this.ALLOWED_FILE_TYPES[file.mimetype];
-    if (!allowedType) {
-      const allowedTypes = Object.keys(this.ALLOWED_FILE_TYPES)
-        .map((mime) => this.ALLOWED_FILE_TYPES[mime].ext.toUpperCase())
-        .join(', ');
-
-      throw new BadRequestException(
-        `Tipe file tidak didukung. Hanya ${allowedTypes} yang diperbolehkan.`,
-      );
-    }
-
-    // Check file size
-    if (file.size > allowedType.maxSize) {
-      const maxSizeMB = Math.round(allowedType.maxSize / (1024 * 1024));
-      throw new BadRequestException(
-        `Ukuran file terlalu besar. Maksimal ${maxSizeMB}MB.`,
-      );
-    }
-
-    // Check filename length
-    if (file.originalname.length > 255) {
-      throw new BadRequestException(
-        'Nama file terlalu panjang. Maksimal 255 karakter.',
-      );
-    }
-
-    // Check for potentially dangerous files
-    const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.com'];
-    const fileExtension = this.getFileExtension(
-      file.originalname,
-    ).toLowerCase();
-    if (dangerousExtensions.includes(fileExtension)) {
-      throw new BadRequestException('Tipe file berbahaya tidak diperbolehkan.');
-    }
-  }
-
-  /**
-   * Get file extension from filename
-   */
-  private getFileExtension(filename: string): string {
-    const lastDotIndex = filename.lastIndexOf('.');
-    return lastDotIndex !== -1 ? filename.substring(lastDotIndex) : '';
-  }
-
-  /**
-   * Save file metadata to database
-   */
-  private async saveFileMetadata(metadata: any) {
-    // Implementation depends on your database schema
-    // For now, return mock data
     return {
-      id: metadata.id,
-      filename: metadata.filename,
-      // ... other fields
+      id: attachment.id,
+      filename: attachment.filename,
+      size: attachment.size,
+      mimeType: attachment.mimeType,
+      cloudKey: attachment.cloudKey,
+      uploadedAt: attachment.uploadedAt.toISOString(),
     };
-  }
-
-  /**
-   * Send upload notification
-   */
-  private async sendUploadNotification(userId: string, filename: string) {
-    try {
-      this.realtimeGateway.sendNotification(userId, {
-        type: 'file_uploaded',
-        message: `File "${filename}" berhasil diunggah`,
-        data: { filename },
-        createdAt: new Date().toISOString(),
-      });
-    } catch (error) {
-      this.logger.warn('[STORAGE] Failed to send upload notification:', error);
-    }
   }
 }

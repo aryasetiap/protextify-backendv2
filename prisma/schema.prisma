@@ -27,6 +27,7 @@ model User {
   submissions   Submission[]
   transactions  Transaction[]
   ClassActivity ClassActivity[]
+  attachments   Attachment[] //  ilişkiyi ekle
 }
 
 model CreditBalance {
@@ -74,6 +75,7 @@ model Assignment {
   class                Class         @relation(fields: [classId], references: [id])
   submissions          Submission[]
   Transaction          Transaction[]
+  attachments          Attachment[] // ilişkiyi ekle
 }
 
 model Submission {
@@ -91,6 +93,7 @@ model Submission {
   assignment       Assignment          @relation(fields: [assignmentId], references: [id])
   student          User                @relation(fields: [studentId], references: [id])
   versions         SubmissionVersion[]
+  attachments      Attachment[] // ilişkiyi ekle
 }
 
 model SubmissionVersion {
@@ -117,6 +120,27 @@ model PlagiarismCheck {
   checkedAt    DateTime   @default(now())
   rawResponse  Json?
   submission   Submission @relation(fields: [submissionId], references: [id])
+}
+
+// 🔽 Yeni modeli buraya ekleyin
+model Attachment {
+  id           String   @id @default(cuid())
+  filename     String
+  size         Int
+  mimeType     String
+  cloudKey     String   @unique
+  description  String?
+  uploadedAt   DateTime @default(now())
+  uploaderId   String
+  assignmentId String?
+  submissionId String?
+
+  uploader   User        @relation(fields: [uploaderId], references: [id])
+  assignment Assignment? @relation(fields: [assignmentId], references: [id])
+  submission Submission? @relation(fields: [submissionId], references: [id])
+
+  @@index([assignmentId])
+  @@index([submissionId])
 }
 
 model Transaction {
