@@ -150,7 +150,7 @@ export class PDFReportService {
           .fillColor(this.COLORS.SUBTLE_TEXT)
           .fontSize(10)
           .text('Plagiarism Analysis Report', { align: 'right' });
-        doc.moveDown(4);
+        doc.y = 100; // Set a consistent starting point for content after header
 
         // Judul
         doc
@@ -165,66 +165,85 @@ export class PDFReportService {
           .text(`Submission by: ${submission.student.fullName}`);
         doc.moveDown(2);
 
-        // Kartu Skor
+        // Kartu Skor - REVISED FOR STABILITY
         const scoreColor = this.getScoreColor(plagiarismChecks.score);
+        const cardStartY = doc.y;
         doc
-          .roundedRect(50, doc.y, doc.page.width - 100, 90, 5)
+          .roundedRect(50, cardStartY, doc.page.width - 100, 90, 5)
           .fillAndStroke(this.COLORS.BACKGROUND, this.COLORS.BORDER);
+
         doc
           .fillColor(this.COLORS.TEXT)
           .font('Helvetica-Bold')
           .fontSize(14)
-          .text(
-            'Overall Plagiarism Score',
-            70,
-            doc.y + 20,
-            { continued: false }, // Reset continued
-          );
+          .text('Overall Plagiarism Score', 70, cardStartY + 20);
+
         doc
           .font('Helvetica-Bold')
           .fontSize(36)
           .fillColor(scoreColor)
-          .text(`${plagiarismChecks.score.toFixed(2)}%`, { align: 'right' });
-        doc.moveDown(2);
+          .text(`${plagiarismChecks.score.toFixed(2)}%`, 70, cardStartY + 35, {
+            width: doc.page.width - 140,
+            align: 'right',
+          });
 
-        // Detail Submission & Metrik
-        const detailsY = doc.y;
+        doc.y = cardStartY + 90 + 25;
+
+        // Detail Submission & Metrik - REVISED FOR STABILITY
+        const detailsStartY = doc.y;
+        const leftColumnX = 70;
+        const rightColumnX = 320;
+
         doc
-          .fillColor(this.COLORS.TEXT)
           .font('Helvetica-Bold')
           .fontSize(12)
-          .text('Submission Details', 70, detailsY);
+          .fillColor(this.COLORS.TEXT)
+          .text('Submission Details', leftColumnX, detailsStartY);
         doc
           .font('Helvetica')
           .fontSize(10)
           .fillColor(this.COLORS.SUBTLE_TEXT)
-          .text(`Class: ${submission.assignment.class.name}`, 70, doc.y + 5)
+          .text(
+            `Class: ${submission.assignment.class.name}`,
+            leftColumnX,
+            detailsStartY + 20,
+          )
           .text(
             `Checked On: ${plagiarismChecks.checkedAt.toLocaleString('id-ID')}`,
+            leftColumnX,
+            detailsStartY + 35,
           );
 
         if (rawData && rawData.result) {
           doc
-            .fillColor(this.COLORS.TEXT)
             .font('Helvetica-Bold')
             .fontSize(12)
-            .text('Key Metrics', 320, detailsY);
+            .fillColor(this.COLORS.TEXT)
+            .text('Key Metrics', rightColumnX, detailsStartY);
           doc
             .font('Helvetica')
             .fontSize(10)
             .fillColor(this.COLORS.SUBTLE_TEXT)
             .text(
               `Total Words: ${rawData.result.textWordCounts}`,
-              320,
-              doc.y + 5,
+              rightColumnX,
+              detailsStartY + 20,
             )
-            .text(`Plagiarized Words: ${rawData.result.totalPlagiarismWords}`)
-            .text(`Sources Found: ${rawData.result.sourceCounts}`);
+            .text(
+              `Plagiarized Words: ${rawData.result.totalPlagiarismWords}`,
+              rightColumnX,
+              detailsStartY + 35,
+            )
+            .text(
+              `Sources Found: ${rawData.result.sourceCounts}`,
+              rightColumnX,
+              detailsStartY + 50,
+            );
         }
-        doc.moveDown(3);
 
         // ===== HALAMAN 2: ANALISIS KONTEN =====
         doc.addPage();
+        doc.y = 100; // FIX: Leave space for the header
         doc
           .font('Helvetica-Bold')
           .fontSize(16)
@@ -249,6 +268,7 @@ export class PDFReportService {
           rawData.sources.filter((s) => s.score > 0).length > 0
         ) {
           doc.addPage();
+          doc.y = 100; // FIX: Leave space for the header
           doc
             .font('Helvetica-Bold')
             .fontSize(16)
@@ -257,6 +277,11 @@ export class PDFReportService {
 
           const relevantSources = rawData.sources.filter((s) => s.score > 0);
           relevantSources.forEach((source) => {
+            // Add a check to prevent content from overflowing and creating extra pages
+            if (doc.y > doc.page.height - 150) {
+              doc.addPage();
+              doc.y = 100; // Reset position on new page
+            }
             doc
               .roundedRect(doc.x, doc.y, doc.page.width - 100, 1, 0)
               .fill(this.COLORS.BORDER);
@@ -283,14 +308,17 @@ export class PDFReportService {
           });
         }
 
-        // ===== FOOTER UNTUK SEMUA HALAMAN =====
+        // ===== HEADER & FOOTER UNTUK SEMUA HALAMAN =====
         const range = doc.bufferedPageRange();
         for (let i = 0; i < range.count; i++) {
           doc.switchToPage(i);
+
+          // Header untuk halaman selanjutnya (setelah halaman 1)
           if (i > 0 && logoPath) {
-            // Header untuk halaman selanjutnya
             doc.image(logoPath, 50, 45, { width: 80 });
           }
+
+          // Footer untuk semua halaman
           doc
             .fontSize(8)
             .fillColor(this.COLORS.SUBTLE_TEXT)
@@ -302,9 +330,12 @@ export class PDFReportService {
             )
             .text(
               `Page ${i + 1} of ${range.count}`,
-              doc.page.width - 100,
+              50, // FIX: Align to left margin
               doc.page.height - 40,
-              { align: 'right' },
+              {
+                align: 'right',
+                width: doc.page.width - 100, // FIX: Use page width minus margins
+              },
             );
         }
 
