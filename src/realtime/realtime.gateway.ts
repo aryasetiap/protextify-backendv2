@@ -19,6 +19,7 @@ import { WEBSOCKET_EVENTS } from './events';
 @WebSocketGateway({
   cors: {
     origin: [
+      'https://api.protextify.id/',
       'http://api.protextify.id/', // Production
       'https://protextify.id/', // Production
       'https://www.protextify.id/', // Production

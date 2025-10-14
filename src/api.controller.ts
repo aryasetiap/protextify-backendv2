@@ -67,7 +67,7 @@ export class ApiController {
           'submissionUpdated',
           'submissionListUpdated',
         ],
-        url: 'ws://api.protextify.id/',
+        url: 'wss://api.protextify.id/',
       },
       status: 'operational',
       uptime: process.uptime(),

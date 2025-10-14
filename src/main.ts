@@ -46,7 +46,10 @@ async function bootstrap() {
   // 🔧 Updated CORS configuration - Support frontend development
   app.enableCors({
     origin: [
+    'https://api.protextify.id',
     'http://api.protextify.id', // Production
+    'https://protextify.id',      // HTTPS domain
+    'http://protextify.id',       // HTTP domain
     'http://localhost:5173', // Vite dev server (primary)
     'http://localhost:3000', // Backend same-origin
     'http://localhost:3001', // Alternative frontend port
@@ -56,8 +59,6 @@ async function bootstrap() {
     'http://127.0.0.1:3000', // IP variant
     'http://103.217.145.28', // FE Docker port
     'http://103.217.145.28:5173', // FE Docker port
-    'http://protextify.id',       // HTTP domain
-    'https://protextify.id',      // HTTPS domain
   ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -88,7 +89,7 @@ async function bootstrap() {
     .setDescription('Backend API untuk platform Protextify')
     .setVersion('2.0.0')
     .addBearerAuth()
-    .addServer('http://api.protextify.id', 'Development server')
+    .addServer('https://api.protextify.id', 'Development server')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
