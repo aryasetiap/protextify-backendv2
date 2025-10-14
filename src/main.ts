@@ -46,15 +46,18 @@ async function bootstrap() {
   // 🔧 Updated CORS configuration - Support frontend development
   app.enableCors({
     origin: [
-      'http://localhost:5173', // Vite dev server (primary)
-      'http://localhost:3000', // Backend same-origin
-      'http://localhost:3001', // Alternative frontend port
-      'http://localhost:4173', // Vite preview
-      'http://localhost:5174', // Vite dev server backup
-      'http://127.0.0.1:5173', // IP variant
-      'http://127.0.0.1:3000', // IP variant
-      'http://103.217.145.28:5173', // <--- Tambahkan ini
-    ],
+    'http://localhost:5173', // Vite dev server (primary)
+    'http://localhost:3000', // Backend same-origin
+    'http://localhost:3001', // Alternative frontend port
+    'http://localhost:4173', // Vite preview
+    'http://localhost:5174', // Vite dev server backup
+    'http://127.0.0.1:5173', // IP variant
+    'http://127.0.0.1:3000', // IP variant
+    'http://103.217.145.28', // FE Docker port
+    'http://103.217.145.28:5173', // FE Docker port
+    'http://protextify.id',       // HTTP domain
+    'https://protextify.id',      // HTTPS domain
+  ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
