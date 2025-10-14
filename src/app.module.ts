@@ -44,11 +44,11 @@ import { AnalyticsModule } from './analytics/analytics.module';
         WINSTON_AI_API_URL: Joi.string().required(),
         WINSTON_AI_TOKEN: Joi.string().required(),
         // Base URL
-        BASE_URL: Joi.string().default('http://localhost:3000'),
+        BASE_URL: Joi.string().default('http://api.protextify.id'),
         // 🔧 Frontend & CORS URLs
-        FRONTEND_URL: Joi.string().default('http://localhost:5173'),
+        FRONTEND_URL: Joi.string().default('http://protextify.id'),
         CORS_ORIGINS: Joi.string().default(
-          'http://localhost:5173,http://localhost:3000,http://localhost:4173',
+          'http://protextify.id,http://api.protextify.id,http://localhost:4173',
         ),
         // Cloudflare R2
         CLOUDFLARE_R2_ENDPOINT: Joi.string().required(),

@@ -19,6 +19,9 @@ import { WEBSOCKET_EVENTS } from './events';
 @WebSocketGateway({
   cors: {
     origin: [
+      'http://api.protextify.id/', // Production
+      'https://protextify.id/', // Production
+      'https://www.protextify.id/', // Production
       'http://localhost:5173', // Vite dev server (primary)
       'http://localhost:3000', // Backend same-origin
       'http://localhost:3001', // Alternative frontend port
