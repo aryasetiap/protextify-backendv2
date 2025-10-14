@@ -53,6 +53,7 @@ async function bootstrap() {
       'http://localhost:5174', // Vite dev server backup
       'http://127.0.0.1:5173', // IP variant
       'http://127.0.0.1:3000', // IP variant
+      'http://103.217.145.28:5173', // <--- Tambahkan ini
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
