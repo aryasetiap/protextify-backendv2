@@ -18,6 +18,12 @@ RUN npx prisma generate
 # Build project
 RUN npm run build
 
+# Copy email templates ke dist/email/templates
+RUN mkdir -p dist/email/templates && cp -r src/email/templates/* dist/email/templates/
+
+# Copy email templates ke dist/src/email/templates (jika ada kode yang akses path ini)
+RUN mkdir -p dist/src/email/templates && cp -r src/email/templates/* dist/src/email/templates/
+
 EXPOSE 3000
 
 CMD ["node", "dist/src/main.js"]
