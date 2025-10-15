@@ -29,6 +29,9 @@ export class AuthService {
     ) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    if (!user.emailVerified) {
+      throw new UnauthorizedException('Email belum diverifikasi');
+    }
     const payload = { sub: user.id, email: user.email, role: user.role };
     const accessToken = await this.jwtService.signAsync(payload);
     return {
