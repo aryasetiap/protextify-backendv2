@@ -29,6 +29,7 @@ import { BulkGradeDto } from './dto/bulk-grade.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
 import { BulkDownloadDto } from './dto/bulk-download.dto';
 import { GetClassHistoryDto } from './dto/get-class-history.dto';
+import { StudentFeedbackDto } from './dto/student-feedback.dto';
 
 @ApiTags('submissions')
 @ApiBearerAuth()
@@ -407,13 +408,24 @@ export class SubmissionsController {
   @Post('/submissions/:id/submit')
   @ApiOperation({
     summary: 'Submit assignment',
-    description: 'Student submits their assignment for grading.',
+    description:
+      'Student submits their assignment for grading and gives feedback.',
   })
   @ApiParam({
     name: 'id',
     type: String,
     description: 'Submission ID',
     example: 'submission-1',
+  })
+  @ApiBody({
+    type: StudentFeedbackDto,
+    required: false,
+    examples: {
+      withFeedback: {
+        summary: 'Submit with feedback',
+        value: { answers: [8, 7, 9, 6, 10] },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -422,7 +434,8 @@ export class SubmissionsController {
       example: {
         id: 'submission-1',
         status: 'SUBMITTED',
-        submittedAt: '2025-06-01T13:10:00.000Z', // 🆕 Update example response
+        submittedAt: '2025-06-01T13:10:00.000Z',
+        studentFeedback: [8, 7, 9, 6, 10], // 🆕
       },
     },
   })
@@ -436,8 +449,12 @@ export class SubmissionsController {
     description: 'Not your submission',
     schema: { example: { statusCode: 403, message: 'Not your submission' } },
   })
-  async submit(@Param('id') id: string, @Req() req) {
-    return this.submissionsService.submit(id, req.user.userId);
+  async submit(
+    @Param('id') id: string,
+    @Req() req,
+    @Body() feedbackDto?: StudentFeedbackDto, // 🆕
+  ) {
+    return this.submissionsService.submit(id, req.user.userId, feedbackDto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

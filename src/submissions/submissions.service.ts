@@ -15,6 +15,7 @@ import { BulkDownloadDto } from './dto/bulk-download.dto';
 import JSZip from 'jszip';
 import { nanoid } from 'nanoid';
 import { GetClassHistoryDto } from './dto/get-class-history.dto';
+import { StudentFeedbackDto } from './dto/student-feedback.dto';
 
 @Injectable()
 export class SubmissionsService {
@@ -231,7 +232,11 @@ export class SubmissionsService {
     return updatedSubmission;
   }
 
-  async submit(submissionId: string, userId: string) {
+  async submit(
+    submissionId: string,
+    userId: string,
+    feedbackDto?: StudentFeedbackDto, // 🆕 Tambahkan parameter opsional
+  ) {
     const submission = await this.prisma.submission.findUnique({
       where: { id: submissionId },
       include: {
@@ -244,18 +249,37 @@ export class SubmissionsService {
     if (submission.studentId !== userId)
       throw new ForbiddenException('Not your submission');
 
-    const submittedAt = new Date(); // 🆕 Capture submitted timestamp
+    // Validasi feedback jika diberikan
+    let feedbackData = {};
+    if (feedbackDto && feedbackDto.answers) {
+      if (
+        !Array.isArray(feedbackDto.answers) ||
+        feedbackDto.answers.length !== 5 ||
+        feedbackDto.answers.some((v) => v < 1 || v > 10)
+      ) {
+        throw new BadRequestException(
+          'Feedback answers must be array of 5 numbers (1-10)',
+        );
+      }
+      feedbackData = { studentFeedback: feedbackDto.answers };
+    } else {
+      feedbackData = { studentFeedback: [] }; // Default empty array
+    }
+
+    const submittedAt = new Date();
 
     const updatedSubmission = await this.prisma.submission.update({
       where: { id: submissionId },
       data: {
         status: 'SUBMITTED',
-        submittedAt: submittedAt, // 🆕 Set submittedAt field
+        submittedAt: submittedAt,
+        ...feedbackData, // 🆕 Simpan feedback
       },
       select: {
         id: true,
         status: true,
-        submittedAt: true, // 🆕 Include submittedAt in response
+        submittedAt: true,
+        studentFeedback: true, // 🆕 Return feedback
       },
     });
 

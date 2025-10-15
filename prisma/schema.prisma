@@ -94,6 +94,7 @@ model Submission {
   student          User                @relation(fields: [studentId], references: [id])
   versions         SubmissionVersion[]
   attachments      Attachment[] // ilişkiyi ekle
+  studentFeedback  Int[] // Array of 5 integer scores (nullable)
 }
 
 model SubmissionVersion {
