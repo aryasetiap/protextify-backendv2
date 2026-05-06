@@ -98,8 +98,12 @@ export class PaymentsService {
       const midtransServerKey = this.configService.get<string>(
         'MIDTRANS_SERVER_KEY',
       );
+      const midtransIsProductionRaw = this.configService.get<
+        string | boolean
+      >('MIDTRANS_IS_PRODUCTION');
       const isProduction =
-        this.configService.get<string>('MIDTRANS_IS_PRODUCTION') === 'true';
+        midtransIsProductionRaw === true ||
+        String(midtransIsProductionRaw).toLowerCase() === 'true';
 
       if (!midtransServerKey) {
         throw new BadRequestException('Midtrans server key not configured');
@@ -192,6 +196,16 @@ export class PaymentsService {
 
       return {
         transactionId: transaction.id,
+        orderId: transaction.midtransTransactionId,
+        amount: transaction.amount,
+        createdAt: transaction.createdAt.toISOString(),
+        assignment: assignment
+          ? {
+              id: assignment.id,
+              title: assignment.title,
+              expectedStudentCount: assignment.expectedStudentCount,
+            }
+          : null,
         snapToken: response.data.token,
         paymentUrl: response.data.redirect_url,
         status: transaction.status,
@@ -300,40 +314,51 @@ export class PaymentsService {
         newStatus = 'FAILED';
       }
 
-      // Update status transaksi dengan paymentMethod jika field ditambahkan
-      await this.prisma.transaction.update({
-        where: { id: transaction.id },
-        data: {
-          status: newStatus,
-          paymentMethod: dto.payment_type, // 🆕 Simpan metode pembayaran dari Midtrans
-        },
-      });
+      const statusChanged = transaction.status !== newStatus;
+      const paymentMethodChanged = transaction.paymentMethod !== dto.payment_type;
+      const isFinalStatus = transaction.status === 'SUCCESS' || transaction.status === 'FAILED';
 
-      // Jika pembayaran sukses dan ini untuk assignment
-      if (
+      // Idempotency guard: ignore duplicate final webhook state updates.
+      if (isFinalStatus && !statusChanged && !paymentMethodChanged) {
+        return { message: 'Webhook already processed' };
+      }
+
+      const shouldActivateAssignment =
+        statusChanged &&
         newStatus === 'SUCCESS' &&
-        transaction.assignment &&
-        transaction.assignmentId
-      ) {
-        // Aktifkan assignment dengan null check
-        await this.prisma.assignment.update({
-          where: { id: transaction.assignmentId },
-          data: { active: true },
-        });
+        !!transaction.assignment &&
+        !!transaction.assignmentId;
+      const shouldNotifyFailure = statusChanged && newStatus === 'FAILED';
 
-        // Log activity
-        await this.prisma.classActivity.create({
+      await this.prisma.$transaction(async (tx) => {
+        await tx.transaction.update({
+          where: { id: transaction.id },
           data: {
-            classId: transaction.assignment.classId,
-            type: 'ASSIGNMENT_CREATED',
-            details: {
-              assignmentTitle: transaction.assignment.title,
-            },
-            actorId: transaction.userId,
+            status: newStatus,
+            paymentMethod: dto.payment_type, // Simpan metode pembayaran dari Midtrans
           },
         });
 
-        // Kirim notifikasi WebSocket dengan data yang benar
+        if (shouldActivateAssignment && transaction.assignmentId) {
+          await tx.assignment.update({
+            where: { id: transaction.assignmentId },
+            data: { active: true },
+          });
+
+          await tx.classActivity.create({
+            data: {
+              classId: transaction.assignment!.classId,
+              type: 'ASSIGNMENT_CREATED',
+              details: {
+                assignmentTitle: transaction.assignment!.title,
+              },
+              actorId: transaction.userId,
+            },
+          });
+        }
+      });
+
+      if (shouldActivateAssignment && transaction.assignmentId && transaction.assignment) {
         this.realtimeGateway.sendNotification(transaction.userId, {
           type: 'payment_success',
           message: `Payment successful! Assignment "${transaction.assignment.title}" is now active.`,
@@ -344,8 +369,7 @@ export class PaymentsService {
           },
           createdAt: new Date().toISOString(),
         });
-      } else if (newStatus === 'FAILED') {
-        // Kirim notifikasi kegagalan
+      } else if (shouldNotifyFailure) {
         this.realtimeGateway.sendNotification(transaction.userId, {
           type: 'payment_failed',
           message: 'Payment failed. Please try again.',
@@ -636,15 +660,15 @@ export class PaymentsService {
       'application/pdf',
     );
 
-    const downloadUrl = await this.storageService.refreshDownloadUrl(
+    const signed = await this.storageService.refreshDownloadUrl(
       cloudKey,
       filename,
       3600, // 1 hour expiry
     );
 
     return {
-      downloadUrl,
-      expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+      downloadUrl: signed.url,
+      expiresAt: signed.expiresAt,
       filename,
     };
   }
@@ -736,15 +760,15 @@ export class PaymentsService {
 
     await this.storageService.uploadRawBuffer(csvBuffer, cloudKey, 'text/csv');
 
-    const downloadUrl = await this.storageService.refreshDownloadUrl(
+    const signed = await this.storageService.refreshDownloadUrl(
       cloudKey,
       filename,
       3600, // Expires in 1 hour
     );
 
     return {
-      downloadUrl,
-      expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+      downloadUrl: signed.url,
+      expiresAt: signed.expiresAt,
       filename,
     };
   }

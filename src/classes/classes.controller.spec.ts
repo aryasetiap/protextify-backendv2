@@ -108,12 +108,16 @@ describe('ClassesController', () => {
       const classId = 'class-xyz';
       const mockResult = { id: classId, name: 'Detail Kelas' };
       service.getClassDetail.mockResolvedValue(mockResult);
+      const req = { user: { userId: 'instructor-1' } };
 
       // Act
-      const result = await controller.getClassDetail(classId);
+      const result = await controller.getClassDetail(classId, req);
 
       // Assert
-      expect(service.getClassDetail).toHaveBeenCalledWith(classId);
+      expect(service.getClassDetail).toHaveBeenCalledWith(
+        classId,
+        'instructor-1',
+      );
       expect(result).toEqual(mockResult);
     });
   });

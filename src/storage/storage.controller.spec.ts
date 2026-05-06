@@ -57,7 +57,11 @@ describe('StorageController', () => {
 
     it('should call service with correct parameters and return url', async () => {
       const newUrl = 'http://new-presigned-url.com';
-      service.refreshDownloadUrl.mockResolvedValue(newUrl);
+      service.refreshDownloadUrl.mockResolvedValue({
+        url: newUrl,
+        expiresIn: 7200,
+        expiresAt: new Date(Date.now() + 7200 * 1000).toISOString(),
+      });
 
       const result = await controller.refreshDownloadUrl(
         cloudKey,
@@ -75,7 +79,11 @@ describe('StorageController', () => {
     });
 
     it('should use default expiration if not provided', async () => {
-      service.refreshDownloadUrl.mockResolvedValue('http://default-url.com');
+      service.refreshDownloadUrl.mockResolvedValue({
+        url: 'http://default-url.com',
+        expiresIn: 3600,
+        expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+      });
       await controller.refreshDownloadUrl(cloudKey, filename, undefined);
       expect(service.refreshDownloadUrl).toHaveBeenCalledWith(
         cloudKey,

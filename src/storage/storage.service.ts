@@ -77,6 +77,32 @@ export class StorageService {
   }
 
   /**
+   * Konten dari editor rich-text (mis. Lexical) disimpan sebagai HTML di DB.
+   * PDFKit / docx butuh teks biasa — tanpa ini tag HTML tercetak apa adanya.
+   */
+  private submissionHtmlToPlainText(html: string): string {
+    if (!html || typeof html !== 'string') return '';
+    let text = html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<\/h[1-6]>/gi, '\n')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<[^>]+>/g, '');
+    text = text
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\u00a0/g, ' ');
+    return text.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  /**
    * Generate PDF file from submission content
    */
   async generatePDF(
@@ -483,11 +509,12 @@ export class StorageService {
       .fontSize(16)
       .text('Konten Submission', { underline: true });
     doc.moveDown();
+    const bodyPlain = this.submissionHtmlToPlainText(submission.content);
     doc
       .font('Helvetica')
       .fontSize(10.5)
       .lineGap(4)
-      .text(submission.content, { align: 'justify' });
+      .text(bodyPlain || '(Tidak ada teks)', { align: 'justify' });
   }
 
   /**
@@ -562,7 +589,9 @@ export class StorageService {
               ],
             }),
             new DOCX.Paragraph({ text: '' }),
-            new DOCX.Paragraph({ text: submission.content }),
+            new DOCX.Paragraph({
+              text: this.submissionHtmlToPlainText(submission.content) || '(Tidak ada teks)',
+            }),
           ],
         },
       ],

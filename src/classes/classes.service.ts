@@ -3,7 +3,6 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
-  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateClassDto } from './dto/create-class.dto';
@@ -103,20 +102,48 @@ export class ClassesService {
   async deleteClass(classId: string, instructorId: string) {
     const kelas = await this.prisma.class.findUnique({
       where: { id: classId },
-      include: { _count: { select: { enrollments: true, assignments: true } } },
     });
 
     if (!kelas) throw new NotFoundException('Class not found');
     if (kelas.instructorId !== instructorId)
       throw new ForbiddenException('You do not own this class');
 
-    if (kelas._count.enrollments > 0 || kelas._count.assignments > 0) {
-      throw new BadRequestException(
-        'Cannot delete class with active students or assignments.',
-      );
-    }
+    await this.prisma.$transaction(
+      async (tx) => {
+        const assignments = await tx.assignment.findMany({
+          where: { classId },
+          select: { id: true },
+        });
+        const assignmentIds = assignments.map((a) => a.id);
 
-    await this.prisma.class.delete({ where: { id: classId } });
+        if (assignmentIds.length > 0) {
+          const submissions = await tx.submission.findMany({
+            where: { assignmentId: { in: assignmentIds } },
+            select: { id: true },
+          });
+          const submissionIds = submissions.map((s) => s.id);
+
+          if (submissionIds.length > 0) {
+            await tx.plagiarismCheck.deleteMany({
+              where: { submissionId: { in: submissionIds } },
+            });
+            await tx.submission.deleteMany({
+              where: { id: { in: submissionIds } },
+            });
+          }
+
+          await tx.assignment.deleteMany({
+            where: { id: { in: assignmentIds } },
+          });
+        }
+
+        await tx.classEnrollment.deleteMany({ where: { classId } });
+
+        await tx.class.delete({ where: { id: classId } });
+      },
+      { maxWait: 10000, timeout: 120000 },
+    );
+
     return { message: 'Class deleted successfully' };
   }
 
@@ -197,7 +224,14 @@ export class ClassesService {
         instructor: { select: { id: true, fullName: true } },
         enrollments: {
           include: {
-            student: { select: { id: true, fullName: true } },
+            student: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                institution: true,
+              },
+            },
           },
         },
         assignments: {
@@ -240,6 +274,33 @@ export class ClassesService {
       ...kelas,
       currentUserEnrollment,
     };
+  }
+
+  async removeStudentFromClass(
+    classId: string,
+    studentId: string,
+    instructorId: string,
+  ) {
+    const kelas = await this.prisma.class.findUnique({
+      where: { id: classId },
+    });
+    if (!kelas) throw new NotFoundException('Class not found');
+    if (kelas.instructorId !== instructorId)
+      throw new ForbiddenException('You do not own this class');
+
+    const enrollment = await this.prisma.classEnrollment.findUnique({
+      where: {
+        studentId_classId: { studentId, classId },
+      },
+    });
+    if (!enrollment)
+      throw new NotFoundException('Student is not enrolled in this class');
+
+    await this.prisma.classEnrollment.delete({
+      where: { id: enrollment.id },
+    });
+
+    return { message: 'Student removed from class' };
   }
 
   async getActivityFeed(classId: string, instructorId: string, limit: number) {

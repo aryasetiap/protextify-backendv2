@@ -1,26 +1,26 @@
 version: '3.8'
 
 services:
-  api-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    ports:
-      - "3000:3000"
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
-    environment:
-      - NODE_ENV=development
-      - PORT=3000
-      - DATABASE_URL=postgresql://postgres:arya19032004A*@postgres:5432/protextifyv2?schema=public
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - JWT_SECRET=YOUR_RANDOM_JWT_SECRET
-      - JWT_EXPIRATION_TIME=3600s
-    depends_on:
-      - postgres
-      - redis
+  # api-dev:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.dev
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - .:/usr/src/app
+  #     - /usr/src/app/node_modules
+  #   environment:
+  #     - NODE_ENV=development
+  #     - PORT=3000
+  #     - DATABASE_URL=postgresql://postgres:arya19032004A*@postgres:5432/protextifyv2?schema=public
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - JWT_SECRET=YOUR_RANDOM_JWT_SECRET
+  #     - JWT_EXPIRATION_TIME=3600s
+  #   depends_on:
+  #     - postgres
+  #     - redis
 
   api:
     build:

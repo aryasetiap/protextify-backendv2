@@ -159,16 +159,16 @@ export class StorageController {
     }
 
     try {
-      const url = await this.storageService.refreshDownloadUrl(
+      const signed = await this.storageService.refreshDownloadUrl(
         decodeURIComponent(cloudKey),
         filename,
         expiresIn,
       );
 
       return {
-        url,
-        expiresIn,
-        expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+        url: signed.url,
+        expiresIn: signed.expiresIn,
+        expiresAt: signed.expiresAt,
       };
     } catch (error) {
       this.logger.error(`[STORAGE] Refresh URL error:`, error);

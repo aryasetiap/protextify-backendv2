@@ -143,21 +143,29 @@ export class PaymentsController {
     description: 'Transaction not found',
     schema: { example: { statusCode: 404, message: 'Transaction not found' } },
   })
-  async handleWebhook(@Body() dto: WebhookDto) {
-    try {
-      console.log('[WEBHOOK CONTROLLER] Received webhook request');
-      const result = await this.paymentsService.handleWebhook(dto);
-      console.log('[WEBHOOK CONTROLLER] Webhook processed successfully');
-      return result;
-    } catch (error) {
-      console.error('[WEBHOOK CONTROLLER] Error processing webhook:', error);
-      // Return success response even if there's an error to prevent Midtrans retry
-      return {
-        message: 'Webhook received',
-        status: 'error',
-        error: error.message,
-      };
+  async handleWebhook(@Body() dto: Partial<WebhookDto>) {
+    console.log('[WEBHOOK CONTROLLER] Received webhook request');
+
+    // Midtrans "Test notification URL" may send ping payloads.
+    // Return 200 only for incomplete test payloads.
+    if (!dto?.order_id || !dto?.transaction_status || !dto?.signature_key) {
+      return { message: 'Webhook endpoint reachable' };
     }
+
+    const result = await this.paymentsService.handleWebhook(dto as WebhookDto);
+    console.log('[WEBHOOK CONTROLLER] Webhook processed successfully');
+    return result;
+  }
+
+  @Get('webhook')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Webhook health check endpoint',
+    description:
+      'Simple GET endpoint so payment providers can verify webhook URL reachability.',
+  })
+  webhookHealthCheck() {
+    return { message: 'Webhook endpoint reachable' };
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

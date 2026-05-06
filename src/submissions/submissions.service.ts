@@ -249,6 +249,16 @@ export class SubmissionsService {
     if (submission.studentId !== userId)
       throw new ForbiddenException('Not your submission');
 
+    const plainTextContent = (submission.content || '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .trim();
+    if (!plainTextContent) {
+      throw new BadRequestException(
+        'Submission content is empty. Please save your writing before submitting.',
+      );
+    }
+
     // Validasi feedback jika diberikan
     let feedbackData = {};
     if (feedbackDto && feedbackDto.answers) {
@@ -523,15 +533,15 @@ export class SubmissionsService {
     await this.storageService.uploadRawBuffer(fileBuffer, cloudKey, mimeType);
 
     // 4. Generate pre-signed URL
-    const downloadUrl = await this.storageService.refreshDownloadUrl(
+    const signed = await this.storageService.refreshDownloadUrl(
       cloudKey,
       filename,
       3600, // Expires in 1 hour
     );
 
     return {
-      downloadUrl,
-      expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+      downloadUrl: signed.url,
+      expiresAt: signed.expiresAt,
       fileCount: submissions.length,
       filename,
     };
@@ -600,6 +610,7 @@ export class SubmissionsService {
       page = 1,
       limit = 15,
       search,
+      studentId,
       status,
       sortBy = 'updatedAt',
       sortOrder = 'desc',
@@ -615,6 +626,7 @@ export class SubmissionsService {
 
     const where: any = {
       assignment: { classId },
+      ...(studentId && { studentId }),
       ...(status && { status }),
       ...(search && {
         OR: [

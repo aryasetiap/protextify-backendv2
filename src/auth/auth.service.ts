@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -43,6 +44,14 @@ export class AuthService {
         updatedAt: user.updatedAt.toISOString(),
       },
     };
+  }
+
+  async loginAdmin(dto: LoginDto) {
+    const loginResult = await this.login(dto);
+    if (String(loginResult.user.role) !== 'ADMIN') {
+      throw new ForbiddenException('Akun ini bukan admin');
+    }
+    return loginResult;
   }
 
   async generateJwtForUser(user: any) {

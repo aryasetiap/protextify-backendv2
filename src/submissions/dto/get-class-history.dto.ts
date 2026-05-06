@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsEnum,
   IsIn,
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   Min,
 } from 'class-validator';
@@ -37,6 +37,14 @@ export class GetClassHistoryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Restrict results to one enrolled student (UUID)',
+  })
+  @IsOptional()
+  @IsUUID()
+  studentId?: string;
 
   @ApiProperty({
     required: false,

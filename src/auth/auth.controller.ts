@@ -146,6 +146,27 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Post('admin/login')
+  @ApiOperation({
+    summary: 'Login admin',
+    description:
+      'Login endpoint khusus admin. Hanya akun dengan role ADMIN yang bisa berhasil login.',
+  })
+  @ApiBody({
+    type: LoginDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Admin login successful, JWT returned',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden (not admin)',
+  })
+  async loginAdmin(@Body() dto: LoginDto) {
+    return this.authService.loginAdmin(dto);
+  }
+
   @Post('send-verification')
   @ApiOperation({
     summary: 'Send email verification',

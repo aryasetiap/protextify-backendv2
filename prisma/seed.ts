@@ -95,14 +95,27 @@ async function seedUsers() {
   ];
 
   const allUsers = [...instructors, ...students];
-  for (const userData of allUsers) {
+  const admins = [
+    {
+      id: 'admin-1',
+      email: 'admin@protextify.id',
+      fullName: 'Protextify Admin',
+      password: hashedPassword,
+      role: 'ADMIN' as any,
+      institution: 'Protextify',
+      emailVerified: true,
+      phone: '+6281200000000',
+    },
+  ];
+  const usersToSeed = [...allUsers, ...admins];
+  for (const userData of usersToSeed) {
     await prisma.user.upsert({
       where: { email: userData.email },
       update: {},
       create: userData,
     });
   }
-  console.log(`   ✅ Created/updated ${allUsers.length} users`);
+  console.log(`   ✅ Created/updated ${usersToSeed.length} users`);
 }
 
 /**

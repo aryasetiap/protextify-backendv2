@@ -169,6 +169,12 @@ export class SubmissionsController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'search', required: false, type: String })
   @ApiQuery({
+    name: 'studentId',
+    required: false,
+    type: String,
+    description: 'Filter submissions to this student only',
+  })
+  @ApiQuery({
     name: 'status',
     required: false,
     enum: ['DRAFT', 'SUBMITTED', 'GRADED'],

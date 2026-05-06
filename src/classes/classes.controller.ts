@@ -286,16 +286,41 @@ export class ClassesController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('INSTRUCTOR')
+  @Delete(':id/students/:studentId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Remove a student from the class',
+    description:
+      'Deletes the enrollment record for the given student. Does not delete submission history.',
+  })
+  @ApiParam({ name: 'id', type: String, description: 'Class ID' })
+  @ApiParam({ name: 'studentId', type: String, description: 'Student user ID' })
+  @ApiResponse({ status: 200, description: 'Student removed successfully.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({ status: 404, description: 'Class or enrollment not found.' })
+  async removeStudentFromClass(
+    @Param('id') classId: string,
+    @Param('studentId') studentId: string,
+    @Req() req,
+  ) {
+    return this.classesService.removeStudentFromClass(
+      classId,
+      studentId,
+      req.user.userId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('INSTRUCTOR')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete a class',
     description:
-      'Permanently deletes a class. Only possible if there are no students or assignments.',
+      'Permanently deletes the class and cascades: submissions (and plagiarism checks), assignments, enrollments, and class activity. Payment transactions keep history with assignment link cleared (FK SET NULL).',
   })
   @ApiParam({ name: 'id', type: String, description: 'Class ID' })
   @ApiResponse({ status: 204, description: 'Class deleted successfully.' })
-  @ApiResponse({ status: 400, description: 'Class is not empty.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Class not found.' })
   async deleteClass(@Param('id') classId: string, @Req() req) {

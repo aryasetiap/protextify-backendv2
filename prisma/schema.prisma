@@ -176,6 +176,7 @@ model ClassActivity {
 }
 
 enum Role {
+  ADMIN
   STUDENT
   INSTRUCTOR
 }
