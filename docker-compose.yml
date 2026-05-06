@@ -62,7 +62,7 @@ services:
 
   frontend:
     build:
-      context: ../protextify-frontend
+      context: ../protextify-frontendv2
       dockerfile: Dockerfile
     ports:
       - "5173:80"
