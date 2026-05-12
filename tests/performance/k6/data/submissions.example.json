@@ -1,6 +1,13 @@
 {
   "classId": "replace-with-local-class-id",
+  "classToken": "replace-with-local-class-token",
   "assignmentId": "replace-with-local-assignment-id",
+  "writeAssignmentId": "replace-with-local-write-assignment-id",
   "submissionId": "replace-with-local-submission-id",
+  "submissionDraftId": "replace-with-local-draft-submission-id",
+  "submissionSubmittedId": "replace-with-local-submitted-submission-id",
+  "shortContentSubmissionId": "replace-with-local-short-content-submission-id",
+  "winstonAiSubmissionId": "replace-with-local-winstonai-submission-id",
+  "reportSubmissionId": "replace-with-local-report-submission-id",
   "content": "Contoh konten dummy untuk pengujian lokal. Jangan gunakan data pribadi asli atau dokumen skripsi asli pada file example."
 }

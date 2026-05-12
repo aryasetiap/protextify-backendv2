@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2026-01-01T00:00:00.000Z",
+  "prefix": "thesis-perf",
+  "baseUrl": "http://localhost:3000",
+  "instructor": {
+    "id": "thesis-perf-instructor-1",
+    "email": "thesis-perf-instructor@example.test"
+  },
+  "student": {
+    "id": "thesis-perf-student-main",
+    "email": "thesis-perf-student-main@example.test"
+  },
+  "classId": "thesis-perf-class-1",
+  "classToken": "THESISPERF2026",
+  "assignmentId": "thesis-perf-assignment-main",
+  "writeAssignmentId": "thesis-perf-assignment-write",
+  "submissionDraftId": "thesis-perf-submission-draft",
+  "submissionSubmittedId": "thesis-perf-submission-submitted",
+  "shortContentSubmissionId": "thesis-perf-submission-short-content",
+  "winstonAiSubmissionId": "thesis-perf-submission-winstonai",
+  "reportSubmissionId": "thesis-perf-submission-report",
+  "writeTestData": [
+    {
+      "studentId": "thesis-perf-student-write-1",
+      "studentEmail": "thesis-perf-student-write-1@example.test",
+      "submissionId": "thesis-perf-submission-write-1"
+    }
+  ]
+}

@@ -1,10 +1,12 @@
 {
   "instructor": {
+    "id": "thesis-perf-instructor-1",
     "email": "instructor@example.test",
-    "password": "dummy-password"
+    "passwordEnv": "TEST_USER_PASSWORD"
   },
   "student": {
+    "id": "thesis-perf-student-main",
     "email": "student@example.test",
-    "password": "dummy-password"
+    "passwordEnv": "TEST_USER_PASSWORD"
   }
 }

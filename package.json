@@ -29,6 +29,9 @@
     "copy:assets": "copyfiles -u 2 src/assets/* dist/src/assets",
     "queue:dashboard": "bull-board",
     "queue:clean": "node -e \"require('./dist/src/plagiarism/plagiarism.service.js').cleanupOldJobs()\"",
+    "test:data:setup": "tsx scripts/test-data/setup-test-data.ts",
+    "test:data:cleanup": "tsx scripts/test-data/cleanup-test-data.ts",
+    "thesis:test:data:reset": "npm run test:data:cleanup && npm run test:data:setup",
     "db:seed": "npx prisma db seed",
     "db:reset": "npx prisma migrate reset && npx prisma db seed"
   },

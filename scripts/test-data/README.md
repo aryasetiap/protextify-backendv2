@@ -1,11 +1,17 @@
 # Test Data Scripts
 
-Folder ini disiapkan untuk script setup dan cleanup data uji skripsi.
+Folder ini berisi script setup dan cleanup data uji skripsi.
 
-Script penuh belum dibuat pada Prompt 3. Saat dibuat nanti, script harus:
+Script yang tersedia:
+
+- `setup-test-data.ts`
+- `cleanup-test-data.ts`
+
+Aturan utama:
 
 - memakai data dummy;
 - idempotent;
+- hanya menyentuh data dengan prefix `thesis-perf` / `THESIS_PERF`;
 - tidak menghapus data asli;
 - tidak menampilkan secret;
-- menjelaskan risiko sebelum dijalankan.
+- menolak berjalan pada `NODE_ENV=production`.

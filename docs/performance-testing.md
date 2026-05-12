@@ -83,6 +83,53 @@ Periksa nilai env tersebut di `.env.local` secara lokal tanpa membagikan isi sec
 
 Jangan menjalankan `db:seed`, `db:reset`, atau cleanup data sebelum risiko dan target datanya jelas.
 
+## Setup dan Cleanup Data Uji Skripsi
+
+Data uji skripsi dibuat dengan prefix `thesis-perf` dan label `THESIS_PERF` agar mudah dikenali serta aman dibersihkan.
+
+Sebelum setup data uji, pastikan readiness sudah `ready`:
+
+```powershell
+curl http://localhost:3000/api/health/readiness
+```
+
+Jalankan setup data uji:
+
+```powershell
+npm run test:data:setup
+```
+
+Script setup akan membuat file lokal berikut:
+
+```text
+tests/performance/k6/data/test-data.local.json
+```
+
+File lokal tersebut berisi ID data uji yang dibutuhkan k6 dan sudah di-ignore oleh Git. Jangan commit file `*.local.json`.
+
+Jalankan cleanup data uji:
+
+```powershell
+npm run test:data:cleanup
+```
+
+Reset data uji secara aman dapat dilakukan dengan:
+
+```powershell
+npm run thesis:test:data:reset
+```
+
+Script setup dan cleanup menolak berjalan pada `NODE_ENV=production`. Periksa `.env.local` sendiri tanpa membagikan secret. Password dummy user test dapat diatur lewat `TEST_USER_PASSWORD`; jika tidak diatur, script memakai fallback dummy lokal yang bukan secret.
+
+Cleanup hanya menghapus data dengan prefix `thesis-perf`, label `THESIS_PERF`, class token `THESISPERF2026`, atau relasi langsung dari data uji tersebut. Script tidak menjalankan `db:reset`, tidak menjalankan `queue:clean`, dan tidak membersihkan queue global.
+
+Troubleshooting:
+
+- Jika assignment terlihat inactive, jalankan ulang `npm run test:data:setup`; script membuat assignment uji dengan `active=true`.
+- Jika login/JWT gagal, pastikan user test dibuat dan gunakan password dummy lokal yang sama dengan `TEST_USER_PASSWORD`.
+- Jika terjadi konflik data, jalankan `npm run test:data:cleanup`, lalu setup ulang.
+- Jika file `test-data.local.json` belum ada, setup belum berhasil atau tidak punya izin tulis ke folder data k6.
+
 ## Menjalankan Backend Lokal
 
 ```powershell
