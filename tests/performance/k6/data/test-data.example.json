@@ -14,16 +14,20 @@
   "classToken": "THESISPERF2026",
   "assignmentId": "thesis-perf-assignment-main",
   "writeAssignmentId": "thesis-perf-assignment-write",
-  "submissionDraftId": "thesis-perf-submission-draft",
-  "submissionSubmittedId": "thesis-perf-submission-submitted",
-  "shortContentSubmissionId": "thesis-perf-submission-short-content",
-  "winstonAiSubmissionId": "thesis-perf-submission-winstonai",
-  "reportSubmissionId": "thesis-perf-submission-report",
+  "submissionDraftId": "00000000-0000-4000-8000-000000000101",
+  "submissionSubmittedId": "00000000-0000-4000-8000-000000000102",
+  "shortContentSubmissionId": "00000000-0000-4000-8000-000000000103",
+  "winstonAiSubmissionId": "00000000-0000-4000-8000-000000000104",
+  "reportSubmissionId": "00000000-0000-4000-8000-000000000105",
+  "createSubmissionStudent": {
+    "id": "thesis-perf-student-create-submission",
+    "email": "thesis-perf-student-create-submission@example.test"
+  },
   "writeTestData": [
     {
       "studentId": "thesis-perf-student-write-1",
       "studentEmail": "thesis-perf-student-write-1@example.test",
-      "submissionId": "thesis-perf-submission-write-1"
+      "submissionId": "00000000-0000-4000-8000-000000000201"
     }
   ]
 }

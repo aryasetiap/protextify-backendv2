@@ -15,6 +15,13 @@ const OUTPUT_PATH = path.resolve(
   'tests/performance/k6/data/test-data.local.json',
 );
 const DEFAULT_TEST_PASSWORD = 'thesis-perf-local-password';
+const SUBMISSION_IDS = {
+  draft: '00000000-0000-4000-8000-000000000101',
+  submitted: '00000000-0000-4000-8000-000000000102',
+  shortContent: '00000000-0000-4000-8000-000000000103',
+  winstonAi: '00000000-0000-4000-8000-000000000104',
+  report: '00000000-0000-4000-8000-000000000105',
+};
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL ?? '',
@@ -116,6 +123,11 @@ async function main() {
       email: `${TEST_PREFIX}-student-report@example.test`,
       fullName: `${TEST_LABEL} Student Report`,
     },
+    {
+      id: `${TEST_PREFIX}-student-create-submission`,
+      email: `${TEST_PREFIX}-student-create-submission@example.test`,
+      fullName: `${TEST_LABEL} Student Create Submission`,
+    },
     ...Array.from({ length: 8 }, (_, index) => {
       const number = index + 1;
       return {
@@ -208,7 +220,7 @@ async function main() {
   });
 
   const draftSubmission = await upsertSubmission({
-    id: `${TEST_PREFIX}-submission-draft`,
+    id: SUBMISSION_IDS.draft,
     assignmentId: assignment.id,
     studentId: `${TEST_PREFIX}-student-main`,
     content: validContent('Draft submission'),
@@ -216,7 +228,7 @@ async function main() {
   });
 
   const submittedSubmission = await upsertSubmission({
-    id: `${TEST_PREFIX}-submission-submitted`,
+    id: SUBMISSION_IDS.submitted,
     assignmentId: assignment.id,
     studentId: `${TEST_PREFIX}-student-submitted`,
     content: validContent('Submitted submission'),
@@ -225,7 +237,7 @@ async function main() {
   });
 
   const shortSubmission = await upsertSubmission({
-    id: `${TEST_PREFIX}-submission-short-content`,
+    id: SUBMISSION_IDS.shortContent,
     assignmentId: assignment.id,
     studentId: `${TEST_PREFIX}-student-short-content`,
     content: 'Terlalu pendek.',
@@ -234,7 +246,7 @@ async function main() {
   });
 
   const winstonAiSubmission = await upsertSubmission({
-    id: `${TEST_PREFIX}-submission-winstonai`,
+    id: SUBMISSION_IDS.winstonAi,
     assignmentId: assignment.id,
     studentId: `${TEST_PREFIX}-student-winstonai`,
     content: winstonContent(),
@@ -243,7 +255,7 @@ async function main() {
   });
 
   const reportSubmission = await upsertSubmission({
-    id: `${TEST_PREFIX}-submission-report`,
+    id: SUBMISSION_IDS.report,
     assignmentId: assignment.id,
     studentId: `${TEST_PREFIX}-student-report`,
     content: validContent('Report submission with completed plagiarism check'),
@@ -282,7 +294,9 @@ async function main() {
   }> = [];
   for (const student of writeStudents) {
     const submission = await upsertSubmission({
-      id: `${TEST_PREFIX}-submission-write-${student.id.split('-').at(-1)}`,
+      id: `00000000-0000-4000-8000-0000000002${String(
+        student.id.split('-').at(-1),
+      ).padStart(2, '0')}`,
       assignmentId: writeAssignment.id,
       studentId: student.id,
       content: validContent(`Write submission ${student.fullName}`),
@@ -333,6 +347,10 @@ async function main() {
     shortContentSubmissionId: shortSubmission.id,
     winstonAiSubmissionId: winstonAiSubmission.id,
     reportSubmissionId: reportSubmission.id,
+    createSubmissionStudent: {
+      id: `${TEST_PREFIX}-student-create-submission`,
+      email: `${TEST_PREFIX}-student-create-submission@example.test`,
+    },
     writeTestData: writeSubmissions,
   };
 

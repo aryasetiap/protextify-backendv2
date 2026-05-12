@@ -130,6 +130,49 @@ Troubleshooting:
 - Jika terjadi konflik data, jalankan `npm run test:data:cleanup`, lalu setup ulang.
 - Jika file `test-data.local.json` belum ada, setup belum berhasil atau tidak punya izin tulis ke folder data k6.
 
+## Functional API Testing
+
+Functional API testing digunakan untuk memastikan endpoint utama berjalan sebelum performance testing dengan k6.
+
+Prasyarat:
+
+- backend lokal berjalan;
+- `/api/health/readiness` mengembalikan `ready`;
+- data uji skripsi sudah dibuat dengan `npm run test:data:setup`;
+- file `tests/performance/k6/data/test-data.local.json` tersedia;
+- jangan memanggil real WinstonAI untuk functional hidden dry-run.
+
+Jalankan functional test:
+
+```powershell
+npm run thesis:test:functional
+```
+
+Functional test membaca:
+
+- `BASE_URL` atau default dari `test-data.local.json`;
+- data uji dari `tests/performance/k6/data/test-data.local.json`;
+- password dummy dari `TEST_USER_PASSWORD` atau fallback dummy lokal yang sama dengan setup script.
+
+Functional test mengubah data uji:
+
+- membuat satu submission baru untuk student khusus create-submission;
+- mengubah content submission draft;
+- mengubah status submission draft menjadi `SUBMITTED`.
+
+Karena itu, reset data uji sebelum menjalankan ulang functional test:
+
+```powershell
+npm run thesis:test:data:reset
+npm run thesis:test:functional
+```
+
+Positive `POST /api/submissions/:id/check-plagiarism` sengaja tidak dijalankan pada tahap ini agar tidak memicu worker/WinstonAI real. Negative case yang gagal sebelum enqueue/provider tetap dijalankan.
+
+Endpoint report diuji menggunakan submission yang belum memiliki plagiarism check agar tidak memicu pembuatan PDF/storage eksternal. Pengujian report lengkap dilakukan pada integration testing terpisah.
+
+Hasil functional hidden dry-run belum menjadi hasil resmi Bab IV. Hasil resmi hanya berasal dari Iterasi Pertama dan Iterasi Kedua yang benar-benar dijalankan.
+
 ## Menjalankan Backend Lokal
 
 ```powershell
