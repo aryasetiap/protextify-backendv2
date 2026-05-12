@@ -37,10 +37,11 @@ lerna-debug.log*
 
 # dotenv environment variable files
 .env
+.env.local
+.env.*.local
 .env.development.local
 .env.test.local
 .env.production.local
-.env.local
 
 # temp directory
 .temp
@@ -58,3 +59,13 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 /generated/prisma
 /src/generated/prisma
 /uploads
+
+# Performance testing outputs
+results/performance/**/*.json
+results/performance/**/*.csv
+results/performance/**/*.txt
+results/performance/**/*.log
+
+# Local performance testing data
+tests/performance/k6/data/*.local.json
+tests/performance/k6/data/tokens*.json

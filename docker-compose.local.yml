@@ -1,0 +1,10 @@
+# Local-only Docker Compose override for hidden dry-run and development.
+# This file publishes Redis to localhost so a backend started on the host with
+# `npm run start:dev` can reach Bull/Redis through REDIS_HOST=localhost.
+#
+# Do not use this file for production deployment.
+
+services:
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"

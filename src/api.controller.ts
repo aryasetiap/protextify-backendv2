@@ -1,9 +1,29 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { PrismaService } from './prisma/prisma.service';
+import { PlagiarismService } from './plagiarism/plagiarism.service';
+
+type ReadinessCheck = {
+  status: 'up' | 'down';
+  name?: string;
+  reason?: string;
+  stats?: {
+    waiting: number;
+    active: number;
+    completed: number;
+    failed: number;
+    total: number;
+  };
+};
 
 @ApiTags('api')
 @Controller()
 export class ApiController {
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly plagiarismService: PlagiarismService,
+  ) {}
+
   @Get()
   @ApiOperation({ summary: 'API Root endpoint' })
   @ApiResponse({ status: 200, description: 'API information' })
@@ -59,6 +79,10 @@ export class ApiController {
           refreshUrl: 'GET /api/storage/refresh-url/:cloudKey',
           download: 'GET /api/storage/download/:filename',
         },
+        health: {
+          api: 'GET /api/health-check',
+          readiness: 'GET /api/health/readiness',
+        },
       },
       websocket: {
         events: [
@@ -103,5 +127,86 @@ export class ApiController {
       platform: process.platform,
       pid: process.pid,
     };
+  }
+
+  @Get('health/readiness')
+  @ApiOperation({ summary: 'API readiness check' })
+  @ApiResponse({
+    status: 200,
+    description: 'Readiness status for API, PostgreSQL, Redis, and queue',
+  })
+  async getReadiness() {
+    const [postgres, queue] = await Promise.all([
+      this.withTimeout(this.checkPostgres(), 3000, {
+        status: 'down',
+        reason: 'timeout',
+      }),
+      this.withTimeout(this.checkQueue(), 3000, {
+        status: 'down',
+        name: 'plagiarism',
+        reason: 'timeout',
+      }),
+    ]);
+    const ready = postgres.status === 'up' && queue.status === 'up';
+
+    return {
+      status: ready ? 'ready' : 'not_ready',
+      timestamp: new Date().toISOString(),
+      service: 'protextify-backend-api',
+      timeoutMs: 3000,
+      checks: {
+        api: {
+          status: 'up',
+        },
+        postgres,
+        redis: {
+          status: queue.status,
+          via: 'bull queue',
+        },
+        queue,
+      },
+    };
+  }
+
+  private async checkPostgres(): Promise<ReadinessCheck> {
+    try {
+      await this.prismaService.$queryRaw`SELECT 1`;
+      return {
+        status: 'up',
+      };
+    } catch {
+      return {
+        status: 'down',
+      };
+    }
+  }
+
+  private async checkQueue(): Promise<ReadinessCheck> {
+    try {
+      const stats = await this.plagiarismService.getQueueStats();
+      return {
+        status: 'up',
+        name: 'plagiarism',
+        stats,
+      };
+    } catch {
+      return {
+        status: 'down',
+        name: 'plagiarism',
+      };
+    }
+  }
+
+  private async withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    fallback: T,
+  ): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((resolve) =>
+        setTimeout(() => resolve(fallback), timeoutMs),
+      ),
+    ]);
   }
 }

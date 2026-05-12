@@ -1,0 +1,10 @@
+{
+  "instructor": {
+    "email": "instructor@example.test",
+    "password": "dummy-password"
+  },
+  "student": {
+    "email": "student@example.test",
+    "password": "dummy-password"
+  }
+}

@@ -31,7 +31,7 @@ export class RootController {
           description: 'Root health check',
         },
         apiHealth: {
-          url: '/api/health',
+          url: '/api/health-check',
           description: 'API health check with detailed info',
         },
         storage: {

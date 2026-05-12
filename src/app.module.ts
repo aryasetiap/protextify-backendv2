@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { BullModule } from '@nestjs/bull';
@@ -22,6 +23,8 @@ import { StorageModule } from './storage/storage.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AdminModule } from './admin/admin.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { RequestLoggingInterceptor } from './common/interceptors/request-logging.interceptor';
 
 @Module({
   imports: [
@@ -66,6 +69,7 @@ import { AdminModule } from './admin/admin.module';
         MIDTRANS_SERVER_KEY: Joi.string().optional(),
         MIDTRANS_CLIENT_KEY: Joi.string().optional(),
         MIDTRANS_IS_PRODUCTION: Joi.boolean().default(false),
+        ENABLE_REQUEST_LOGGING: Joi.boolean().default(false),
       }),
     }),
     ServeStaticModule.forRoot({
@@ -106,12 +110,19 @@ import { AdminModule } from './admin/admin.module';
     ScheduleModule.forRoot(), // Add this for cron jobs
     AnalyticsModule,
     AdminModule,
+    PrismaModule,
   ],
   controllers: [
     AppController,
     RootController, // 🔧 Register RootController for root paths
     ApiController, // 🔧 Register ApiController for /api root paths
   ],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestLoggingInterceptor,
+    },
+  ],
 })
 export class AppModule {}
