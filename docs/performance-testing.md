@@ -261,6 +261,183 @@ results/performance/iteration-2/
 
 Gunakan `--out json=...` jika membutuhkan raw metric JSON lengkap dari k6. File JSON, TXT, CSV, dan LOG di folder `results/performance` sudah di-ignore oleh Git.
 
+## Monitoring Resource dan Result Collection
+
+Folder hasil resmi dan hidden dry-run:
+
+```text
+results/performance/hidden-dry-run/
+results/performance/iteration-1/
+results/performance/iteration-2/
+```
+
+Siapkan folder hasil pada Windows:
+
+```powershell
+npm run thesis:results:prepare -- -Label hidden-dry-run
+npm run thesis:results:prepare -- -Label iteration-1
+npm run thesis:results:prepare -- -Label iteration-2
+```
+
+Siapkan folder hasil pada Linux/VPS:
+
+```bash
+bash scripts/monitoring/prepare-result-dir.sh --label hidden-dry-run
+bash scripts/monitoring/prepare-result-dir.sh --label iteration-1
+bash scripts/monitoring/prepare-result-dir.sh --label iteration-2
+```
+
+Script monitoring Windows:
+
+```powershell
+$env:RUN_LABEL="hidden-dry-run"
+$env:RUN_PHASE="before"
+$env:BASE_URL="http://localhost:3000"
+npm run thesis:monitor:local
+```
+
+Script monitoring Linux/VPS:
+
+```bash
+RUN_LABEL=iteration-1 RUN_PHASE=before BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+```
+
+Queue stats membutuhkan token instructor karena endpoint dilindungi. Jika ingin mengambil queue stats, set token hanya di shell lokal dan jangan tulis ke dokumen:
+
+```powershell
+$env:QUEUE_STATS_TOKEN="ISI_TOKEN_INSTRUCTOR_LOKAL"
+npm run thesis:monitor:local
+Remove-Item Env:\QUEUE_STATS_TOKEN
+```
+
+```bash
+QUEUE_STATS_TOKEN="ISI_TOKEN_INSTRUCTOR_LOKAL" bash scripts/monitoring/capture-vps-metrics.sh --label iteration-1 --phase before
+unset QUEUE_STATS_TOKEN
+```
+
+Script monitoring tidak membaca `.env`, tidak mencetak token, tidak mencatat request body, dan tidak menampilkan secret. Jika token tidak tersedia, queue stats akan dilewati dengan catatan `Skipped`.
+
+Naming file hasil:
+
+```text
+hidden-dry-run-smoke.json
+iteration-1-load.json
+iteration-1-stress.json
+iteration-1-spike.json
+iteration-1-endurance.json
+iteration-1-winstonai.json
+iteration-1-resource-before.txt
+iteration-1-resource-after.txt
+iteration-2-load.json
+iteration-2-resource-before.txt
+iteration-2-resource-after.txt
+```
+
+Simpan raw k6 JSON dengan `--out json=...`:
+
+```powershell
+$env:K6_RUN_LABEL="iteration-1"
+$env:K6_SUMMARY_DIR="results/performance/iteration-1"
+k6 run --out json=results/performance/iteration-1/iteration-1-load.json tests/performance/k6/load.js
+```
+
+`handleSummary` pada script k6 otomatis membuat summary JSON/TXT di folder `K6_SUMMARY_DIR`. File JSON/TXT/LOG/CSV di `results/performance` sudah di-ignore oleh Git.
+
+Gunakan `docs/performance-result-template.md` untuk menyalin ringkasan hasil ke format laporan yang siap dianalisis.
+
+### Runbook Iterasi Pertama
+
+Jangan jalankan rangkaian ini sampai environment resmi siap. Urutan command Windows:
+
+```powershell
+npm run thesis:results:prepare -- -Label iteration-1
+npm run thesis:test:data:reset
+curl http://localhost:3000/api/health/readiness
+
+$env:RUN_LABEL="iteration-1"
+$env:RUN_PHASE="before"
+$env:BASE_URL="http://localhost:3000"
+npm run thesis:monitor:local
+
+npm run thesis:test:functional
+
+$env:K6_RUN_LABEL="iteration-1"
+$env:K6_SUMMARY_DIR="results/performance/iteration-1"
+k6 run --out json=results/performance/iteration-1/iteration-1-smoke.json tests/performance/k6/smoke.js
+k6 run --out json=results/performance/iteration-1/iteration-1-load.json tests/performance/k6/load.js
+k6 run --out json=results/performance/iteration-1/iteration-1-stress.json tests/performance/k6/stress.js
+k6 run --out json=results/performance/iteration-1/iteration-1-spike.json tests/performance/k6/spike.js
+k6 run --out json=results/performance/iteration-1/iteration-1-endurance.json tests/performance/k6/endurance.js
+
+$env:WINSTON_AI_MODE="mock"
+$env:PLAGIARISM_REPORT_MODE="metadata"
+k6 run --out json=results/performance/iteration-1/iteration-1-winstonai.json tests/performance/k6/winstonai-integration.js
+
+$env:RUN_PHASE="after"
+npm run thesis:monitor:local
+npm run thesis:test:data:reset
+```
+
+Urutan Linux/VPS:
+
+```bash
+bash scripts/monitoring/prepare-result-dir.sh --label iteration-1
+npm run thesis:test:data:reset
+curl http://localhost:3000/api/health/readiness
+
+RUN_LABEL=iteration-1 RUN_PHASE=before BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+
+npm run thesis:test:functional
+
+export K6_RUN_LABEL=iteration-1
+export K6_SUMMARY_DIR=results/performance/iteration-1
+k6 run --out json=results/performance/iteration-1/iteration-1-smoke.json tests/performance/k6/smoke.js
+k6 run --out json=results/performance/iteration-1/iteration-1-load.json tests/performance/k6/load.js
+k6 run --out json=results/performance/iteration-1/iteration-1-stress.json tests/performance/k6/stress.js
+k6 run --out json=results/performance/iteration-1/iteration-1-spike.json tests/performance/k6/spike.js
+k6 run --out json=results/performance/iteration-1/iteration-1-endurance.json tests/performance/k6/endurance.js
+
+WINSTON_AI_MODE=mock PLAGIARISM_REPORT_MODE=metadata \
+  k6 run --out json=results/performance/iteration-1/iteration-1-winstonai.json tests/performance/k6/winstonai-integration.js
+
+RUN_LABEL=iteration-1 RUN_PHASE=after BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+npm run thesis:test:data:reset
+```
+
+### Runbook Iterasi Kedua
+
+Gunakan urutan yang sama seperti Iterasi Pertama, tetapi label dan output diarahkan ke `iteration-2`:
+
+```powershell
+npm run thesis:results:prepare -- -Label iteration-2
+npm run thesis:test:data:reset
+curl http://localhost:3000/api/health/readiness
+
+$env:RUN_LABEL="iteration-2"
+$env:RUN_PHASE="before"
+npm run thesis:monitor:local
+
+npm run thesis:test:functional
+
+$env:K6_RUN_LABEL="iteration-2"
+$env:K6_SUMMARY_DIR="results/performance/iteration-2"
+k6 run --out json=results/performance/iteration-2/iteration-2-smoke.json tests/performance/k6/smoke.js
+k6 run --out json=results/performance/iteration-2/iteration-2-load.json tests/performance/k6/load.js
+k6 run --out json=results/performance/iteration-2/iteration-2-stress.json tests/performance/k6/stress.js
+k6 run --out json=results/performance/iteration-2/iteration-2-spike.json tests/performance/k6/spike.js
+k6 run --out json=results/performance/iteration-2/iteration-2-endurance.json tests/performance/k6/endurance.js
+k6 run --out json=results/performance/iteration-2/iteration-2-winstonai.json tests/performance/k6/winstonai-integration.js
+
+$env:RUN_PHASE="after"
+npm run thesis:monitor:local
+npm run thesis:test:data:reset
+```
+
+Hidden dry-run digunakan hanya untuk memastikan kesiapan internal. Hasil resmi Bab IV harus berasal dari Iterasi Pertama dan Iterasi Kedua, dengan file output, snapshot resource, dan ringkasan yang terdokumentasi.
+
 ## WinstonAI Integration Testing Terbatas
 
 WinstonAI integration testing digunakan untuk menguji alur backend, bukan akurasi WinstonAI:
