@@ -438,6 +438,158 @@ npm run thesis:test:data:reset
 
 Hidden dry-run digunakan hanya untuk memastikan kesiapan internal. Hasil resmi Bab IV harus berasal dari Iterasi Pertama dan Iterasi Kedua, dengan file output, snapshot resource, dan ringkasan yang terdokumentasi.
 
+## Deploy ke VPS Testing
+
+Deployment VPS testing digunakan sebagai environment resmi Iterasi Pertama dan Iterasi Kedua. Hidden dry-run lokal tidak boleh dipakai sebagai hasil resmi Bab IV.
+
+### Start Production
+
+Build NestJS repository ini menghasilkan entrypoint:
+
+```text
+dist/src/main.js
+```
+
+Karena itu `npm run start:prod` menjalankan:
+
+```powershell
+node dist/src/main.js
+```
+
+Validasi non-Docker:
+
+```powershell
+npm install
+npm run build
+$env:PORT="3000"
+npm run start:prod
+```
+
+Pada Linux/VPS:
+
+```bash
+npm ci
+npm run build
+PORT=3000 npm run start:prod
+```
+
+### Env Testing
+
+Gunakan `.env.testing.example` sebagai template, lalu buat file lokal VPS:
+
+```bash
+cp .env.testing.example .env.testing
+nano .env.testing
+```
+
+Jangan commit `.env.testing`. File tersebut harus diisi sendiri di VPS dan tidak boleh dibagikan.
+
+Mode yang direkomendasikan untuk Iterasi Pertama:
+
+```text
+WINSTON_AI_MODE=mock
+PLAGIARISM_REPORT_MODE=metadata
+```
+
+Real WinstonAI hanya boleh dipakai untuk integration testing terbatas yang eksplisit, misalnya 1-2 trigger, bukan untuk load, stress, spike, atau endurance.
+
+### Docker Compose VPS Testing
+
+Gunakan compose khusus backend testing:
+
+```bash
+docker compose --env-file .env.testing -f docker-compose.vps-testing.yml build api
+docker compose --env-file .env.testing -f docker-compose.vps-testing.yml up -d postgres redis api
+docker compose --env-file .env.testing -f docker-compose.vps-testing.yml ps
+```
+
+Untuk validasi konfigurasi dengan file example tanpa membuat `.env.testing`:
+
+```bash
+APP_ENV_FILE=.env.testing.example docker compose --env-file .env.testing.example -f docker-compose.vps-testing.yml config --quiet
+```
+
+Service yang berjalan:
+
+- `api` pada port `${API_PUBLIC_PORT:-3000}:3000`;
+- `postgres` internal Docker network dengan volume `pgdata`;
+- `redis` internal Docker network;
+- volume `uploads` untuk file upload backend.
+
+PostgreSQL dan Redis tidak dipublish ke publik oleh compose VPS testing. Jika perlu akses debug, gunakan SSH tunnel atau override lokal sementara, bukan publish publik tanpa pembatasan.
+
+Health check:
+
+```bash
+curl http://localhost:3000/health
+curl http://localhost:3000/api/health-check
+curl http://localhost:3000/api/health/readiness
+```
+
+### Deployment Checklist
+
+- Pull repository pada VPS.
+- Pastikan branch skripsi/deploy sudah benar.
+- Install Docker dan Docker Compose.
+- Copy `.env.testing.example` menjadi `.env.testing`.
+- Isi `.env.testing` tanpa membagikan secret.
+- Pastikan `WINSTON_AI_MODE=mock` dan `PLAGIARISM_REPORT_MODE=metadata` untuk performance internal.
+- Build dan jalankan compose VPS testing.
+- Cek `/health`, `/api/health-check`, dan `/api/health/readiness`.
+- Jalankan `npm run thesis:test:data:reset` pada environment yang terhubung ke DB testing.
+- Jalankan functional test.
+- Siapkan folder hasil `results/performance/iteration-1`.
+- Capture monitoring before.
+- Jalankan k6 resmi sesuai runbook.
+- Capture monitoring after.
+- Reset data uji setelah selesai.
+- Salin ringkasan ke `docs/performance-result-template.md`.
+
+### Runbook Iterasi Pertama di VPS
+
+Jangan jalankan command ini sampai environment resmi siap.
+
+```bash
+git pull
+docker compose --env-file .env.testing -f docker-compose.vps-testing.yml build api
+docker compose --env-file .env.testing -f docker-compose.vps-testing.yml up -d postgres redis api
+docker compose --env-file .env.testing -f docker-compose.vps-testing.yml ps
+
+curl http://localhost:3000/health
+curl http://localhost:3000/api/health-check
+curl http://localhost:3000/api/health/readiness
+
+bash scripts/monitoring/prepare-result-dir.sh --label iteration-1
+npm run thesis:test:data:reset
+
+RUN_LABEL=iteration-1 RUN_PHASE=before BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+
+npm run thesis:test:functional
+
+export K6_RUN_LABEL=iteration-1
+export K6_SUMMARY_DIR=results/performance/iteration-1
+k6 run --out json=results/performance/iteration-1/iteration-1-smoke.json tests/performance/k6/smoke.js
+k6 run --out json=results/performance/iteration-1/iteration-1-load.json tests/performance/k6/load.js
+k6 run --out json=results/performance/iteration-1/iteration-1-stress.json tests/performance/k6/stress.js
+k6 run --out json=results/performance/iteration-1/iteration-1-spike.json tests/performance/k6/spike.js
+k6 run --out json=results/performance/iteration-1/iteration-1-endurance.json tests/performance/k6/endurance.js
+
+WINSTON_AI_MODE=mock PLAGIARISM_REPORT_MODE=metadata \
+  k6 run --out json=results/performance/iteration-1/iteration-1-winstonai.json tests/performance/k6/winstonai-integration.js
+
+RUN_LABEL=iteration-1 RUN_PHASE=after BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+
+npm run thesis:test:data:reset
+```
+
+### Mesin Penguji k6
+
+Idealnya k6 dijalankan dari laptop lokal atau VPS terpisah sebagai mesin penguji. Ini membuat CPU/memory backend tidak bercampur dengan beban generator.
+
+Jika k6 harus dijalankan pada VPS backend yang sama, catat sebagai keterbatasan pengujian karena hasil latency dan resource usage dapat bias oleh proses k6 itu sendiri.
+
 ## WinstonAI Integration Testing Terbatas
 
 WinstonAI integration testing digunakan untuk menguji alur backend, bukan akurasi WinstonAI:

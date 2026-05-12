@@ -1,45 +1,20 @@
 services:
-  # api-dev:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.dev
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - .:/usr/src/app
-  #     - /usr/src/app/node_modules
-  #   environment:
-  #     - NODE_ENV=development
-  #     - PORT=3000
-  #     - DATABASE_URL=postgresql://<user>:<password>@postgres:5432/<database>?schema=public
-  #     - REDIS_HOST=redis
-  #     - REDIS_PORT=6379
-  #     - JWT_SECRET=<local-dev-secret>
-  #     - JWT_EXPIRATION_TIME=3600s
-  #   depends_on:
-  #     - postgres
-  #     - redis
-
   api:
     build:
       context: .
       dockerfile: Dockerfile
     env_file:
-      - .env
+      - ${APP_ENV_FILE:-.env.testing}
     restart: unless-stopped
+    ports:
+      - "${API_PUBLIC_PORT:-3000}:3000"
     volumes:
       - uploads:/usr/src/app/uploads
-    ports:
-      - "3000:3000"
-      - "5555:5555"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
     healthcheck:
       test:
         [
@@ -55,14 +30,11 @@ services:
 
   postgres:
     image: postgres:15
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
-    # Untuk keamanan, jangan expose port ke publik
-    # ports:
-    #   - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -73,7 +45,7 @@ services:
 
   redis:
     image: redis:7
-    restart: always
+    restart: unless-stopped
     command: >
       sh -c 'if [ -n "$$REDIS_PASSWORD" ]; then redis-server --requirepass "$$REDIS_PASSWORD"; else redis-server; fi'
     environment:
@@ -87,20 +59,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  # Untuk keamanan, jangan expose port ke publik
-  # ports:
-  #   - "6379:6379"
-
-  frontend:
-    build:
-      context: ../protextify-frontendv2
-      dockerfile: Dockerfile
-    ports:
-      - "5173:80"
-    environment:
-      - NODE_ENV=production
-    depends_on:
-      - api
 
 volumes:
   pgdata:
