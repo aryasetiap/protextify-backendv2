@@ -442,6 +442,12 @@ Hidden dry-run digunakan hanya untuk memastikan kesiapan internal. Hasil resmi B
 
 Deployment VPS testing digunakan sebagai environment resmi Iterasi Pertama dan Iterasi Kedua. Hidden dry-run lokal tidak boleh dipakai sebagai hasil resmi Bab IV.
 
+Panduan setup VPS lengkap tersedia di:
+
+```text
+docs/vps-setup-guide.md
+```
+
 ### Start Production
 
 Build NestJS repository ini menghasilkan entrypoint:
