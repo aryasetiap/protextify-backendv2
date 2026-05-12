@@ -173,6 +173,94 @@ Endpoint report diuji menggunakan submission yang belum memiliki plagiarism chec
 
 Hasil functional hidden dry-run belum menjadi hasil resmi Bab IV. Hasil resmi hanya berasal dari Iterasi Pertama dan Iterasi Kedua yang benar-benar dijalankan.
 
+## k6 Performance Testing
+
+Script k6 untuk skripsi berada di:
+
+```text
+tests/performance/k6/
+```
+
+Script yang tersedia:
+
+- `smoke.js` untuk memastikan k6 dapat login dan mengakses endpoint ringan;
+- `load.js` untuk beban normal read-heavy;
+- `stress.js` untuk mencari titik degradasi secara bertahap;
+- `spike.js` untuk lonjakan trafik singkat;
+- `endurance.js` untuk stabilitas durasi panjang.
+
+Endpoint performance internal tidak memanggil real WinstonAI, payment/Midtrans, Google OAuth, atau storage upload besar. Endpoint `POST /api/submissions/:id/check-plagiarism` tidak dimasukkan ke load, stress, spike, atau endurance internal.
+
+Prasyarat sebelum menjalankan k6:
+
+- backend lokal berjalan;
+- `/api/health/readiness` mengembalikan `ready`;
+- data uji sudah dibuat dengan `npm run test:data:setup`;
+- `tests/performance/k6/data/test-data.local.json` tersedia;
+- `k6 version` berhasil dijalankan;
+- hasil hidden dry-run tidak digunakan sebagai hasil resmi Bab IV.
+
+Smoke hidden dry-run:
+
+```powershell
+curl http://localhost:3000/api/health/readiness
+npm run thesis:k6:smoke
+```
+
+Load hidden kecil:
+
+```powershell
+$env:K6_LOAD_VUS="5"
+$env:K6_LOAD_DURATION="2m"
+$env:K6_RUN_LABEL="hidden-dry-run"
+$env:K6_SUMMARY_DIR="results/performance/hidden-dry-run"
+npm run thesis:k6:load
+```
+
+Stress, spike, dan endurance jangan dijalankan otomatis pada hidden dry-run kecuali lingkungan lokal sudah siap dan risikonya dipahami:
+
+```powershell
+npm run thesis:k6:stress
+npm run thesis:k6:spike
+npm run thesis:k6:endurance
+```
+
+Official Iterasi Pertama dengan export JSON:
+
+```powershell
+$env:K6_RUN_LABEL="iteration-1"
+$env:K6_SUMMARY_DIR="results/performance/iteration-1"
+k6 run --out json=results/performance/iteration-1/load.json tests/performance/k6/load.js
+```
+
+Official Iterasi Kedua dengan export JSON:
+
+```powershell
+$env:K6_RUN_LABEL="iteration-2"
+$env:K6_SUMMARY_DIR="results/performance/iteration-2"
+k6 run --out json=results/performance/iteration-2/load.json tests/performance/k6/load.js
+```
+
+Write scenario pada k6 nonaktif secara default. Jika perlu menguji write endpoint terbatas, reset data terlebih dahulu lalu aktifkan flag:
+
+```powershell
+npm run thesis:test:data:reset
+$env:ENABLE_WRITE_SCENARIO="true"
+npm run thesis:k6:load
+```
+
+Write scenario dapat mengubah content submission draft. Reset data sebelum menjalankan ulang agar kondisi pengujian tetap repeatable.
+
+Summary otomatis disimpan ke:
+
+```text
+results/performance/hidden-dry-run/
+results/performance/iteration-1/
+results/performance/iteration-2/
+```
+
+Gunakan `--out json=...` jika membutuhkan raw metric JSON lengkap dari k6. File JSON, TXT, CSV, dan LOG di folder `results/performance` sudah di-ignore oleh Git.
+
 ## Menjalankan Backend Lokal
 
 ```powershell

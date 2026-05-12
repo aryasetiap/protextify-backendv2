@@ -1,20 +1,58 @@
-const DEFAULT_BASE_URL = 'http://localhost:3000';
+const DEFAULT_TEST_DATA_PATH = './data/test-data.local.json';
+const DEFAULT_PASSWORD = 'thesis-perf-local-password';
+
+function readJson(path) {
+  try {
+    return JSON.parse(open(path));
+  } catch (error) {
+    throw new Error(
+      `Unable to read k6 test data from ${path}. Run npm run test:data:setup first.`,
+    );
+  }
+}
+
+function intEnv(name, fallback) {
+  const value = Number.parseInt(__ENV[name] || '', 10);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function boolEnv(name, fallback = false) {
+  if (__ENV[name] === undefined) {
+    return fallback;
+  }
+
+  return ['1', 'true', 'yes', 'on'].indexOf(String(__ENV[name]).toLowerCase()) >= 0;
+}
+
+export const testDataPath = __ENV.TEST_DATA_PATH || DEFAULT_TEST_DATA_PATH;
+export const testData = readJson(testDataPath);
 
 export const config = {
-  baseUrl: __ENV.BASE_URL || DEFAULT_BASE_URL,
-  usersFile: __ENV.K6_USERS_FILE || './data/users.example.json',
-  submissionsFile: __ENV.K6_SUBMISSIONS_FILE || './data/submissions.example.json',
-  outputDir: __ENV.K6_OUTPUT_DIR || '../../../results/performance/hidden-dry-run',
+  baseUrl: __ENV.BASE_URL || testData.baseUrl || 'http://localhost:3000',
+  password: __ENV.TEST_USER_PASSWORD || DEFAULT_PASSWORD,
+  summaryDir: __ENV.K6_SUMMARY_DIR || 'results/performance/hidden-dry-run',
+  runLabel: __ENV.K6_RUN_LABEL || 'hidden-dry-run',
+  enableWriteScenario: boolEnv('ENABLE_WRITE_SCENARIO', false),
+  smoke: {
+    vus: intEnv('K6_SMOKE_VUS', 1),
+    duration: __ENV.K6_SMOKE_DURATION || '30s',
+  },
+  load: {
+    vus: intEnv('K6_LOAD_VUS', 5),
+    duration: __ENV.K6_LOAD_DURATION || '2m',
+  },
+  stress: {
+    maxVus: intEnv('K6_STRESS_MAX_VUS', 15),
+  },
+  spike: {
+    maxVus: intEnv('K6_SPIKE_MAX_VUS', 20),
+  },
+  endurance: {
+    vus: intEnv('K6_ENDURANCE_VUS', 5),
+    duration: __ENV.K6_ENDURANCE_DURATION || '5m',
+  },
 };
 
 export function endpoint(path) {
   return `${config.baseUrl}${path}`;
-}
-
-export function authHeaders(token) {
-  return token
-    ? {
-        Authorization: `Bearer ${token}`,
-      }
-    : {};
 }
