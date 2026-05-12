@@ -47,6 +47,8 @@ import { RequestLoggingInterceptor } from './common/interceptors/request-logging
         // Winston AI
         WINSTON_AI_API_URL: Joi.string().required(),
         WINSTON_AI_TOKEN: Joi.string().required(),
+        WINSTON_AI_MODE: Joi.string().valid('mock', 'real').optional(),
+        PLAGIARISM_REPORT_MODE: Joi.string().valid('metadata', 'pdf').optional(),
         // Base URL
         BASE_URL: Joi.string().default('https://api.protextify.id'),
         // 🔧 Frontend & CORS URLs

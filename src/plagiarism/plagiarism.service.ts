@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue, Job } from 'bull';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckPlagiarismDto, PlagiarismResultDto } from './dto';
 import { PlagiarismJobData } from './interfaces/winston-ai.interface';
@@ -18,6 +19,7 @@ export class PlagiarismService {
   private readonly logger = new Logger(PlagiarismService.name);
 
   constructor(
+    private readonly configService: ConfigService,
     private readonly prismaService: PrismaService,
     @InjectQueue('plagiarism') private readonly plagiarismQueue: Queue,
     private readonly pdfReportService: PDFReportService, // 🔧 Inject PDFReportService
@@ -250,6 +252,13 @@ export class PlagiarismService {
     role: string,
   ): Promise<string | null> {
     try {
+      if (this.getReportMode() === 'metadata') {
+        this.logger.log(
+          `[PLAGIARISM SERVICE] Skipping PDF report generation in metadata mode for submission: ${submission.id}`,
+        );
+        return null;
+      }
+
       this.logger.log(
         `[PLAGIARISM SERVICE] Generating PDF report for submission: ${submission.id}`,
       );
@@ -291,6 +300,20 @@ export class PlagiarismService {
       // Return null agar respons utama tidak gagal jika pembuatan PDF error
       return null;
     }
+  }
+
+  private getReportMode(): 'metadata' | 'pdf' {
+    const explicitMode = this.configService.get<string>(
+      'PLAGIARISM_REPORT_MODE',
+    );
+
+    if (explicitMode === 'metadata' || explicitMode === 'pdf') {
+      return explicitMode;
+    }
+
+    return this.configService.get<string>('NODE_ENV') === 'production'
+      ? 'pdf'
+      : 'metadata';
   }
 
   async getJobStatus(

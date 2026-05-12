@@ -261,6 +261,66 @@ results/performance/iteration-2/
 
 Gunakan `--out json=...` jika membutuhkan raw metric JSON lengkap dari k6. File JSON, TXT, CSV, dan LOG di folder `results/performance` sudah di-ignore oleh Git.
 
+## WinstonAI Integration Testing Terbatas
+
+WinstonAI integration testing digunakan untuk menguji alur backend, bukan akurasi WinstonAI:
+
+```text
+trigger endpoint -> Redis/Bull queue -> worker -> provider mock/real -> database -> report/status endpoint
+```
+
+Mode provider dikontrol lewat:
+
+```powershell
+$env:WINSTON_AI_MODE="mock"
+```
+
+Nilai yang didukung:
+
+- `mock` untuk hidden dry-run dan pengujian lokal aman;
+- `real` hanya untuk integration testing terbatas setelah token, credit, dan risiko latency diputuskan manual.
+
+Jika `WINSTON_AI_MODE` tidak diset, backend memakai default aman:
+
+- `mock` pada non-production;
+- `real` pada production.
+
+Report PDF/storage dapat dinonaktifkan pada local testing dengan:
+
+```powershell
+$env:PLAGIARISM_REPORT_MODE="metadata"
+```
+
+Jika `PLAGIARISM_REPORT_MODE` tidak diset, backend memakai:
+
+- `metadata` pada non-production;
+- `pdf` pada production.
+
+Jalankan integration test WinstonAI terbatas:
+
+```powershell
+curl http://localhost:3000/api/health/readiness
+npm run thesis:test:data:reset
+$env:WINSTON_AI_MODE="mock"
+$env:PLAGIARISM_REPORT_MODE="metadata"
+npm run thesis:test:winstonai
+```
+
+Script k6 WinstonAI integration terbatas dibuat terpisah dari load/stress/spike/endurance:
+
+```powershell
+npm run thesis:test:data:reset
+$env:WINSTON_AI_MODE="mock"
+$env:PLAGIARISM_REPORT_MODE="metadata"
+npm run thesis:k6:winstonai
+```
+
+Script `tests/performance/k6/winstonai-integration.js` bukan load test besar. Default-nya hanya 1 VU dan 1 iterasi untuk mengukur trigger response time, enqueue success, queue stats, dan polling report secara terbatas.
+
+Jangan memasukkan endpoint WinstonAI real ke `load.js`, `stress.js`, `spike.js`, atau `endurance.js`. Jangan menilai akurasi WinstonAI dari test ini; yang diuji hanya kemampuan backend mengelola integrasi eksternal secara terkendali.
+
+Reset data sebelum menjalankan ulang karena positive integration test mengubah status plagiarism check submission khusus WinstonAI menjadi `completed` atau `failed`.
+
 ## Menjalankan Backend Lokal
 
 ```powershell
