@@ -12,6 +12,9 @@ RUN npm install -g @nestjs/cli --registry=https://registry.npmmirror.com
 COPY . .
 
 ENV PRISMA_CLI_CDN_PROXY="https://prisma-cdn.cloud"
+ARG DATABASE_URL="postgresql://build:build@localhost:5432/build?schema=public"
+ENV DATABASE_URL=${DATABASE_URL}
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 RUN npx prisma generate
 
 RUN npm run build

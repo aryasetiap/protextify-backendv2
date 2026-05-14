@@ -46,7 +46,7 @@ esac
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 RESULT_DIR="$REPO_ROOT/results/performance/$LABEL"
-SAFE_PHASE="$(echo "$PHASE" | tr -c 'a-zA-Z0-9_-' '-')"
+SAFE_PHASE="$(printf '%s' "$PHASE" | tr -c 'a-zA-Z0-9_-' '-')"
 OUTPUT_PATH="$RESULT_DIR/$LABEL-resource-$SAFE_PHASE.txt"
 
 mkdir -p "$RESULT_DIR"

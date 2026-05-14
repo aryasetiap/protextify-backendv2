@@ -64,12 +64,12 @@ import { RequestLoggingInterceptor } from './common/interceptors/request-logging
         CLOUDFLARE_R2_SECRET_ACCESS_KEY: Joi.string().required(),
         CLOUDFLARE_R2_PUBLIC_URL: Joi.string().required(),
         // Google OAuth
-        GOOGLE_CLIENT_ID: Joi.string().optional(),
-        GOOGLE_CLIENT_SECRET: Joi.string().optional(),
-        GOOGLE_CALLBACK_URL: Joi.string().optional(),
+        GOOGLE_CLIENT_ID: Joi.string().allow('').optional(),
+        GOOGLE_CLIENT_SECRET: Joi.string().allow('').optional(),
+        GOOGLE_CALLBACK_URL: Joi.string().allow('').optional(),
         // Midtrans
-        MIDTRANS_SERVER_KEY: Joi.string().optional(),
-        MIDTRANS_CLIENT_KEY: Joi.string().optional(),
+        MIDTRANS_SERVER_KEY: Joi.string().allow('').optional(),
+        MIDTRANS_CLIENT_KEY: Joi.string().allow('').optional(),
         MIDTRANS_IS_PRODUCTION: Joi.boolean().default(false),
         ENABLE_REQUEST_LOGGING: Joi.boolean().default(false),
       }),
