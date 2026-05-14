@@ -25,6 +25,24 @@ Hidden dry-run adalah pengujian internal untuk memastikan lingkungan lokal siap.
 
 Iterasi Pertama adalah pengujian resmi untuk memperoleh baseline performance backend.
 
+Run `iteration-1` yang memakai parameter ringan dapat diperlakukan sebagai pilot/baseline ringan jika tujuannya hanya memastikan pipeline, data uji, dan output k6 berjalan. Untuk hasil Bab IV yang lebih representatif, gunakan label terpisah `iteration-1-final` agar file pilot tidak bercampur dengan hasil final.
+
+### Iterasi Pertama Final
+
+Iterasi Pertama Final adalah pengulangan Iterasi Pertama dengan parameter beban yang lebih representatif pada backend VPS. k6 dijalankan dari laptop, sedangkan backend, PostgreSQL, Redis, dan queue berjalan di VPS.
+
+Parameter final:
+
+- load: 20 VU selama 10 menit;
+- stress: ramp sampai 75 VU;
+- spike: max 75 VU;
+- endurance: 15 VU selama 30 menit;
+- WinstonAI mock integration: 1 VU terbatas.
+
+Stress dan spike memang dirancang untuk melihat degradasi, saturasi, atau batas layanan. Degradasi pada fase ini tidak otomatis berarti penelitian gagal; hasilnya perlu dianalisis bersama error rate, p95/p99, status code, queue, dan resource VPS.
+
+Real WinstonAI tidak diuji pada load, stress, spike, atau endurance. Untuk performance internal, gunakan `WINSTON_AI_MODE=mock` dan `PLAGIARISM_REPORT_MODE=metadata`.
+
 ### Iterasi Kedua
 
 Iterasi Kedua dilakukan setelah perbaikan atau penyesuaian berdasarkan temuan Iterasi Pertama.
@@ -233,6 +251,32 @@ $env:K6_SUMMARY_DIR="results/performance/iteration-1"
 k6 run --out json=results/performance/iteration-1/load.json tests/performance/k6/load.js
 ```
 
+Official Iterasi Pertama Final dengan export JSON:
+
+```powershell
+$env:BASE_URL="http://103.55.37.96:3000"
+$env:K6_RUN_LABEL="iteration-1-final"
+$env:K6_SUMMARY_DIR="results/performance/iteration-1-final"
+$env:WINSTON_AI_MODE="mock"
+$env:PLAGIARISM_REPORT_MODE="metadata"
+
+$env:K6_LOAD_VUS="20"
+$env:K6_LOAD_DURATION="10m"
+$env:K6_STRESS_MAX_VUS="75"
+$env:K6_SPIKE_MAX_VUS="75"
+$env:K6_ENDURANCE_VUS="15"
+$env:K6_ENDURANCE_DURATION="30m"
+
+k6 run --out json=results/performance/iteration-1-final/iteration-1-final-smoke.json tests/performance/k6/smoke.js
+k6 run --out json=results/performance/iteration-1-final/iteration-1-final-load.json tests/performance/k6/load.js
+k6 run --out json=results/performance/iteration-1-final/iteration-1-final-stress.json tests/performance/k6/stress.js
+k6 run --out json=results/performance/iteration-1-final/iteration-1-final-spike.json tests/performance/k6/spike.js
+k6 run --out json=results/performance/iteration-1-final/iteration-1-final-endurance.json tests/performance/k6/endurance.js
+k6 run --out json=results/performance/iteration-1-final/iteration-1-final-winstonai.json tests/performance/k6/winstonai-integration.js
+```
+
+Jalankan command final hanya setelah VPS siap, data uji final sudah di-reset, functional test PASS, resource BEFORE sudah dibuat, dan `TEST_USER_PASSWORD` tersedia di shell laptop tanpa dicetak.
+
 Official Iterasi Kedua dengan export JSON:
 
 ```powershell
@@ -256,6 +300,7 @@ Summary otomatis disimpan ke:
 ```text
 results/performance/hidden-dry-run/
 results/performance/iteration-1/
+results/performance/iteration-1-final/
 results/performance/iteration-2/
 ```
 
@@ -276,6 +321,7 @@ Siapkan folder hasil pada Windows:
 ```powershell
 npm run thesis:results:prepare -- -Label hidden-dry-run
 npm run thesis:results:prepare -- -Label iteration-1
+npm run thesis:results:prepare -- -Label iteration-1-final
 npm run thesis:results:prepare -- -Label iteration-2
 ```
 
@@ -284,6 +330,7 @@ Siapkan folder hasil pada Linux/VPS:
 ```bash
 bash scripts/monitoring/prepare-result-dir.sh --label hidden-dry-run
 bash scripts/monitoring/prepare-result-dir.sh --label iteration-1
+bash scripts/monitoring/prepare-result-dir.sh --label iteration-1-final
 bash scripts/monitoring/prepare-result-dir.sh --label iteration-2
 ```
 
@@ -329,6 +376,12 @@ iteration-1-endurance.json
 iteration-1-winstonai.json
 iteration-1-resource-before.txt
 iteration-1-resource-after.txt
+iteration-1-final-resource-before.txt
+iteration-1-final-resource-during-load.txt
+iteration-1-final-resource-during-stress.txt
+iteration-1-final-resource-during-spike.txt
+iteration-1-final-resource-during-endurance.txt
+iteration-1-final-resource-after.txt
 iteration-2-load.json
 iteration-2-resource-before.txt
 iteration-2-resource-after.txt
@@ -345,6 +398,96 @@ k6 run --out json=results/performance/iteration-1/iteration-1-load.json tests/pe
 `handleSummary` pada script k6 otomatis membuat summary JSON/TXT di folder `K6_SUMMARY_DIR`. File JSON/TXT/LOG/CSV di `results/performance` sudah di-ignore oleh Git.
 
 Gunakan `docs/performance-result-template.md` untuk menyalin ringkasan hasil ke format laporan yang siap dianalisis.
+
+### Runbook Iterasi Pertama Final dari Laptop ke VPS
+
+Gunakan runbook ini untuk hasil `iteration-1-final`. Jangan jalankan sebelum backend VPS, PostgreSQL, Redis, queue, data uji, dan functional test sudah siap.
+
+Alur ringkas:
+
+```text
+Local commit/push -> VPS pull -> VPS capture before -> laptop k6 final -> VPS capture during per skenario -> VPS capture after
+```
+
+Pada laptop:
+
+```powershell
+git status
+git push
+
+$env:BASE_URL="http://103.55.37.96:3000"
+$env:K6_RUN_LABEL="iteration-1-final"
+$env:K6_SUMMARY_DIR="results/performance/iteration-1-final"
+$env:WINSTON_AI_MODE="mock"
+$env:PLAGIARISM_REPORT_MODE="metadata"
+$env:K6_LOAD_VUS="20"
+$env:K6_LOAD_DURATION="10m"
+$env:K6_STRESS_MAX_VUS="75"
+$env:K6_SPIKE_MAX_VUS="75"
+$env:K6_ENDURANCE_VUS="15"
+$env:K6_ENDURANCE_DURATION="30m"
+
+npm run thesis:results:prepare -- -Label iteration-1-final
+curl http://103.55.37.96:3000/health
+curl http://103.55.37.96:3000/api/health-check
+curl http://103.55.37.96:3000/api/health/readiness
+
+k6 run --out json=results/performance/iteration-1-final/iteration-1-final-smoke.json tests/performance/k6/smoke.js
+```
+
+Jika smoke PASS, lanjutkan satu per satu. Ambil capture `during-*` di VPS saat skenario terkait sedang berjalan:
+
+```powershell
+k6 run --out json=results/performance/iteration-1-final/iteration-1-final-load.json tests/performance/k6/load.js
+k6 run --out json=results/performance/iteration-1-final/iteration-1-final-stress.json tests/performance/k6/stress.js
+k6 run --out json=results/performance/iteration-1-final/iteration-1-final-spike.json tests/performance/k6/spike.js
+k6 run --out json=results/performance/iteration-1-final/iteration-1-final-endurance.json tests/performance/k6/endurance.js
+k6 run --out json=results/performance/iteration-1-final/iteration-1-final-winstonai.json tests/performance/k6/winstonai-integration.js
+```
+
+Pada VPS, setelah pull dan sebelum laptop menjalankan k6:
+
+```bash
+git pull
+bash scripts/monitoring/prepare-result-dir.sh --label iteration-1-final
+
+RUN_LABEL=iteration-1-final RUN_PHASE=before BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+```
+
+Saat skenario berjalan dari laptop, ambil snapshot sesuai fase:
+
+```bash
+RUN_LABEL=iteration-1-final RUN_PHASE=during-load BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+
+RUN_LABEL=iteration-1-final RUN_PHASE=during-stress BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+
+RUN_LABEL=iteration-1-final RUN_PHASE=during-spike BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+
+RUN_LABEL=iteration-1-final RUN_PHASE=during-endurance BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+```
+
+Setelah seluruh skenario selesai:
+
+```bash
+RUN_LABEL=iteration-1-final RUN_PHASE=after BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+```
+
+File resource yang diharapkan:
+
+```text
+results/performance/iteration-1-final/iteration-1-final-resource-before.txt
+results/performance/iteration-1-final/iteration-1-final-resource-during-load.txt
+results/performance/iteration-1-final/iteration-1-final-resource-during-stress.txt
+results/performance/iteration-1-final/iteration-1-final-resource-during-spike.txt
+results/performance/iteration-1-final/iteration-1-final-resource-during-endurance.txt
+results/performance/iteration-1-final/iteration-1-final-resource-after.txt
+```
 
 ### Runbook Iterasi Pertama
 
@@ -545,6 +688,7 @@ curl http://localhost:3000/api/health/readiness
 - Jalankan `npm run thesis:test:data:reset` pada environment yang terhubung ke DB testing.
 - Jalankan functional test.
 - Siapkan folder hasil `results/performance/iteration-1`.
+- Untuk Iterasi Pertama Final, gunakan folder hasil terpisah `results/performance/iteration-1-final`.
 - Capture monitoring before.
 - Jalankan k6 resmi sesuai runbook.
 - Capture monitoring after.
@@ -711,6 +855,7 @@ Simpan hasil pengujian pada struktur berikut:
 ```text
 results/performance/hidden-dry-run/
 results/performance/iteration-1/
+results/performance/iteration-1-final/
 results/performance/iteration-2/
 ```
 
@@ -724,4 +869,4 @@ Untuk skenario beban internal, gunakan mock/sandbox jika tersedia.
 
 ## Catatan Bab IV
 
-Hasil hidden dry-run hanya dipakai untuk kesiapan internal. Hasil resmi Bab IV harus berasal dari Iterasi Pertama dan Iterasi Kedua yang benar-benar dijalankan serta terdokumentasi.
+Hasil hidden dry-run hanya dipakai untuk kesiapan internal. Run `iteration-1` yang terlalu ringan dapat diperlakukan sebagai pilot/baseline ringan. Hasil resmi Bab IV harus berasal dari Iterasi Pertama Final dan Iterasi Kedua yang benar-benar dijalankan serta terdokumentasi.
