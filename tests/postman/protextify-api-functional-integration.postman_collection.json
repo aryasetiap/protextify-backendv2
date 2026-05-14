@@ -1,0 +1,727 @@
+{
+  "info": {
+    "_postman_id": "protextify-api-functional-integration",
+    "name": "Protextify API Functional & Integration Testing",
+    "description": "Functional and integration API checks for the Protextify backend. This collection complements Jest/Supertest and k6. WinstonAI coverage is limited to mock/metadata flow; it does not test WinstonAI accuracy or real-provider load.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('response body is valid JSON when present', function () {",
+          "  const body = pm.response.text();",
+          "  if (body && body.trim().length > 0) {",
+          "    pm.expect(function () { pm.response.json(); }).not.to.throw();",
+          "  }",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "valid_content",
+      "value": "Konten API Functional dan Integration Testing backend Protextify. Teks dummy ini sengaja dibuat lebih dari seratus karakter agar valid untuk submission dan pengecekan plagiarisme mode mock."
+    },
+    {
+      "key": "updated_content",
+      "value": "Konten draft yang diperbarui melalui Postman Collection Runner atau Newman. Teks ini tetap dummy dan aman digunakan untuk pengujian fungsional endpoint update content."
+    },
+    {
+      "key": "invalid_submission_id",
+      "value": "not-a-real-submission-id"
+    }
+  ],
+  "item": [
+    {
+      "name": "A. Auth",
+      "item": [
+        {
+          "name": "Login instructor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('access token and instructor user are present', function () {",
+                  "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+                  "  pm.expect(json.user).to.be.an('object');",
+                  "  pm.expect(json.user.email).to.eql(pm.environment.get('instructor_email'));",
+                  "  pm.expect(json.user.role).to.eql('INSTRUCTOR');",
+                  "});",
+                  "pm.environment.set('instructor_token', json.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{instructor_email}}\",\n  \"password\": \"{{test_user_password}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Login student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('access token and student user are present', function () {",
+                  "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+                  "  pm.expect(json.user).to.be.an('object');",
+                  "  pm.expect(json.user.email).to.eql(pm.environment.get('student_email'));",
+                  "  pm.expect(json.user.role).to.eql('STUDENT');",
+                  "});",
+                  "pm.environment.set('student_token', json.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"{{test_user_password}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Get users/me instructor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('instructor profile matches environment', function () {",
+                  "  pm.expect(json.id).to.be.a('string');",
+                  "  pm.expect(json.email).to.eql(pm.environment.get('instructor_email'));",
+                  "  pm.expect(json.role).to.eql('INSTRUCTOR');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{instructor_token}}" }],
+            "url": { "raw": "{{base_url}}/api/users/me", "host": ["{{base_url}}"], "path": ["api", "users", "me"] }
+          }
+        },
+        {
+          "name": "Get users/me student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('student profile matches environment', function () {",
+                  "  pm.expect(json.id).to.be.a('string');",
+                  "  pm.expect(json.email).to.eql(pm.environment.get('student_email'));",
+                  "  pm.expect(json.role).to.eql('STUDENT');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "url": { "raw": "{{base_url}}/api/users/me", "host": ["{{base_url}}"], "path": ["api", "users", "me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "B. Class & Assignment",
+      "item": [
+        {
+          "name": "Get classes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('response is array and contains configured class', function () {",
+                  "  pm.expect(json).to.be.an('array');",
+                  "  pm.expect(json.some(function (item) { return item.id === pm.environment.get('class_id'); })).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{instructor_token}}" }],
+            "url": { "raw": "{{base_url}}/api/classes", "host": ["{{base_url}}"], "path": ["api", "classes"] }
+          }
+        },
+        {
+          "name": "Get class detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('class id matches configured class', function () {",
+                  "  pm.expect(json.id).to.eql(pm.environment.get('class_id'));",
+                  "  pm.expect(json.classToken).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{instructor_token}}" }],
+            "url": { "raw": "{{base_url}}/api/classes/{{class_id}}", "host": ["{{base_url}}"], "path": ["api", "classes", "{{class_id}}"] }
+          }
+        },
+        {
+          "name": "Get class assignments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('response is array and contains configured assignment', function () {",
+                  "  pm.expect(json).to.be.an('array');",
+                  "  pm.expect(json.some(function (item) { return item.id === pm.environment.get('assignment_id'); })).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{instructor_token}}" }],
+            "url": { "raw": "{{base_url}}/api/classes/{{class_id}}/assignments", "host": ["{{base_url}}"], "path": ["api", "classes", "{{class_id}}", "assignments"] }
+          }
+        },
+        {
+          "name": "Get assignment detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('assignment id and active flag are valid', function () {",
+                  "  pm.expect(json.id).to.eql(pm.environment.get('assignment_id'));",
+                  "  pm.expect(json.active).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{instructor_token}}" }],
+            "url": { "raw": "{{base_url}}/api/assignments/{{assignment_id}}", "host": ["{{base_url}}"], "path": ["api", "assignments", "{{assignment_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "C. Submission Flow",
+      "item": [
+        {
+          "name": "Create submission",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('submission is created as draft', function () {",
+                  "  pm.expect(json.id).to.be.a('string');",
+                  "  pm.expect(json.assignmentId).to.eql(pm.environment.get('write_assignment_id'));",
+                  "  pm.expect(json.status).to.eql('DRAFT');",
+                  "});",
+                  "pm.environment.set('created_submission_id', json.id);",
+                  "pm.environment.set('submission_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"{{valid_content}}\"\n}" },
+            "url": { "raw": "{{base_url}}/api/assignments/{{write_assignment_id}}/submissions", "host": ["{{base_url}}"], "path": ["api", "assignments", "{{write_assignment_id}}", "submissions"] }
+          }
+        },
+        {
+          "name": "Update draft content",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('draft content update returns expected fields', function () {",
+                  "  pm.expect(json.id).to.eql(pm.environment.get('created_submission_id'));",
+                  "  pm.expect(json.content).to.be.a('string');",
+                  "  pm.expect(json.status).to.eql('DRAFT');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"{{updated_content}}\"\n}" },
+            "url": { "raw": "{{base_url}}/api/submissions/{{created_submission_id}}/content", "host": ["{{base_url}}"], "path": ["api", "submissions", "{{created_submission_id}}", "content"] }
+          }
+        },
+        {
+          "name": "Submit submission",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('submission becomes SUBMITTED', function () {",
+                  "  pm.expect(json.id).to.eql(pm.environment.get('created_submission_id'));",
+                  "  pm.expect(json.status).to.eql('SUBMITTED');",
+                  "  pm.expect(json.submittedAt).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"answers\": [8, 8, 8, 8, 8]\n}" },
+            "url": { "raw": "{{base_url}}/api/submissions/{{created_submission_id}}/submit", "host": ["{{base_url}}"], "path": ["api", "submissions", "{{created_submission_id}}", "submit"] }
+          }
+        },
+        {
+          "name": "Get submission detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('submission detail has expected shape', function () {",
+                  "  pm.expect(json.id).to.eql(pm.environment.get('created_submission_id'));",
+                  "  pm.expect(json.status).to.eql('SUBMITTED');",
+                  "  pm.expect(json.assignment).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "url": { "raw": "{{base_url}}/api/submissions/{{created_submission_id}}", "host": ["{{base_url}}"], "path": ["api", "submissions", "{{created_submission_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "D. Validation Negative Cases",
+      "item": [
+        {
+          "name": "Missing token rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 401', function () { pm.response.to.have.status(401); });",
+                "const json = pm.response.json();",
+                "pm.test('error response has message', function () { pm.expect(json.message).to.exist; });"
+              ] }
+            }
+          ],
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/api/users/me", "host": ["{{base_url}}"], "path": ["api", "users", "me"] } }
+        },
+        {
+          "name": "Student rejected from queue stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 401 or 403', function () { pm.expect([401, 403]).to.include(pm.response.code); });",
+                "const json = pm.response.json();",
+                "pm.test('error response has message', function () { pm.expect(json.message).to.exist; });"
+              ] }
+            }
+          ],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }], "url": { "raw": "{{base_url}}/api/plagiarism/queue-stats", "host": ["{{base_url}}"], "path": ["api", "plagiarism", "queue-stats"] } }
+        },
+        {
+          "name": "Invalid payload rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 400', function () { pm.response.to.have.status(400); });",
+                "const json = pm.response.json();",
+                "pm.test('validation error response has message', function () { pm.expect(json.message).to.exist; });"
+              ] }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": 12345\n}" },
+            "url": { "raw": "{{base_url}}/api/submissions/{{draft_submission_id}}/content", "host": ["{{base_url}}"], "path": ["api", "submissions", "{{draft_submission_id}}", "content"] }
+          }
+        },
+        {
+          "name": "Empty update payload rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 400', function () { pm.response.to.have.status(400); });",
+                "const json = pm.response.json();",
+                "pm.test('empty payload validation error has message', function () { pm.expect(json.message).to.exist; });"
+              ] }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{student_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/api/submissions/{{draft_submission_id}}/content", "host": ["{{base_url}}"], "path": ["api", "submissions", "{{draft_submission_id}}", "content"] }
+          }
+        },
+        {
+          "name": "Invalid submission id rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is client or server error', function () { pm.expect(pm.response.code).to.be.within(400, 599); });",
+                "const json = pm.response.json();",
+                "pm.test('error response has message', function () { pm.expect(json.message).to.exist; });"
+              ] }
+            }
+          ],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{instructor_token}}" }], "url": { "raw": "{{base_url}}/api/submissions/{{invalid_submission_id}}", "host": ["{{base_url}}"], "path": ["api", "submissions", "{{invalid_submission_id}}"] } }
+        },
+        {
+          "name": "Short content rejected before provider call",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 400', function () { pm.response.to.have.status(400); });",
+                "const json = pm.response.json();",
+                "pm.test('short content error is present', function () { pm.expect(json.message).to.exist; });"
+              ] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{instructor_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/api/submissions/{{short_content_submission_id}}/check-plagiarism", "host": ["{{base_url}}"], "path": ["api", "submissions", "{{short_content_submission_id}}", "check-plagiarism"] }
+          }
+        },
+        {
+          "name": "Draft submission rejected before provider call",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 400', function () { pm.response.to.have.status(400); });",
+                "const json = pm.response.json();",
+                "pm.test('draft status error is present', function () { pm.expect(json.message).to.exist; });"
+              ] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{instructor_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/api/submissions/{{draft_submission_id}}/check-plagiarism", "host": ["{{base_url}}"], "path": ["api", "submissions", "{{draft_submission_id}}", "check-plagiarism"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "E. Plagiarism Integration Mock",
+      "description": "Run only when backend uses WINSTON_AI_MODE=mock and PLAGIARISM_REPORT_MODE=metadata.",
+      "item": [
+        {
+          "name": "Queue stats before",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                "const json = pm.response.json();",
+                "pm.test('queue stats numeric fields exist', function () { ['waiting','active','completed','failed','total'].forEach(function (key) { pm.expect(json[key]).to.be.a('number'); }); });"
+              ] }
+            }
+          ],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{instructor_token}}" }], "url": { "raw": "{{base_url}}/api/plagiarism/queue-stats", "host": ["{{base_url}}"], "path": ["api", "plagiarism", "queue-stats"] } }
+        },
+        {
+          "name": "Trigger check plagiarism on valid submitted submission",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 200 or 201', function () { pm.expect([200, 201]).to.include(pm.response.code); });",
+                "const json = pm.response.json();",
+                "pm.test('trigger response has safe status shape', function () {",
+                "  pm.expect(json.status).to.be.oneOf(['queued', 'processing', 'completed']);",
+                "  pm.expect(json.message).to.be.a('string');",
+                "});",
+                "pm.environment.set('plagiarism_poll_attempt', '0');"
+              ] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{instructor_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{base_url}}/api/submissions/{{winstonai_submission_id}}/check-plagiarism", "host": ["{{base_url}}"], "path": ["api", "submissions", "{{winstonai_submission_id}}", "check-plagiarism"] }
+          }
+        },
+        {
+          "name": "Poll/get plagiarism report",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                "const json = pm.response.json();",
+                "pm.test('report response has base shape', function () {",
+                "  pm.expect(json.submissionId).to.eql(pm.environment.get('winstonai_submission_id'));",
+                "  pm.expect(json.status).to.be.a('string');",
+                "  pm.expect(json).to.have.property('pdfReportUrl');",
+                "});",
+                "const terminal = ['completed', 'failed'].includes(json.status);",
+                "let attempts = Number(pm.environment.get('plagiarism_poll_attempt') || '0');",
+                "if (!terminal && attempts < 10) {",
+                "  pm.environment.set('plagiarism_poll_attempt', String(attempts + 1));",
+                "  postman.setNextRequest('Poll/get plagiarism report');",
+                "} else {",
+                "  pm.environment.unset('plagiarism_poll_attempt');",
+                "  pm.test('mock report reaches terminal status', function () { pm.expect(json.status).to.be.oneOf(['completed', 'failed']); });",
+                "  if (json.status === 'completed') {",
+                "    pm.test('completed mock report has metrics but no accuracy assertion', function () {",
+                "      pm.expect(json.score).to.be.a('number');",
+                "      pm.expect(json.wordCount).to.be.a('number');",
+                "      pm.expect(json.creditsUsed).to.be.a('number');",
+                "      pm.expect(json.pdfReportUrl === null || typeof json.pdfReportUrl === 'string').to.eql(true);",
+                "      pm.expect(json.detailedResults).to.be.an('object');",
+                "      pm.expect(json.detailedResults.metadata.providerMode).to.eql('mock');",
+                "    });",
+                "  }",
+                "}"
+              ] }
+            }
+          ],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{instructor_token}}" }], "url": { "raw": "{{base_url}}/api/submissions/{{winstonai_submission_id}}/plagiarism-report", "host": ["{{base_url}}"], "path": ["api", "submissions", "{{winstonai_submission_id}}", "plagiarism-report"] } }
+        },
+        {
+          "name": "Queue stats after",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                "const json = pm.response.json();",
+                "pm.test('queue stats after has numeric fields', function () { ['waiting','active','completed','failed','total'].forEach(function (key) { pm.expect(json[key]).to.be.a('number'); }); });"
+              ] }
+            }
+          ],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{instructor_token}}" }], "url": { "raw": "{{base_url}}/api/plagiarism/queue-stats", "host": ["{{base_url}}"], "path": ["api", "plagiarism", "queue-stats"] } }
+        }
+      ]
+    },
+    {
+      "name": "F. Document/File Input Validation",
+      "description": "Audit result: POST /api/storage/upload exists and whitelists PDF, DOC, DOCX, JPG, PNG, ZIP. text/plain .txt is not whitelisted, so TXT is expected to be rejected. These checks validate upload endpoint acceptance/rejection only; they do not prove plagiarism document parsing.",
+      "item": [
+        {
+          "name": "Upload PDF accepted",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                "const json = pm.response.json();",
+                "pm.test('PDF upload response has expected fields', function () {",
+                "  pm.expect(json.id).to.be.a('string');",
+                "  pm.expect(json.filename).to.eql('sample.pdf');",
+                "  pm.expect(json.mimeType).to.eql('application/pdf');",
+                "  pm.expect(json.cloudKey).to.be.a('string');",
+                "});"
+              ] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "tests/postman/fixtures/sample.pdf", "contentType": "application/pdf" },
+                { "key": "submissionId", "value": "{{created_submission_id}}", "type": "text" },
+                { "key": "description", "value": "Postman PDF upload validation fixture", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/api/storage/upload", "host": ["{{base_url}}"], "path": ["api", "storage", "upload"] }
+          }
+        },
+        {
+          "name": "Upload DOCX accepted",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                "const json = pm.response.json();",
+                "pm.test('DOCX upload response has expected fields', function () {",
+                "  pm.expect(json.id).to.be.a('string');",
+                "  pm.expect(json.filename).to.eql('sample.docx');",
+                "  pm.expect(json.mimeType).to.eql('application/vnd.openxmlformats-officedocument.wordprocessingml.document');",
+                "  pm.expect(json.cloudKey).to.be.a('string');",
+                "});"
+              ] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "tests/postman/fixtures/sample.docx", "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+                { "key": "submissionId", "value": "{{created_submission_id}}", "type": "text" },
+                { "key": "description", "value": "Postman DOCX upload validation fixture", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/api/storage/upload", "host": ["{{base_url}}"], "path": ["api", "storage", "upload"] }
+          }
+        },
+        {
+          "name": "Upload TXT rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 400', function () { pm.response.to.have.status(400); });",
+                "const json = pm.response.json();",
+                "pm.test('TXT rejection has error message', function () { pm.expect(json.message).to.exist; });"
+              ] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "tests/postman/fixtures/sample.txt", "contentType": "text/plain" },
+                { "key": "submissionId", "value": "{{created_submission_id}}", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/api/storage/upload", "host": ["{{base_url}}"], "path": ["api", "storage", "upload"] }
+          }
+        },
+        {
+          "name": "Upload invalid format rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status is 400', function () { pm.response.to.have.status(400); });",
+                "const json = pm.response.json();",
+                "pm.test('invalid format rejection has error message', function () { pm.expect(json.message).to.exist; });"
+              ] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "tests/postman/fixtures/sample.exe", "contentType": "application/octet-stream" },
+                { "key": "submissionId", "value": "{{created_submission_id}}", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/api/storage/upload", "host": ["{{base_url}}"], "path": ["api", "storage", "upload"] }
+          }
+        }
+      ]
+    }
+  ]
+}

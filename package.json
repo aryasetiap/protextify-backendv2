@@ -23,6 +23,7 @@
     "thesis:test:functional": "npm run test:functional",
     "test:winstonai": "jest --config ./test/jest-winstonai-integration.json --runInBand",
     "thesis:test:winstonai": "npm run test:winstonai",
+    "test:postman:iteration1": "npx --yes newman run tests/postman/protextify-api-functional-integration.postman_collection.json -e tests/postman/protextify-api-testing.postman_environment.local.json --reporters cli,json --reporter-json-export results/performance/iteration-1-final/iteration-1-final-postman-newman-report.json",
     "k6:smoke": "k6 run tests/performance/k6/smoke.js",
     "k6:load": "k6 run tests/performance/k6/load.js",
     "k6:stress": "k6 run tests/performance/k6/stress.js",

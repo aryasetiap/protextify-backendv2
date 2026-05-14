@@ -191,6 +191,115 @@ Endpoint report diuji menggunakan submission yang belum memiliki plagiarism chec
 
 Hasil functional hidden dry-run belum menjadi hasil resmi Bab IV. Hasil resmi hanya berasal dari Iterasi Pertama dan Iterasi Kedua yang benar-benar dijalankan.
 
+## API Functional & Integration Testing dengan Postman/Newman
+
+Postman/Newman digunakan sebagai bukti tambahan API Functional & Integration Testing. Pengujian ini melengkapi Jest/Supertest dan k6:
+
+- Jest/Supertest memvalidasi endpoint secara otomatis dari test suite backend.
+- Postman/Newman menyediakan collection runner yang mudah direplikasi dan dilampirkan sebagai evidence Bab IV.
+- k6 tetap menjadi alat utama uji performa load, stress, spike, dan endurance.
+
+Collection berada di:
+
+```text
+tests/postman/protextify-api-functional-integration.postman_collection.json
+```
+
+Environment example berada di:
+
+```text
+tests/postman/protextify-api-testing.postman_environment.example.json
+```
+
+Jangan commit environment lokal yang berisi password atau token. Buat file lokal:
+
+```powershell
+Copy-Item tests/postman/protextify-api-testing.postman_environment.example.json `
+  tests/postman/protextify-api-testing.postman_environment.local.json
+```
+
+Isi placeholder lokal dari data uji VPS atau `test-data.local.json` tanpa menampilkan isinya di log/chat. Variable penting:
+
+```text
+base_url
+instructor_email
+student_email
+test_user_password
+class_id
+assignment_id
+write_assignment_id
+submission_id
+draft_submission_id
+submitted_submission_id
+short_content_submission_id
+winstonai_submission_id
+```
+
+Token `instructor_token` dan `student_token` disimpan otomatis oleh request login saat collection dijalankan. Nilai token tidak boleh dipublikasikan atau dicopy ke laporan.
+
+Cakupan collection:
+
+- Auth: login instructor/student dan `GET /api/users/me`.
+- Class & Assignment: daftar kelas, detail kelas, assignment class, detail assignment.
+- Submission Flow: create submission, update draft content, submit submission, detail submission.
+- Validation Negative Cases: missing token, role student ditolak dari queue stats, invalid payload, invalid submission id, short content, dan DRAFT submission untuk plagiarism check.
+- Plagiarism Integration Mock: queue stats before/after, trigger check plagiarism, dan polling plagiarism report pada mode mock/metadata.
+- Document/File Input Validation: validasi upload PDF/DOCX diterima dan TXT/format invalid ditolak pada `POST /api/storage/upload`.
+
+Validasi konten plagiarism yang diaudit dari backend:
+
+- submission harus berstatus `SUBMITTED`;
+- content tidak boleh kosong;
+- content minimal 100 karakter;
+- content maksimal 120.000 karakter;
+- invalid submission id pada endpoint plagiarism ditolak sebelum service/provider;
+- response report pada `PLAGIARISM_REPORT_MODE=metadata` dapat mengembalikan `pdfReportUrl: null`.
+
+Collection tidak menguji akurasi WinstonAI dan tidak boleh digunakan untuk load/stress/spike terhadap real WinstonAI. Untuk Iterasi Pertama Final, backend harus berjalan dengan:
+
+```text
+WINSTON_AI_MODE=mock
+PLAGIARISM_REPORT_MODE=metadata
+```
+
+Audit upload dokumen:
+
+- Endpoint upload aktual: `POST /api/storage/upload`.
+- Format yang di-whitelist backend: PDF, DOC, DOCX, JPG, PNG, ZIP.
+- `.pdf` didukung sebagai upload attachment.
+- `.docx` didukung sebagai upload attachment.
+- `.txt` tidak didukung karena `text/plain` tidak ada pada whitelist MIME backend.
+- Test upload ini hanya memvalidasi accept/reject upload attachment, bukan parsing isi dokumen untuk plagiarism detection.
+
+Runbook Newman dari laptop ke VPS:
+
+```powershell
+# 1. Di VPS: reset data uji dan pastikan functional test PASS.
+# 2. Di laptop: siapkan environment local dari example, isi placeholder tanpa mencetak secret.
+# 3. Pastikan backend VPS memakai WINSTON_AI_MODE=mock dan PLAGIARISM_REPORT_MODE=metadata.
+
+npm run thesis:results:prepare -- -Label iteration-1-final
+
+npm run test:postman:iteration1
+```
+
+Command langsung yang ekuivalen:
+
+```powershell
+npx --yes newman run tests/postman/protextify-api-functional-integration.postman_collection.json `
+  -e tests/postman/protextify-api-testing.postman_environment.local.json `
+  --reporters cli,json `
+  --reporter-json-export results/performance/iteration-1-final/iteration-1-final-postman-newman-report.json
+```
+
+Setelah selesai, reset data uji di VPS agar kondisi pengujian berikutnya bersih. Report JSON Newman disimpan sebagai evidence:
+
+```text
+results/performance/iteration-1-final/iteration-1-final-postman-newman-report.json
+```
+
+File report dan environment local sudah di-ignore oleh Git.
+
 ## k6 Performance Testing
 
 Script k6 untuk skripsi berada di:

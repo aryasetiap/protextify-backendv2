@@ -1,0 +1,2 @@
+Placeholder DOCX fixture for Protextify upload API validation.
+The backend upload endpoint validates MIME type and file size; it does not parse document contents.
