@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { StorageController } from './storage.controller';
 import { StorageService } from './storage.service';
 import { StorageScheduler } from './storage.scheduler';
@@ -12,7 +13,7 @@ import { RealtimeModule } from '../realtime/realtime.module';
     PrismaModule,
     RealtimeModule,
     MulterModule.register({
-      dest: './uploads', // Temporary directory
+      storage: memoryStorage(),
     }),
   ],
   controllers: [StorageController],

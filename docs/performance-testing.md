@@ -265,11 +265,14 @@ PLAGIARISM_REPORT_MODE=metadata
 Audit upload dokumen:
 
 - Endpoint upload aktual: `POST /api/storage/upload`.
+- Pengujian upload memakai konfigurasi Cloudflare R2 testing untuk memastikan attachment dapat diterima backend dan diteruskan ke storage provider.
+- Validasi ini bukan uji performa Cloudflare R2 dan bukan pengujian parsing dokumen plagiarism.
 - Format yang di-whitelist backend: PDF, DOC, DOCX, JPG, PNG, ZIP.
 - `.pdf` didukung sebagai upload attachment.
 - `.docx` didukung sebagai upload attachment.
 - `.txt` tidak didukung karena `text/plain` tidak ada pada whitelist MIME backend.
 - Test upload ini hanya memvalidasi accept/reject upload attachment, bukan parsing isi dokumen untuk plagiarism detection.
+- Real WinstonAI tetap menggunakan mode mock/metadata untuk functional/integration testing yang tidak secara eksplisit menguji provider real secara terbatas.
 
 Runbook Newman dari laptop ke VPS:
 
