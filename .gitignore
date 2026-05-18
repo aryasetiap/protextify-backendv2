@@ -73,3 +73,7 @@ tests/performance/k6/data/tokens*.json
 tests/postman/*local*.json
 
 skripsi-evidence/*
+
+.venv/
+__pycache__/
+*.pyc

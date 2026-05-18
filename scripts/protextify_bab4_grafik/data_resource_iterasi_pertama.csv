@@ -1,0 +1,7 @@
+Snapshot,API_CPU_pct,API_Mem_MiB
+Before,0.02,214.7
+During Load,6.1,293.1
+During Stress,22.67,322.0
+During Spike,18.94,239.1
+During Endurance,6.45,277.0
+After,0.0,329.6
