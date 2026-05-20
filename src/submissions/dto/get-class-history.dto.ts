@@ -48,11 +48,11 @@ export class GetClassHistoryDto {
 
   @ApiProperty({
     required: false,
-    enum: ['SUBMITTED', 'GRADED', 'DRAFT', 'PENDING'],
+    enum: ['SUBMITTED', 'GRADED', 'DRAFT'],
     description: 'Filter by submission status',
   })
   @IsOptional()
-  @IsIn(['SUBMITTED', 'GRADED', 'DRAFT', 'PENDING'])
+  @IsIn(['SUBMITTED', 'GRADED', 'DRAFT'])
   status?: string;
 
   @ApiProperty({

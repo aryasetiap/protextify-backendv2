@@ -618,11 +618,11 @@ export class SubmissionsService {
 
     const skip = (page - 1) * limit;
 
-    const kelas = await this.prisma.class.findUnique({
-      where: { id: classId },
+    const kelas = await this.prisma.class.findFirst({
+      where: { id: classId, instructorId },
+      select: { id: true },
     });
-    if (!kelas || kelas.instructorId !== instructorId)
-      throw new ForbiddenException('Not your class');
+    if (!kelas) throw new ForbiddenException('Not your class');
 
     const where: any = {
       assignment: { classId },
@@ -651,7 +651,15 @@ export class SubmissionsService {
       this.prisma.submission.count({ where }),
       this.prisma.submission.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          status: true,
+          grade: true,
+          studentId: true,
+          assignmentId: true,
+          createdAt: true,
+          updatedAt: true,
+          submittedAt: true,
           student: { select: { id: true, fullName: true } },
           assignment: { select: { id: true, title: true } },
           plagiarismChecks: {
