@@ -111,8 +111,9 @@ try {
   Push-Location $RepoRoot
 
   foreach ($Name in $SelectedScenarios) {
-    $ScriptPath = Join-Path $RepoRoot $ScenarioScripts[$Name]
+    $ScriptRelPath = $ScenarioScripts[$Name] -replace '\\', '/'
     $RawJsonPath = Join-Path $ResultDir "$Label-$Name.json"
+    $RawJsonRelPath = "results/performance/$Label/$Label-$Name.json"
     $LogPath = Join-Path $ResultDir "$Label-$Name.log"
     $EndpointCsvPath = Join-Path $ResultDir "$Label-$Name-endpoint-metrics.csv"
     $SummaryJsonPath = Join-Path $ResultDir "$Label-$Name-summary.json"
@@ -133,12 +134,25 @@ try {
     $K6Args = @(
       'run',
       '--out',
-      "json=$RawJsonPath",
-      $ScriptPath
+      "json=$RawJsonRelPath",
+      $ScriptRelPath
     )
 
-    & k6 @K6Args 2>&1 | Tee-Object -FilePath $LogPath
+    Set-Content -Path $LogPath -Value @(
+      "k6 command: k6 $($K6Args -join ' ')",
+      "startedAt: $(Get-Date -Format o)",
+      "baseUrl: $BaseUrl",
+      "label: $Label",
+      "scenario: $Name"
+    ) -Encoding utf8
+
+    & k6 @K6Args
     $ExitCode = $LASTEXITCODE
+
+    Add-Content -Path $LogPath -Value @(
+      "finishedAt: $(Get-Date -Format o)",
+      "exitCode: $ExitCode"
+    ) -Encoding utf8
 
     if (Test-Path $RawJsonPath) {
       Invoke-EndpointMetrics -RawJsonPath $RawJsonPath -OutputCsvPath $EndpointCsvPath
