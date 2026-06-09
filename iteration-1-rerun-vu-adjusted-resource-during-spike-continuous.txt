@@ -1,0 +1,1779 @@
+# Protextify VPS Continuous Resource Capture
+startedAt: 2026-06-09T09:12:02+00:00
+label: iteration-1-rerun-vu-adjusted
+phase: during-spike
+intervalSeconds: 5
+durationSeconds: 120
+baseUrl: http://localhost:3000
+secretPolicy: env files, tokens, passwords, and request bodies are not captured
+
+============================================================
+sample: 1
+timestamp: 2026-06-09T09:12:02+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O           BLOCK I/O         PIDS
+protextify-backendv2-api-1        0.02%     178.5MiB / 3.824GiB   304MB / 500MB     114MB / 4.79MB    15
+protextify-backendv2-postgres-1   0.00%     32.2MiB / 3.824GiB    182MB / 261MB     167MB / 4.88MB    6
+protextify-backendv2-redis-1      0.68%     8.82MiB / 3.824GiB    1.68MB / 2.16MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1637        1602          16         983        2278
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:12:04 up  2:57,  4 users,  load average: 0.38, 0.58, 0.52
+
+## Top Snapshot
+top - 09:12:04 up  2:57,  4 users,  load average: 0.38, 0.58, 0.52
+Tasks: 144 total,   1 running, 139 sleeping,   0 stopped,   4 zombie
+%Cpu(s):  4.8 us,  4.8 sy,  0.0 ni, 90.5 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+MiB Mem :   3915.9 total,   1602.7 free,   1637.4 used,    983.4 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2278.4 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  72785 be-test+  20   0   26.4g 643232  68272 S  10.0  16.0   2:28.04 MainThr+
+ 102322 be-test+  20   0   13636   6364   4180 R  10.0   0.2   0:00.01 top
+      1 root      20   0   22176   9368   5408 S   0.0   0.2   0:05.63 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.42 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.75 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.17 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.70 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.32 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+     38 root      39  19       0      0      0 S   0.0   0.0   0:00.00 khugepa+
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.4 16.0 27683056 643232 ?     Sl   08:26   2:28 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.3  4.4 10230132 179624 ?     Ssl  07:15   5:07 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160600 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.9  2.9 415740 117784 ?       Sl   08:26   1:19 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 82584 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+be-test+   72864  0.0  1.7 1485848 68616 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         982  3.0  1.6 2649860 67312 ?       Ssl  06:14   5:25 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+root         768  3.3  0.9 2390120 38848 ?       Ssl  06:14   5:56 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+be-test+   73137  0.0  0.4  40888 16328 ?        Sl   08:26   0:00 /home/be-testing/.vscode-server/code-6a44c352bd24569c417e530095901b649960f9f8 command-shell --cli-data-dir /home/be-testing/.vscode-server/cli --parent-process-id 73115 --on-host=127.0.0.1 --on-port
+999         1341  0.0  0.3 216068 13924 ?        Ss   06:14   0:02 postgres
+root         829  0.0  0.3 619152 13680 ?        Ssl  06:14   0:03 /usr/libexec/fwupd/fwupd
+root         780  0.0  0.3 109996 13120 ?        Ssl  06:14   0:00 /usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal
+root         291  0.0  0.2  58756 11092 ?        S<s  06:14   0:01 /usr/lib/systemd/systemd-journald
+root       72862  0.0  0.2  14956 10652 ?        Ss   08:26   0:00 sshd: be-testing [priv]
+root       72716  0.0  0.2  14960 10636 ?        Ss   08:26   0:00 sshd: be-testing [priv]
+be-test+   72742  0.5  0.2  18068 10252 ?        S    08:26   0:15 sshd: be-testing@notty
+root        1261  0.1  0.2 1235860 9460 ?        Sl   06:14   0:10 /usr/bin/containerd-shim-runc-v2 -namespace moby -id 5cd0c4a0f5777364ee996710560fecaa6e0d96518880def45ba8f31a660b4e0c -address /run/containerd/containerd.sock
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:12:04.570Z","service":"protextify-backend","version":"2.0.0","uptime":6992,"memory":{"used":"60.54 MB","total":"90.31 MB","rss":"175.4 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:12:04.613Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 2
+timestamp: 2026-06-09T09:12:09+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O           BLOCK I/O         PIDS
+protextify-backendv2-api-1        1.44%     179.5MiB / 3.824GiB   304MB / 500MB     114MB / 4.79MB    15
+protextify-backendv2-postgres-1   0.22%     37.48MiB / 3.824GiB   182MB / 261MB     167MB / 4.88MB    9
+protextify-backendv2-redis-1      0.62%     8.82MiB / 3.824GiB    1.68MB / 2.17MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1649        1590          16         983        2265
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:12:11 up  2:57,  4 users,  load average: 0.32, 0.57, 0.52
+
+## Top Snapshot
+top - 09:12:12 up  2:57,  4 users,  load average: 0.32, 0.57, 0.52
+Tasks: 147 total,   1 running, 142 sleeping,   0 stopped,   4 zombie
+%Cpu(s):  4.5 us,  4.5 sy,  0.0 ni, 90.9 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+MiB Mem :   3915.9 total,   1587.7 free,   1652.4 used,    983.5 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2263.5 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+      1 root      20   0   22176   9368   5408 S   0.0   0.2   0:05.63 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.42 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.75 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.17 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.70 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.32 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+     38 root      39  19       0      0      0 S   0.0   0.0   0:00.00 khugepa+
+     39 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     40 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.4 16.0 27683056 645200 ?     Sl   08:26   2:28 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.3  4.5 10231156 180564 ?     Ssl  07:15   5:07 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160600 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.9  2.9 415740 117808 ?       Sl   08:26   1:19 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 82584 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 69324 ?       Ssl  06:14   5:26 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68616 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40520 ?       Ssl  06:14   5:56 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  0.0  0.4 219008 17472 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102331  0.0  0.4 218780 16464 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42494) idle
+be-test+   73137  0.0  0.4  40888 16328 ?        Sl   08:26   0:00 /home/be-testing/.vscode-server/code-6a44c352bd24569c417e530095901b649960f9f8 command-shell --cli-data-dir /home/be-testing/.vscode-server/cli --parent-process-id 73115 --on-host=127.0.0.1 --on-port
+999       102381  0.0  0.3 218264 15764 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999         1341  0.0  0.3 216068 13924 ?        Ss   06:14   0:02 postgres
+root         829  0.0  0.3 619152 13680 ?        Ssl  06:14   0:03 /usr/libexec/fwupd/fwupd
+root         780  0.0  0.3 109996 13120 ?        Ssl  06:14   0:00 /usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal
+root         291  0.0  0.2  58756 11092 ?        S<s  06:14   0:01 /usr/lib/systemd/systemd-journald
+root       72862  0.0  0.2  14956 10652 ?        Ss   08:26   0:00 sshd: be-testing [priv]
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:12:12.208Z","service":"protextify-backend","version":"2.0.0","uptime":6999,"memory":{"used":"60.87 MB","total":"90.31 MB","rss":"176.28 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:12:12.232Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 3
+timestamp: 2026-06-09T09:12:17+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O           BLOCK I/O         PIDS
+protextify-backendv2-api-1        2.56%     179.6MiB / 3.824GiB   304MB / 500MB     114MB / 4.79MB    15
+protextify-backendv2-postgres-1   0.62%     37.93MiB / 3.824GiB   182MB / 261MB     167MB / 4.88MB    9
+protextify-backendv2-redis-1      0.69%     8.82MiB / 3.824GiB    1.68MB / 2.19MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1653        1586          16         983        2262
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:12:19 up  2:58,  4 users,  load average: 0.30, 0.56, 0.51
+
+## Top Snapshot
+top - 09:12:19 up  2:58,  4 users,  load average: 0.30, 0.56, 0.51
+Tasks: 150 total,   1 running, 145 sleeping,   0 stopped,   4 zombie
+%Cpu(s): 14.3 us, 14.3 sy,  0.0 ni, 71.4 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+MiB Mem :   3915.9 total,   1586.7 free,   1653.2 used,    983.7 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2262.7 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  42060 root      20   0 9991.4m 180728  29660 S   9.1   4.5   5:08.01 MainThr+
+      1 root      20   0   22176   9368   5408 S   0.0   0.2   0:05.63 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.42 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.76 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.17 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.71 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.32 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+     38 root      39  19       0      0      0 S   0.0   0.0   0:00.00 khugepa+
+     39 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.4 15.8 27674708 637080 ?     Sl   08:26   2:28 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.3  4.5 10231156 180728 ?     Ssl  07:15   5:08 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160600 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.9  2.9 415996 117816 ?       Sl   08:26   1:19 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 82584 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 69612 ?       Ssl  06:14   5:26 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68616 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40964 ?       Ssl  06:14   5:56 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  0.1  0.4 219008 17600 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102331  0.1  0.4 219040 17220 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42494) idle
+999       102381  0.0  0.4 218264 16488 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+be-test+   73137  0.0  0.4  40888 16328 ?        Sl   08:26   0:00 /home/be-testing/.vscode-server/code-6a44c352bd24569c417e530095901b649960f9f8 command-shell --cli-data-dir /home/be-testing/.vscode-server/cli --parent-process-id 73115 --on-host=127.0.0.1 --on-port
+999         1341  0.0  0.3 216068 13924 ?        Ss   06:14   0:02 postgres
+root         829  0.0  0.3 619152 13680 ?        Ssl  06:14   0:03 /usr/libexec/fwupd/fwupd
+root         780  0.0  0.3 109996 13120 ?        Ssl  06:14   0:00 /usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal
+root         291  0.0  0.2  58756 11092 ?        S<s  06:14   0:01 /usr/lib/systemd/systemd-journald
+root       72862  0.0  0.2  14956 10652 ?        Ss   08:26   0:00 sshd: be-testing [priv]
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:12:19.723Z","service":"protextify-backend","version":"2.0.0","uptime":7007,"memory":{"used":"62.15 MB","total":"90.31 MB","rss":"176.4 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:12:19.748Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 4
+timestamp: 2026-06-09T09:12:24+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O           BLOCK I/O         PIDS
+protextify-backendv2-api-1        5.34%     181.8MiB / 3.824GiB   304MB / 500MB     114MB / 4.79MB    15
+protextify-backendv2-postgres-1   0.99%     38.27MiB / 3.824GiB   182MB / 261MB     167MB / 4.88MB    9
+protextify-backendv2-redis-1      0.68%     8.82MiB / 3.824GiB    1.68MB / 2.21MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1649        1590          16         983        2266
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:12:26 up  2:58,  4 users,  load average: 0.25, 0.54, 0.51
+
+## Top Snapshot
+top - 09:12:27 up  2:58,  4 users,  load average: 0.25, 0.54, 0.51
+Tasks: 150 total,   1 running, 145 sleeping,   0 stopped,   4 zombie
+%Cpu(s):  4.5 us,  4.5 sy,  0.0 ni, 90.9 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+MiB Mem :   3915.9 total,   1588.6 free,   1651.3 used,    983.7 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2264.6 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+      1 root      20   0   22176   9368   5408 S   0.0   0.2   0:05.63 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.42 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.76 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.17 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.71 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.32 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+     38 root      39  19       0      0      0 S   0.0   0.0   0:00.00 khugepa+
+     39 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     40 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.3 15.8 27674708 637084 ?     Sl   08:26   2:28 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.3  4.5 10237300 182732 ?     Ssl  07:15   5:08 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160600 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 383180 117832 ?       Sl   08:26   1:19 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 82584 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 69672 ?       Ssl  06:14   5:26 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68616 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40964 ?       Ssl  06:14   5:57 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  0.2  0.4 219008 17664 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102381  0.1  0.4 219024 17232 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999       102331  0.1  0.4 219040 17220 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42494) idle
+999       102600  0.0  0.4 219064 17144 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102601  0.0  0.4 218780 16444 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+be-test+   73137  0.0  0.4  40888 16328 ?        Sl   08:26   0:00 /home/be-testing/.vscode-server/code-6a44c352bd24569c417e530095901b649960f9f8 command-shell --cli-data-dir /home/be-testing/.vscode-server/cli --parent-process-id 73115 --on-host=127.0.0.1 --on-port
+999       102599  0.0  0.3 218264 15964 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999         1341  0.0  0.3 216068 13924 ?        Ss   06:14   0:02 postgres
+root         829  0.0  0.3 619152 13680 ?        Ssl  06:14   0:03 /usr/libexec/fwupd/fwupd
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:12:27.233Z","service":"protextify-backend","version":"2.0.0","uptime":7015,"memory":{"used":"64.46 MB","total":"97.31 MB","rss":"178.4 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:12:27.257Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 5
+timestamp: 2026-06-09T09:12:32+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O           BLOCK I/O         PIDS
+protextify-backendv2-api-1        23.46%    186.1MiB / 3.824GiB   305MB / 501MB     114MB / 4.79MB    15
+protextify-backendv2-postgres-1   1.84%     49.8MiB / 3.824GiB    182MB / 261MB     167MB / 4.88MB    15
+protextify-backendv2-redis-1      5.34%     8.82MiB / 3.824GiB    1.69MB / 2.23MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1674        1565          16         983        2241
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:12:34 up  2:58,  4 users,  load average: 0.23, 0.53, 0.50
+
+## Top Snapshot
+top - 09:12:34 up  2:58,  4 users,  load average: 0.23, 0.53, 0.50
+Tasks: 153 total,   1 running, 148 sleeping,   0 stopped,   4 zombie
+%Cpu(s):  4.8 us,  0.0 sy,  0.0 ni, 95.2 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+MiB Mem :   3915.9 total,   1565.7 free,   1674.1 used,    983.7 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2241.7 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  54275 be-test+  20   0 1632572  82584  49404 S   9.1   2.1   0:21.41 MainThr+
+      1 root      20   0   22176   9368   5408 S   0.0   0.2   0:05.64 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.42 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.77 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.17 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.71 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.32 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+     38 root      39  19       0      0      0 S   0.0   0.0   0:00.00 khugepa+
+     39 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.3 15.8 27674708 637104 ?     Sl   08:26   2:28 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.3  4.6 10237300 187100 ?     Ssl  07:15   5:08 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160632 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 434656 118048 ?       Sl   08:26   1:19 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 82584 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 70408 ?       Ssl  06:14   5:26 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68616 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40724 ?       Ssl  06:14   5:57 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  0.1  0.4 219008 17664 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102601  0.3  0.4 219020 17608 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+999       102690  0.3  0.4 219032 17508 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47568) idle
+999       102381  0.1  0.4 219024 17268 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999       102600  0.1  0.4 219064 17232 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102331  0.1  0.4 219040 17224 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42494) idle
+999       102599  0.1  0.4 218992 17152 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999       102723  0.0  0.4 219040 17144 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47600) idle
+be-test+   73137  0.0  0.4  40888 16328 ?        Sl   08:26   0:00 /home/be-testing/.vscode-server/code-6a44c352bd24569c417e530095901b649960f9f8 command-shell --cli-data-dir /home/be-testing/.vscode-server/cli --parent-process-id 73115 --on-host=127.0.0.1 --on-port
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:12:34.798Z","service":"protextify-backend","version":"2.0.0","uptime":7022,"memory":{"used":"60.55 MB","total":"76.31 MB","rss":"182.53 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:12:34.824Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 6
+timestamp: 2026-06-09T09:12:39+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O           BLOCK I/O         PIDS
+protextify-backendv2-api-1        26.18%    191.7MiB / 3.824GiB   305MB / 501MB     114MB / 4.79MB    15
+protextify-backendv2-postgres-1   7.96%     50.44MiB / 3.824GiB   183MB / 262MB     167MB / 4.88MB    15
+protextify-backendv2-redis-1      0.64%     8.82MiB / 3.824GiB    1.69MB / 2.24MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1661        1578          16         983        2254
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:12:42 up  2:58,  4 users,  load average: 0.19, 0.51, 0.50
+
+## Top Snapshot
+top - 09:12:42 up  2:58,  4 users,  load average: 0.19, 0.51, 0.50
+Tasks: 153 total,   1 running, 148 sleeping,   0 stopped,   4 zombie
+%Cpu(s): 19.0 us,  4.8 sy,  0.0 ni, 76.2 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+MiB Mem :   3915.9 total,   1577.1 free,   1662.7 used,    983.8 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2253.2 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  42060 root      20   0 9997.4m 192980  29660 S  18.2   4.8   5:09.77 MainThr+
+ 102599 999       20   0  219024  17268  13708 S   9.1   0.4   0:00.05 postgres
+      1 root      20   0   22176   9368   5408 S   0.0   0.2   0:05.64 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.43 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.78 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.17 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.71 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.32 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+     38 root      39  19       0      0      0 S   0.0   0.0   0:00.00 khugepa+
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.3 15.8 27674708 637112 ?     Sl   08:26   2:28 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.4  4.8 10237300 192980 ?     Rsl  07:15   5:09 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160632 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 385304 117896 ?       Sl   08:26   1:19 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 82584 ?       Rl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 70588 ?       Ssl  06:14   5:26 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68616 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40728 ?       Ssl  06:14   5:57 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  0.2  0.4 219008 17664 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102690  0.2  0.4 219032 17624 ?        Rs   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47568) idle
+999       102601  0.2  0.4 219020 17608 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+999       102381  0.2  0.4 219024 17268 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999       102599  0.3  0.4 219024 17268 ?        Rs   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999       102600  0.1  0.4 219064 17240 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102723  1.0  0.4 219040 17240 ?        Rs   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47600) idle
+999       102331  0.2  0.4 219040 17228 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42494) idle
+999       102722  0.2  0.4 219040 17200 ?        Rs   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47584) idle
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:12:42.327Z","service":"protextify-backend","version":"2.0.0","uptime":7030,"memory":{"used":"67.16 MB","total":"84.31 MB","rss":"188.4 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:12:42.353Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 7
+timestamp: 2026-06-09T09:12:47+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O           BLOCK I/O         PIDS
+protextify-backendv2-api-1        67.55%    237.6MiB / 3.824GiB   308MB / 506MB     114MB / 4.81MB    15
+protextify-backendv2-postgres-1   20.72%    52.61MiB / 3.824GiB   184MB / 264MB     167MB / 4.88MB    16
+protextify-backendv2-redis-1      0.64%     8.82MiB / 3.824GiB    1.69MB / 2.26MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1724        1514          16         983        2191
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:12:49 up  2:58,  4 users,  load average: 0.26, 0.52, 0.50
+
+## Top Snapshot
+top - 09:12:49 up  2:58,  4 users,  load average: 0.26, 0.52, 0.50
+Tasks: 154 total,   1 running, 149 sleeping,   0 stopped,   4 zombie
+%Cpu(s): 17.4 us,  4.3 sy,  0.0 ni, 73.9 id,  0.0 wa,  0.0 hi,  4.3 si,  0.0 st 
+MiB Mem :   3915.9 total,   1515.0 free,   1724.7 used,    983.8 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2191.1 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  42060 root      20   0    9.8g 238288  29660 S  41.7   5.9   5:13.44 MainThr+
+  72785 be-test+  20   0   26.4g 637116  68272 S   8.3  15.9   2:29.13 MainThr+
+ 102600 999       20   0  219064  17252  13704 S   8.3   0.4   0:00.17 postgres
+      1 root      20   0   22176   9368   5408 S   0.0   0.2   0:05.64 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.43 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.78 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.17 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.71 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.32 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.3 15.8 27674708 637116 ?     Sl   08:26   2:29 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.4  5.9 10279796 238288 ?     Ssl  07:15   5:13 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160640 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 385428 117992 ?       Sl   08:26   1:19 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 82584 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 70612 ?       Ssl  06:14   5:26 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68620 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40484 ?       Ssl  06:14   5:57 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  0.4  0.4 219008 17668 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102857  1.2  0.4 219020 17660 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(34898) idle
+999       102690  0.8  0.4 219032 17644 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47568) idle
+999       102601  0.5  0.4 219020 17636 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+999       102381  0.4  0.4 219024 17276 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999       102599  0.5  0.4 219024 17268 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999       102600  0.7  0.4 219064 17252 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102722  1.1  0.4 219040 17252 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47584) idle
+999       102723  1.2  0.4 219040 17240 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47600) idle
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:12:49.993Z","service":"protextify-backend","version":"2.0.0","uptime":7037,"memory":{"used":"85.78 MB","total":"138.81 MB","rss":"232.65 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:12:50.039Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 8
+timestamp: 2026-06-09T09:12:55+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O          BLOCK I/O         PIDS
+protextify-backendv2-api-1        45.15%    296.3MiB / 3.824GiB   311MB / 511MB    114MB / 4.81MB    15
+protextify-backendv2-postgres-1   17.61%    52.63MiB / 3.824GiB   186MB / 267MB    167MB / 4.88MB    16
+protextify-backendv2-redis-1      0.68%     8.82MiB / 3.824GiB    1.7MB / 2.28MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1752        1486          16         983        2162
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:12:56 up  2:58,  4 users,  load average: 0.22, 0.50, 0.50
+
+## Top Snapshot
+top - 09:12:56 up  2:58,  4 users,  load average: 0.22, 0.50, 0.50
+Tasks: 154 total,   1 running, 149 sleeping,   0 stopped,   4 zombie
+%Cpu(s):  9.1 us,  4.5 sy,  0.0 ni, 86.4 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+MiB Mem :   3915.9 total,   1486.7 free,   1752.9 used,    983.9 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2162.9 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  42060 root      20   0    9.9g 295924  29660 S   9.1   7.4   5:16.65 MainThr+
+ 102382 999       20   0  219008  17668  14096 S   9.1   0.4   0:00.32 postgres
+ 103015 be-test+  20   0   13636   6360   4176 R   9.1   0.2   0:00.01 top
+      1 root      20   0   22176   9368   5408 S   0.0   0.2   0:05.64 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.43 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.79 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.17 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.71 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.32 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.3 15.8 27674708 637124 ?     Sl   08:26   2:29 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.4  7.3 10351220 295924 ?     Ssl  07:15   5:16 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160652 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 434560 117968 ?       Sl   08:26   1:19 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 82644 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 70616 ?       Ssl  06:14   5:26 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68620 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40484 ?       Ssl  06:14   5:57 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  0.6  0.4 219008 17668 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102857  1.6  0.4 219020 17664 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(34898) idle
+999       102690  1.0  0.4 219032 17644 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47568) idle
+999       102601  0.9  0.4 219020 17636 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+999       102381  0.6  0.4 219024 17276 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999       102599  0.8  0.4 219024 17268 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999       102600  0.9  0.4 219064 17252 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102722  1.3  0.4 219040 17252 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47584) idle
+999       102723  1.3  0.4 219040 17240 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47600) idle
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:12:56.610Z","service":"protextify-backend","version":"2.0.0","uptime":7044,"memory":{"used":"85.32 MB","total":"206.81 MB","rss":"288.9 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:12:56.634Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 9
+timestamp: 2026-06-09T09:13:01+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O         BLOCK I/O         PIDS
+protextify-backendv2-api-1        41.93%    308.7MiB / 3.824GiB   314MB / 516MB   114MB / 4.81MB    15
+protextify-backendv2-postgres-1   18.57%    52.64MiB / 3.824GiB   188MB / 269MB   167MB / 4.88MB    16
+protextify-backendv2-redis-1      0.71%     8.82MiB / 3.824GiB    1.7MB / 2.3MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1758        1480          16         984        2157
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:13:03 up  2:58,  4 users,  load average: 0.20, 0.49, 0.49
+
+## Top Snapshot
+top - 09:13:04 up  2:58,  4 users,  load average: 0.20, 0.49, 0.49
+Tasks: 153 total,   1 running, 148 sleeping,   0 stopped,   4 zombie
+%Cpu(s): 33.3 us,  4.8 sy,  0.0 ni, 61.9 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+MiB Mem :   3915.9 total,   1480.9 free,   1758.7 used,    984.0 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2157.2 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  42060 root      20   0    9.9g 308412  29660 S  36.4   7.7   5:19.77 MainThr+
+      1 root      20   0   22176   9368   5408 S   9.1   0.2   0:05.65 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.43 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.79 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.17 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.71 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.32 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+     38 root      39  19       0      0      0 S   0.0   0.0   0:00.00 khugepa+
+     39 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.3 15.8 27674708 637124 ?     Sl   08:26   2:29 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.5  7.6 10362996 308428 ?     Rsl  07:15   5:19 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160652 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 434560 117968 ?       Sl   08:26   1:19 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 82724 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 70616 ?       Ssl  06:14   5:27 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68620 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40536 ?       Ssl  06:14   5:57 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  0.7  0.4 219008 17668 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102857  1.7  0.4 219020 17664 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(34898) idle
+999       102690  1.2  0.4 219032 17644 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47568) idle
+999       102601  1.1  0.4 219020 17636 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+999       102381  0.8  0.4 219024 17276 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999       102599  1.1  0.4 219024 17272 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999       102600  1.1  0.4 219064 17252 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102722  1.4  0.4 219040 17252 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47584) idle
+999       102723  1.4  0.4 219040 17240 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47600) idle
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:13:04.208Z","service":"protextify-backend","version":"2.0.0","uptime":7051,"memory":{"used":"137.61 MB","total":"220.31 MB","rss":"301.15 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:13:04.320Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 10
+timestamp: 2026-06-09T09:13:09+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O          BLOCK I/O         PIDS
+protextify-backendv2-api-1        30.58%    324.9MiB / 3.824GiB   318MB / 522MB    114MB / 4.81MB    15
+protextify-backendv2-postgres-1   15.75%    52.63MiB / 3.824GiB   190MB / 273MB    167MB / 4.88MB    16
+protextify-backendv2-redis-1      0.62%     8.824MiB / 3.824GiB   1.7MB / 2.31MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1771        1468          16         984        2144
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:13:11 up  2:58,  4 users,  load average: 0.32, 0.51, 0.50
+
+## Top Snapshot
+top - 09:13:11 up  2:58,  4 users,  load average: 0.32, 0.51, 0.50
+Tasks: 153 total,   1 running, 148 sleeping,   0 stopped,   4 zombie
+%Cpu(s): 33.3 us,  8.3 sy,  0.0 ni, 54.2 id,  0.0 wa,  0.0 hi,  4.2 si,  0.0 st 
+MiB Mem :   3915.9 total,   1468.2 free,   1771.3 used,    984.1 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2144.6 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  42060 root      20   0    9.9g 324316  29660 S  41.7   8.1   5:22.95 MainThr+
+  72785 be-test+  20   0   26.4g 637124  68272 S   8.3  15.9   2:29.45 MainThr+
+      1 root      20   0   22176   9368   5408 S   0.0   0.2   0:05.65 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.43 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.80 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.18 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.72 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.32 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+     38 root      39  19       0      0      0 S   0.0   0.0   0:00.00 khugepa+
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.3 15.8 27674708 637124 ?     Sl   08:26   2:29 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.5  8.0 10378612 324316 ?     Ssl  07:15   5:22 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160652 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 385208 117912 ?       Sl   08:26   1:19 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 82724 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 70636 ?       Ssl  06:14   5:27 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68620 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40536 ?       Ssl  06:14   5:57 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  0.9  0.4 219008 17668 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102857  1.7  0.4 219020 17664 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(34898) idle
+999       102690  1.3  0.4 219032 17644 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47568) idle
+999       102601  1.1  0.4 219020 17636 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+999       102381  0.9  0.4 219024 17276 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999       102599  1.1  0.4 219024 17272 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999       102600  1.2  0.4 219064 17252 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102722  1.5  0.4 219040 17252 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47584) idle
+999       102723  1.5  0.4 219040 17240 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47600) idle
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:13:11.873Z","service":"protextify-backend","version":"2.0.0","uptime":7059,"memory":{"used":"72.65 MB","total":"219.06 MB","rss":"316.53 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:13:11.898Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 11
+timestamp: 2026-06-09T09:13:16+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O          BLOCK I/O         PIDS
+protextify-backendv2-api-1        38.69%    325.6MiB / 3.824GiB   321MB / 528MB    114MB / 4.97MB    15
+protextify-backendv2-postgres-1   28.77%    52.66MiB / 3.824GiB   192MB / 276MB    167MB / 4.88MB    16
+protextify-backendv2-redis-1      0.62%     8.824MiB / 3.824GiB   1.7MB / 2.33MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1773        1465          16         984        2142
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:13:19 up  2:59,  4 users,  load average: 0.30, 0.50, 0.50
+
+## Top Snapshot
+top - 09:13:19 up  2:59,  4 users,  load average: 0.30, 0.50, 0.50
+Tasks: 154 total,   2 running, 148 sleeping,   0 stopped,   4 zombie
+%Cpu(s): 22.7 us,  4.5 sy,  0.0 ni, 68.2 id,  0.0 wa,  0.0 hi,  4.5 si,  0.0 st 
+MiB Mem :   3915.9 total,   1465.2 free,   1774.1 used,    984.2 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2141.8 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  42060 root      20   0    9.9g 324932  29660 S  33.3   8.1   5:25.88 MainThr+
+ 103313 root      39  19   19928   9500   8140 R  33.3   0.2   0:00.04 (mandb)
+      1 root      20   0   22124   9464   5548 S   8.3   0.2   0:05.66 systemd
+    721 message+  20   0    9896   4872   3928 S   8.3   0.1   0:00.75 dbus-da+
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.44 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.81 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.18 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.72 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.32 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.3 15.8 27674708 637124 ?     Sl   08:26   2:29 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.6  8.1 10378612 324932 ?     Ssl  07:15   5:25 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160652 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 385208 117960 ?       Sl   08:26   1:19 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 82840 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 70636 ?       Ssl  06:14   5:27 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68620 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40536 ?       Ssl  06:14   5:57 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  1.0  0.4 219008 17668 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102857  1.8  0.4 219020 17664 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(34898) idle
+999       102690  1.4  0.4 219032 17644 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47568) idle
+999       102601  1.2  0.4 219020 17636 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+999       102381  1.0  0.4 219024 17276 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999       102599  1.3  0.4 219024 17272 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999       102600  1.3  0.4 219064 17252 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102722  1.5  0.4 219040 17252 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47584) idle
+999       102723  1.5  0.4 219040 17240 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47600) idle
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:13:19.430Z","service":"protextify-backend","version":"2.0.0","uptime":7067,"memory":{"used":"124.18 MB","total":"219.06 MB","rss":"317.15 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:13:19.458Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 12
+timestamp: 2026-06-09T09:13:24+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O           BLOCK I/O         PIDS
+protextify-backendv2-api-1        42.43%    326.9MiB / 3.824GiB   325MB / 533MB     114MB / 5.03MB    15
+protextify-backendv2-postgres-1   18.18%    52.61MiB / 3.824GiB   194MB / 278MB     167MB / 4.88MB    16
+protextify-backendv2-redis-1      0.57%     8.824MiB / 3.824GiB   1.71MB / 2.35MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1770        1441          16        1011        2145
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:13:26 up  2:59,  4 users,  load average: 0.71, 0.58, 0.52
+
+## Top Snapshot
+top - 09:13:27 up  2:59,  4 users,  load average: 0.71, 0.58, 0.52
+Tasks: 154 total,   5 running, 145 sleeping,   0 stopped,   4 zombie
+%Cpu(s):  4.5 us,  9.1 sy, 13.6 ni, 40.9 id, 27.3 wa,  0.0 hi,  4.5 si,  0.0 st 
+MiB Mem :   3915.9 total,   1441.2 free,   1770.5 used,   1011.9 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2145.4 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+ 103313 man       39  19   13236   8456   3272 R  36.4   0.2   0:02.15 mandb
+  42060 root      20   0    9.9g 326424  29660 R  27.3   8.1   5:29.11 MainThr+
+ 102723 999       20   0  219040  17240  13708 S   9.1   0.4   0:00.87 postgres
+      1 root      20   0   22124   9520   5604 S   0.0   0.2   0:05.66 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.44 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.82 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.18 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.72 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.32 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.3 15.8 27674708 637124 ?     Sl   08:26   2:29 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.6  8.1 10378612 326424 ?     Rsl  07:15   5:29 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160652 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 385252 118052 ?       Sl   08:26   1:19 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 83052 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 70656 ?       Ssl  06:14   5:27 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68620 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40992 ?       Ssl  06:14   5:57 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  1.0  0.4 219008 17668 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102857  1.7  0.4 219020 17664 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(34898) idle
+999       102690  1.4  0.4 219032 17644 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47568) idle
+999       102601  1.4  0.4 219020 17636 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+999       102381  1.1  0.4 219024 17276 ?        Rs   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(42496) BIND
+999       102599  1.3  0.4 219024 17272 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999       102600  1.3  0.4 219064 17252 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102722  1.6  0.4 219040 17252 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47584) idle
+999       102723  1.6  0.4 219040 17240 ?        Rs   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47600) idle
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:13:27.225Z","service":"protextify-backend","version":"2.0.0","uptime":7075,"memory":{"used":"78.2 MB","total":"220.56 MB","rss":"318.78 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:13:27.296Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 13
+timestamp: 2026-06-09T09:13:32+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O           BLOCK I/O         PIDS
+protextify-backendv2-api-1        39.09%    328MiB / 3.824GiB     328MB / 539MB     114MB / 5.06MB    15
+protextify-backendv2-postgres-1   18.01%    52.65MiB / 3.824GiB   196MB / 281MB     167MB / 4.88MB    16
+protextify-backendv2-redis-1      0.59%     8.824MiB / 3.824GiB   1.71MB / 2.36MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1801        1402          16        1019        2114
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:13:34 up  2:59,  4 users,  load average: 1.46, 0.74, 0.57
+
+## Top Snapshot
+top - 09:13:34 up  2:59,  4 users,  load average: 1.46, 0.74, 0.57
+Tasks: 154 total,   2 running, 148 sleeping,   0 stopped,   4 zombie
+%Cpu(s): 54.5 us, 13.6 sy,  4.5 ni,  4.5 id, 18.2 wa,  0.0 hi,  4.5 si,  0.0 st 
+MiB Mem :   3915.9 total,   1402.3 free,   1801.7 used,   1019.6 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2114.1 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  42060 root      20   0    9.9g 327548  29660 S   8.3   8.2   5:32.31 MainThr+
+  72742 be-test+  20   0   18068  10252   5224 S   8.3   0.3   0:15.57 sshd
+  75089 be-test+  20   0   10120   6104   4096 R   8.3   0.2   0:42.55 htop
+      1 root      20   0   22124   9520   5604 S   0.0   0.2   0:05.66 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.44 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.83 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.18 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.72 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.32 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.3 15.8 27674708 637132 ?     Sl   08:26   2:29 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.6  8.1 10378612 327548 ?     Ssl  07:15   5:32 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160652 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 385252 118052 ?       Sl   08:26   1:20 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 83052 ?       Rl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 70728 ?       Ssl  06:14   5:27 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68620 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40424 ?       Ssl  06:14   5:58 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  1.1  0.4 219008 17668 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102857  1.7  0.4 219020 17664 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(34898) idle
+999       102690  1.5  0.4 219032 17644 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47568) idle
+999       102601  1.4  0.4 219020 17636 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+999       102381  1.1  0.4 219024 17276 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999       102599  1.4  0.4 219024 17272 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999       102600  1.4  0.4 219064 17252 ?        Ss   09:12   0:00 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102722  1.6  0.4 219040 17252 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47584) idle
+999       102723  1.6  0.4 219040 17240 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47600) idle
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:13:34.989Z","service":"protextify-backend","version":"2.0.0","uptime":7082,"memory":{"used":"105.35 MB","total":"204.31 MB","rss":"319.78 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:13:35.126Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 14
+timestamp: 2026-06-09T09:13:40+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O           BLOCK I/O         PIDS
+protextify-backendv2-api-1        41.44%    328.1MiB / 3.824GiB   331MB / 544MB     114MB / 5.06MB    15
+protextify-backendv2-postgres-1   18.71%    52.65MiB / 3.824GiB   198MB / 284MB     167MB / 4.88MB    16
+protextify-backendv2-redis-1      0.59%     8.824MiB / 3.824GiB   1.71MB / 2.38MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1775        1427          16        1020        2140
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:13:42 up  2:59,  4 users,  load average: 1.54, 0.78, 0.59
+
+## Top Snapshot
+top - 09:13:42 up  2:59,  4 users,  load average: 1.54, 0.78, 0.59
+Tasks: 156 total,   1 running, 151 sleeping,   0 stopped,   4 zombie
+%Cpu(s): 18.2 us,  4.5 sy,  0.0 ni, 40.9 id, 31.8 wa,  0.0 hi,  0.0 si,  4.5 st 
+MiB Mem :   3915.9 total,   1427.8 free,   1774.9 used,   1020.9 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2141.0 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  75089 be-test+  20   0   10120   6104   4096 S  18.2   0.2   0:42.67 htop
+ 103580 be-test+  20   0   13636   6372   4188 R   9.1   0.2   0:00.01 top
+      1 root      20   0   22124   9524   5608 S   0.0   0.2   0:05.67 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.45 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.84 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.18 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.72 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.33 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+     38 root      39  19       0      0      0 S   0.0   0.0   0:00.00 khugepa+
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.2 15.8 27674708 637140 ?     Sl   08:26   2:29 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.7  8.1 10378612 327668 ?     Ssl  07:15   5:35 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160652 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 385288 118112 ?       Sl   08:26   1:20 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 83052 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 70728 ?       Ssl  06:14   5:27 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68624 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40424 ?       Ssl  06:14   5:58 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  1.2  0.4 219008 17668 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102857  1.7  0.4 219020 17664 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(34898) idle
+999       102690  1.5  0.4 219032 17644 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47568) idle
+999       102601  1.4  0.4 219020 17636 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+999       102381  1.2  0.4 219024 17276 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999       102599  1.4  0.4 219024 17272 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999       102600  1.4  0.4 219064 17252 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102722  1.6  0.4 219040 17252 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47584) idle
+999       102723  1.6  0.4 219040 17240 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47600) idle
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:13:42.671Z","service":"protextify-backend","version":"2.0.0","uptime":7090,"memory":{"used":"111.62 MB","total":"228.81 MB","rss":"319.9 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:13:42.739Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 15
+timestamp: 2026-06-09T09:13:47+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O          BLOCK I/O         PIDS
+protextify-backendv2-api-1        41.01%    328.1MiB / 3.824GiB   334MB / 549MB    114MB / 5.06MB    15
+protextify-backendv2-postgres-1   19.72%    52.65MiB / 3.824GiB   200MB / 287MB    167MB / 4.88MB    16
+protextify-backendv2-redis-1      0.60%     8.824MiB / 3.824GiB   1.72MB / 2.4MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1777        1424          16        1020        2138
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:13:49 up  2:59,  4 users,  load average: 1.42, 0.77, 0.59
+
+## Top Snapshot
+top - 09:13:49 up  2:59,  4 users,  load average: 1.42, 0.77, 0.59
+Tasks: 153 total,   1 running, 148 sleeping,   0 stopped,   4 zombie
+%Cpu(s): 13.6 us,  0.0 sy,  0.0 ni, 81.8 id,  0.0 wa,  0.0 hi,  4.5 si,  0.0 st 
+MiB Mem :   3915.9 total,   1424.9 free,   1777.7 used,   1021.0 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2138.2 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  42060 root      20   0    9.9g 327668  29660 S   9.1   8.2   5:37.99 MainThr+
+  72742 be-test+  20   0   18068  10252   5224 S   9.1   0.3   0:15.60 sshd
+ 103652 be-test+  20   0   13636   6420   4236 R   9.1   0.2   0:00.01 top
+      1 root      20   0   22124   9524   5608 S   0.0   0.2   0:05.67 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.45 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.84 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.18 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.72 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.33 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.2 15.8 27674708 637140 ?     Sl   08:26   2:29 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.7  8.1 10378612 327668 ?     Rsl  07:15   5:38 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160652 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 385344 118200 ?       Sl   08:26   1:20 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 83052 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 70732 ?       Ssl  06:14   5:27 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68624 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40536 ?       Ssl  06:14   5:58 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  1.2  0.4 219008 17668 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102857  1.7  0.4 219020 17664 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(34898) idle
+999       102690  1.6  0.4 219032 17644 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47568) idle
+999       102601  1.5  0.4 219020 17636 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+999       102381  1.2  0.4 219024 17276 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999       102599  1.4  0.4 219024 17272 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999       102600  1.5  0.4 219064 17252 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102722  1.6  0.4 219040 17252 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47584) idle
+999       102723  1.6  0.4 219040 17240 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47600) idle
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:13:49.323Z","service":"protextify-backend","version":"2.0.0","uptime":7097,"memory":{"used":"89.76 MB","total":"213.31 MB","rss":"319.9 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:13:49.349Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 16
+timestamp: 2026-06-09T09:13:54+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O           BLOCK I/O         PIDS
+protextify-backendv2-api-1        24.88%    328.2MiB / 3.824GiB   337MB / 554MB     114MB / 5.06MB    15
+protextify-backendv2-postgres-1   11.70%    52.65MiB / 3.824GiB   201MB / 289MB     167MB / 4.88MB    16
+protextify-backendv2-redis-1      6.05%     8.824MiB / 3.824GiB   1.72MB / 2.42MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1777        1425          16        1021        2138
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:13:56 up  2:59,  4 users,  load average: 1.28, 0.76, 0.59
+
+## Top Snapshot
+top - 09:13:56 up  2:59,  4 users,  load average: 1.28, 0.76, 0.59
+Tasks: 153 total,   1 running, 148 sleeping,   0 stopped,   4 zombie
+%Cpu(s): 20.8 us,  8.3 sy,  0.0 ni, 70.8 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+MiB Mem :   3915.9 total,   1425.2 free,   1777.3 used,   1021.1 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2138.6 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  42060 root      20   0    9.9g 327672  29660 S  50.0   8.2   5:40.37 MainThr+
+  54062 be-test+  20   0 1796812 160652  52692 S   8.3   4.0   0:36.77 MainThr+
+  72785 be-test+  20   0   26.4g 637140  68272 S   8.3  15.9   2:29.82 MainThr+
+  72858 be-test+  20   0  385344 118200  66116 S   8.3   2.9   1:20.19 codex
+ 102331 999       20   0  219040  17232  13708 S   8.3   0.4   0:01.34 postgres
+ 102601 999       20   0  219020  17636  14064 S   8.3   0.4   0:01.38 postgres
+ 102723 999       20   0  219040  17240  13708 S   8.3   0.4   0:01.39 postgres
+      1 root      20   0   22124   9524   5608 S   0.0   0.2   0:05.67 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.45 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.85 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.18 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.73 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.33 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.2 15.8 27674708 637140 ?     Sl   08:26   2:29 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.7  8.1 10378612 327672 ?     Ssl  07:15   5:40 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160652 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 385344 118200 ?       Sl   08:26   1:20 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 83052 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 70736 ?       Ssl  06:14   5:28 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68624 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40536 ?       Ssl  06:14   5:58 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  1.2  0.4 219008 17668 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102857  1.7  0.4 219020 17664 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(34898) idle
+999       102690  1.5  0.4 219032 17644 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47568) idle
+999       102601  1.5  0.4 219020 17636 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+999       102381  1.2  0.4 219024 17276 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999       102599  1.4  0.4 219024 17272 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999       102600  1.4  0.4 219064 17252 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102722  1.6  0.4 219040 17252 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47584) idle
+999       102723  1.6  0.4 219040 17240 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47600) idle
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:13:56.924Z","service":"protextify-backend","version":"2.0.0","uptime":7104,"memory":{"used":"95.14 MB","total":"218.56 MB","rss":"319.9 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:13:56.951Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+============================================================
+sample: 17
+timestamp: 2026-06-09T09:14:01+00:00
+
+## Docker PS
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS                 PORTS                    NAMES
+f9478d362678   protextify-backendv2-api   "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:3000->3000/tcp   protextify-backendv2-api-1
+ea4558051358   postgres:15                "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   5432/tcp                 protextify-backendv2-postgres-1
+5cd0c4a0f577   redis:7                    "docker-entrypoint.s…"   3 weeks ago   Up 3 hours (healthy)   6379/tcp                 protextify-backendv2-redis-1
+
+## Docker Stats No Stream
+NAME                              CPU %     MEM USAGE / LIMIT     NET I/O           BLOCK I/O         PIDS
+protextify-backendv2-api-1        14.88%    328.1MiB / 3.824GiB   339MB / 556MB     114MB / 5.21MB    15
+protextify-backendv2-postgres-1   5.07%     52.61MiB / 3.824GiB   202MB / 291MB     167MB / 4.88MB    16
+protextify-backendv2-redis-1      0.71%     8.824MiB / 3.824GiB   1.72MB / 2.43MB   54.7MB / 24.6kB   7
+
+## Memory
+               total        used        free      shared  buff/cache   available
+Mem:            3915        1799        1402          16        1021        2116
+Swap:              0           0           0
+
+## Disk
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           392M  1.4M  391M   1% /run
+/dev/vda1        29G   20G  8.3G  71% /
+tmpfs           2.0G     0  2.0G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vda16      881M  117M  703M  15% /boot
+/dev/vda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           392M   12K  392M   1% /run/user/1001
+
+## Uptime
+ 09:14:04 up  2:59,  4 users,  load average: 1.18, 0.75, 0.58
+
+## Top Snapshot
+top - 09:14:04 up  2:59,  4 users,  load average: 1.18, 0.75, 0.58
+Tasks: 153 total,   1 running, 148 sleeping,   0 stopped,   4 zombie
+%Cpu(s):  4.5 us,  4.5 sy,  0.0 ni, 90.9 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+MiB Mem :   3915.9 total,   1402.7 free,   1799.8 used,   1021.1 buff/cache     
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   2116.1 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+  42060 root      20   0    9.9g 327672  29660 S  36.4   8.2   5:41.73 MainThr+
+ 102723 999       20   0  219040  17240  13708 S   9.1   0.4   0:01.44 postgres
+ 103843 be-test+  20   0   13636   6360   4176 R   9.1   0.2   0:00.01 top
+      1 root      20   0   22124   9524   5608 S   0.0   0.2   0:05.67 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:00.01 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      9 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     12 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     15 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+     16 root      20   0       0      0      0 S   0.0   0.0   0:03.45 ksoftir+
+     17 root      20   0       0      0      0 I   0.0   0.0   0:20.85 rcu_pre+
+     18 root      rt   0       0      0      0 S   0.0   0.0   0:00.18 migrati+
+     19 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     20 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/0
+     21 root      20   0       0      0      0 S   0.0   0.0   0:00.00 cpuhp/1
+     22 root     -51   0       0      0      0 S   0.0   0.0   0:00.00 idle_in+
+     23 root      rt   0       0      0      0 S   0.0   0.0   0:00.37 migrati+
+     24 root      20   0       0      0      0 S   0.0   0.0   0:02.73 ksoftir+
+     26 root       0 -20       0      0      0 I   0.0   0.0   0:02.33 kworker+
+     27 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kdevtmp+
+     28 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     29 root      20   0       0      0      0 S   0.0   0.0   0:00.00 kauditd
+     30 root      20   0       0      0      0 S   0.0   0.0   0:00.00 khungta+
+     31 root      20   0       0      0      0 S   0.0   0.0   0:00.00 oom_rea+
+     33 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     34 root      20   0       0      0      0 S   0.0   0.0   0:08.63 kcompac+
+     36 root      25   5       0      0      0 S   0.0   0.0   0:00.00 ksmd
+
+## Process Snapshot
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+be-test+   72785  5.2 15.8 27674708 637148 ?     Sl   08:26   2:29 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node --dns-result-order=ipv4first /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=extensionHost --transformURIs --useHostProxy=false
+root       42060  4.8  8.1 10378612 327672 ?     Ssl  07:15   5:41 node dist/src/main.js
+be-test+   54062  0.6  4.0 1796812 160652 ?      Sl   07:37   0:36 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/server-main.js --start-server --server-data-dir /home/be-testing/.vscode-server --host=127.0.0.1 --accept-server-license-terms --enable-remote-auto-shutdown --port=0 --telemetry-level all --connection-token-file /home/be-testing/.vscode-server/.6a44c352bd24569c417e530095901b649960f9f8.token
+be-test+   72858  2.8  2.9 385412 118300 ?       Sl   08:26   1:20 /home/be-testing/.vscode-server/extensions/openai.chatgpt-26.602.71036-linux-x64/bin/linux-x86_64/codex app-server --analytics-default-enabled
+be-test+   72796  0.2  2.4 1660368 99764 ?       Sl   08:26   0:08 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=fileWatcher
+be-test+   54275  0.3  2.0 1632572 83052 ?       Sl   07:37   0:21 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/out/bootstrap-fork --type=ptyHost --logsPath /home/be-testing/.vscode-server/data/logs/20260609T073715
+root         982  3.0  1.7 2649860 70752 ?       Ssl  06:14   5:28 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+be-test+   72864  0.0  1.7 1485848 68624 ?       Sl   08:26   0:00 /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/node /home/be-testing/.vscode-server/bin/6a44c352bd24569c417e530095901b649960f9f8/extensions/json-language-features/server/dist/node/jsonServerMain --node-ipc --clientProcessId=72785
+root         768  3.3  1.0 2390120 40536 ?       Ssl  06:14   5:58 /usr/bin/containerd
+root         336  0.0  0.6 288952 27292 ?        SLsl 06:14   0:01 /sbin/multipathd -d -s
+999       102382  1.2  0.4 219008 17668 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(42510) idle
+999       102857  1.6  0.4 219020 17664 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(34898) idle
+999       102690  1.5  0.4 219032 17644 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47568) idle
+999       102601  1.4  0.4 219020 17636 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47540) idle
+999       102381  1.2  0.4 219024 17276 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(42496) idle
+999       102599  1.4  0.4 219024 17272 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47528) idle
+999       102600  1.4  0.4 219064 17252 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47530) idle
+999       102722  1.5  0.4 219040 17252 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47584) idle
+999       102723  1.5  0.4 219040 17240 ?        Ss   09:12   0:01 postgres: protextify_testing protextify_testing 172.18.0.4(47600) idle
+
+## Health Endpoint
+{"status":"healthy","timestamp":"2026-06-09T09:14:04.444Z","service":"protextify-backend","version":"2.0.0","uptime":7112,"memory":{"used":"102.77 MB","total":"228.31 MB","rss":"319.9 MB"},"environment":"development","node":"v24.15.0","platform":"linux","pid":1}
+
+## Readiness Endpoint
+{"status":"ready","timestamp":"2026-06-09T09:14:04.466Z","service":"protextify-backend-api","timeoutMs":3000,"checks":{"api":{"status":"up"},"postgres":{"status":"up"},"redis":{"status":"up","via":"bull queue"},"queue":{"status":"up","name":"plagiarism","stats":{"waiting":0,"active":0,"completed":8,"failed":0,"total":8}}}}
+
+completedAt: 2026-06-09T09:14:09+00:00
+samplesCaptured: 17
