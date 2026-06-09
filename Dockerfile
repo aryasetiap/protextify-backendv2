@@ -4,10 +4,7 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 RUN npm config set registry https://registry.npmmirror.com
-RUN npm install -g npm@11.6.2 --registry=https://registry.npmmirror.com
 RUN npm install --registry=https://registry.npmmirror.com
-
-RUN npm install -g @nestjs/cli --registry=https://registry.npmmirror.com
 
 COPY . .
 

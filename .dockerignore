@@ -1,6 +1,10 @@
 dist
 .git
 .env
+node_modules
+results
+coverage
+.cache
 Dockerfile
 Dockerfile.dev
 docker-compose.yml
