@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
@@ -19,6 +20,8 @@ import { StudentFeedbackDto } from './dto/student-feedback.dto';
 
 @Injectable()
 export class SubmissionsService {
+  private readonly logger = new Logger(SubmissionsService.name);
+
   constructor(
     private prisma: PrismaService,
     private realtimeGateway: RealtimeGateway,
@@ -606,9 +609,10 @@ export class SubmissionsService {
     instructorId: string,
     query: GetClassHistoryDto,
   ) {
+    const startedAt = Date.now();
     const {
-      page = 1,
-      limit = 15,
+      page: rawPage = 1,
+      limit: rawLimit = 15,
       search,
       studentId,
       status,
@@ -616,16 +620,42 @@ export class SubmissionsService {
       sortOrder = 'desc',
     } = query;
 
+    const page = Math.max(1, Number(rawPage) || 1);
+    const limit = Math.min(100, Math.max(1, Number(rawLimit) || 15));
     const skip = (page - 1) * limit;
 
     const kelas = await this.prisma.class.findFirst({
       where: { id: classId, instructorId },
-      select: { id: true },
+      select: {
+        id: true,
+        assignments: {
+          select: { id: true },
+        },
+      },
     });
     if (!kelas) throw new ForbiddenException('Not your class');
 
+    const assignmentIds = kelas.assignments.map((assignment) => assignment.id);
+    if (assignmentIds.length === 0) {
+      this.logPerformance('class_history', startedAt, {
+        classId,
+        page,
+        limit,
+        total: 0,
+        returned: 0,
+      });
+
+      return {
+        data: [],
+        page,
+        limit,
+        total: 0,
+        totalPages: 0,
+      };
+    }
+
     const where: any = {
-      assignment: { classId },
+      assignmentId: { in: assignmentIds },
       ...(studentId && { studentId }),
       ...(status && { status }),
       ...(search && {
@@ -638,14 +668,12 @@ export class SubmissionsService {
       }),
     };
 
-    const orderBy = {
-      [sortBy]:
-        sortBy === 'studentName'
-          ? { student: { fullName: sortOrder } }
-          : sortBy === 'assignmentTitle'
-            ? { assignment: { title: sortOrder } }
-            : sortOrder,
-    };
+    const orderBy =
+      sortBy === 'studentName'
+        ? { student: { fullName: sortOrder } }
+        : sortBy === 'assignmentTitle'
+          ? { assignment: { title: sortOrder } }
+          : { updatedAt: sortOrder };
 
     const [total, submissions] = await this.prisma.$transaction([
       this.prisma.submission.count({ where }),
@@ -675,6 +703,14 @@ export class SubmissionsService {
       }),
     ]);
 
+    this.logPerformance('class_history', startedAt, {
+      classId,
+      page,
+      limit,
+      total,
+      returned: submissions.length,
+    });
+
     return {
       data: submissions,
       page,
@@ -682,6 +718,23 @@ export class SubmissionsService {
       total,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  private logPerformance(
+    endpoint: string,
+    startedAt: number,
+    details: Record<string, unknown>,
+  ) {
+    if (process.env.NODE_ENV === 'production') {
+      return;
+    }
+
+    this.logger.log({
+      event: 'performance_endpoint_timing',
+      endpoint,
+      durationMs: Date.now() - startedAt,
+      ...details,
+    });
   }
 
   // 🆕 Updated download method with storage integration

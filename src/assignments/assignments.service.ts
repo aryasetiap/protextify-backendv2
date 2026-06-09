@@ -75,7 +75,15 @@ export class AssignmentsService {
         ...(role === 'STUDENT' && { active: true }),
       },
       orderBy: { createdAt: 'desc' },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        instructions: true,
+        deadline: true,
+        classId: true,
+        expectedStudentCount: true,
+        active: true,
+        createdAt: true,
         submissions: {
           where: role === 'STUDENT' ? { studentId: userId } : undefined,
           select: {
@@ -138,8 +146,27 @@ export class AssignmentsService {
   async getAssignmentDetail(id: string) {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id },
-      include: {
-        submissions: true,
+      select: {
+        id: true,
+        title: true,
+        instructions: true,
+        deadline: true,
+        classId: true,
+        expectedStudentCount: true,
+        active: true,
+        createdAt: true,
+        submissions: {
+          select: {
+            id: true,
+            status: true,
+            grade: true,
+            studentId: true,
+            assignmentId: true,
+            createdAt: true,
+            updatedAt: true,
+            submittedAt: true,
+          },
+        },
         _count: {
           select: { submissions: true },
         },

@@ -22,11 +22,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$LABEL" in
-  hidden-dry-run|iteration-1|iteration-1-final|iteration-1-rerun-vu-adjusted|iteration-2)
+  hidden-dry-run|iteration-1|iteration-1-final|iteration-1-rerun-vu-adjusted|iteration-2|iteration-2-vu-adjusted)
     ;;
   *)
     if [[ "$ALLOW_CUSTOM" != "true" ]]; then
-      echo "Invalid result label '$LABEL'. Allowed labels: hidden-dry-run, iteration-1, iteration-1-final, iteration-1-rerun-vu-adjusted, iteration-2." >&2
+      echo "Invalid result label '$LABEL'. Allowed labels: hidden-dry-run, iteration-1, iteration-1-final, iteration-1-rerun-vu-adjusted, iteration-2, iteration-2-vu-adjusted." >&2
       exit 1
     fi
     ;;

@@ -220,10 +220,19 @@ export class ClassesService {
   async getClassDetail(classId: string, userId?: string) {
     const kelas = await this.prisma.class.findUnique({
       where: { id: classId },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        classToken: true,
+        instructorId: true,
+        createdAt: true,
+        updatedAt: true,
         instructor: { select: { id: true, fullName: true } },
         enrollments: {
-          include: {
+          select: {
+            id: true,
+            joinedAt: true,
             student: {
               select: {
                 id: true,

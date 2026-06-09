@@ -51,6 +51,8 @@ model Class {
   instructor   User              @relation("InstructorClasses", fields: [instructorId], references: [id])
   enrollments  ClassEnrollment[]
   activities   ClassActivity[]
+
+  @@index([instructorId])
 }
 
 model ClassEnrollment {
@@ -62,6 +64,7 @@ model ClassEnrollment {
   student   User     @relation(fields: [studentId], references: [id])
 
   @@unique([studentId, classId])
+  @@index([classId])
 }
 
 model Assignment {
@@ -77,6 +80,7 @@ model Assignment {
   submissions          Submission[]
   Transaction          Transaction[]
   attachments          Attachment[] // ilişkiyi ekle
+
   @@index([classId])
 }
 
@@ -97,6 +101,7 @@ model Submission {
   versions         SubmissionVersion[]
   attachments      Attachment[] // ilişkiyi ekle
   studentFeedback  Int[] // Array of 5 integer scores (nullable)
+
   @@index([assignmentId, updatedAt])
   @@index([studentId, updatedAt])
   @@index([status, updatedAt])
