@@ -370,6 +370,38 @@
             "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
             "url": { "raw": "{{base_url}}/api/submissions/{{created_submission_id}}", "host": ["{{base_url}}"], "path": ["api", "submissions", "{{created_submission_id}}"] }
           }
+        },
+        {
+          "name": "Grade submission",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('submission is graded', function () {",
+                  "  pm.expect(json.id).to.eql(pm.environment.get('created_submission_id'));",
+                  "  pm.expect(json.grade).to.eql(88);",
+                  "  pm.expect(json.status).to.eql('GRADED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{instructor_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grade\": 88,\n  \"feedback\": \"Nilai pengujian fungsional melalui Newman.\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/submissions/{{created_submission_id}}/grade", "host": ["{{base_url}}"], "path": ["api", "submissions", "{{created_submission_id}}", "grade"] }
+          }
         }
       ]
     },
