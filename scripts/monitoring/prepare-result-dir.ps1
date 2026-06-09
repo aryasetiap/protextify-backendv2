@@ -4,7 +4,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$AllowedLabels = @('hidden-dry-run', 'iteration-1', 'iteration-1-final', 'iteration-2')
+$AllowedLabels = @('hidden-dry-run', 'iteration-1', 'iteration-1-final', 'iteration-1-rerun-vu-adjusted', 'iteration-2')
 
 if (-not $AllowCustomLabel -and $AllowedLabels -notcontains $Label) {
   throw "Invalid result label '$Label'. Allowed labels: $($AllowedLabels -join ', '). Use -AllowCustomLabel only for explicit local experiments."

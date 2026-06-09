@@ -7,16 +7,16 @@ import { makeSummary } from './helpers/summary.js';
 export const options = {
   summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
   stages: [
-    { duration: '30s', target: 2 },
-    { duration: '30s', target: config.spike.maxVus },
-    { duration: '30s', target: 2 },
-    { duration: '30s', target: 0 },
+    { duration: '30s', target: 10 },
+    { duration: '10s', target: config.spike.maxVus },
+    { duration: '1m', target: config.spike.maxVus },
+    { duration: '20s', target: 0 },
   ],
   thresholds: {
-    http_req_failed: ['rate<0.15'],
-    http_req_duration: ['p(95)<3000', 'p(99)<6000'],
-    checks: ['rate>0.85'],
-    api_success_rate: ['rate>0.85'],
+    http_req_failed: ['rate<0.01'],
+    http_req_duration: ['p(95)<3000'],
+    checks: ['rate>=0.95'],
+    api_success_rate: ['rate>=0.95'],
   },
 };
 
@@ -30,16 +30,36 @@ export default function (session) {
       endpointName: 'users_me',
       token: session.studentToken,
     }),
+    () => apiRequest('GET', '/api/classes', {
+      endpointName: 'classes_list',
+      token: session.instructorToken,
+    }),
     () => apiRequest('GET', `/api/classes/${testData.classId}`, {
       endpointName: 'class_detail',
+      token: session.instructorToken,
+    }),
+    () => apiRequest('GET', `/api/classes/${testData.classId}/assignments`, {
+      endpointName: 'class_assignments',
       token: session.instructorToken,
     }),
     () => apiRequest('GET', `/api/assignments/${testData.assignmentId}`, {
       endpointName: 'assignment_detail',
       token: session.instructorToken,
     }),
+    () => apiRequest('GET', `/api/submissions/${testData.submissionSubmittedId}`, {
+      endpointName: 'submission_detail',
+      token: session.instructorToken,
+    }),
     () => apiRequest('GET', `/api/classes/${testData.classId}/history`, {
       endpointName: 'class_history',
+      token: session.instructorToken,
+    }),
+    () => apiRequest('GET', '/api/submissions/history', {
+      endpointName: 'student_submission_history',
+      token: session.studentToken,
+    }),
+    () => apiRequest('GET', `/api/submissions/${testData.reportSubmissionId}/plagiarism-report`, {
+      endpointName: 'plagiarism_report_metadata',
       token: session.instructorToken,
     }),
   ];

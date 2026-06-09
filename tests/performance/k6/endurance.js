@@ -9,10 +9,10 @@ export const options = {
   vus: config.endurance.vus,
   duration: config.endurance.duration,
   thresholds: {
-    http_req_failed: ['rate<0.05'],
-    http_req_duration: ['p(95)<2000', 'p(99)<4000'],
-    checks: ['rate>0.95'],
-    api_success_rate: ['rate>0.95'],
+    http_req_failed: ['rate<0.01'],
+    http_req_duration: ['p(95)<3000'],
+    checks: ['rate>=0.95'],
+    api_success_rate: ['rate>=0.95'],
   },
 };
 
@@ -48,6 +48,14 @@ export default function (session) {
     }),
     () => apiRequest('GET', `/api/classes/${testData.classId}/history`, {
       endpointName: 'class_history',
+      token: session.instructorToken,
+    }),
+    () => apiRequest('GET', '/api/submissions/history', {
+      endpointName: 'student_submission_history',
+      token: session.studentToken,
+    }),
+    () => apiRequest('GET', `/api/submissions/${testData.reportSubmissionId}/plagiarism-report`, {
+      endpointName: 'plagiarism_report_metadata',
       token: session.instructorToken,
     }),
   ];

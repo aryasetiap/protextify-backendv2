@@ -38,18 +38,18 @@ export const config = {
     duration: __ENV.K6_SMOKE_DURATION || '30s',
   },
   load: {
-    vus: intEnv('K6_LOAD_VUS', 5),
-    duration: __ENV.K6_LOAD_DURATION || '2m',
+    vus: intEnv('K6_LOAD_VUS', 40),
+    duration: __ENV.K6_LOAD_DURATION || '5m',
   },
   stress: {
-    maxVus: intEnv('K6_STRESS_MAX_VUS', 15),
+    maxVus: intEnv('K6_STRESS_MAX_VUS', 120),
   },
   spike: {
-    maxVus: intEnv('K6_SPIKE_MAX_VUS', 20),
+    maxVus: intEnv('K6_SPIKE_MAX_VUS', 120),
   },
   endurance: {
-    vus: intEnv('K6_ENDURANCE_VUS', 5),
-    duration: __ENV.K6_ENDURANCE_DURATION || '5m',
+    vus: intEnv('K6_ENDURANCE_VUS', 40),
+    duration: __ENV.K6_ENDURANCE_DURATION || '30m',
   },
 };
 

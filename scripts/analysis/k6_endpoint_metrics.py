@@ -16,9 +16,9 @@ def percentile(values, p):
 
 def pick_endpoint(tags):
     return (
-        tags.get("name")
+        tags.get("endpoint")
+        or tags.get("name")
         or tags.get("url")
-        or tags.get("endpoint")
         or "unknown"
     )
 

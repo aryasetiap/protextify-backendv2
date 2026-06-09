@@ -43,6 +43,36 @@ Stress dan spike memang dirancang untuk melihat degradasi, saturasi, atau batas 
 
 Real WinstonAI tidak diuji pada load, stress, spike, atau endurance. Untuk performance internal, gunakan `WINSTON_AI_MODE=mock` dan `PLAGIARISM_REPORT_MODE=metadata`.
 
+### Iterasi Pertama Rerun VU Adjusted
+
+`iteration-1-rerun-vu-adjusted` adalah uji ulang Iterasi Pertama dengan jumlah virtual user yang disesuaikan dengan skenario 3 kelas mata kuliah. Setiap kelas diasumsikan berisi 40 mahasiswa, sehingga total pengguna potensial adalah 120 mahasiswa.
+
+Alasan pemilihan VU:
+
+- load 40 VU = satu kelas penuh aktif;
+- stress ramp sampai 120 VU = peningkatan bertahap hingga tiga kelas aktif;
+- spike 120 VU = lonjakan mendadak seluruh mahasiswa dari tiga kelas;
+- endurance 40 VU = satu kelas penuh aktif dalam durasi panjang.
+
+Parameter rerun:
+
+- smoke: 1 VU selama 30 detik;
+- load: 40 VU selama 5 menit;
+- stress: 2 menit ke 40 VU, 2 menit ke 80 VU, 2 menit ke 120 VU, 3 menit bertahan di 120 VU, 1 menit ramp down ke 0 VU;
+- spike: 30 detik di 10 VU, 10 detik naik ke 120 VU, 1 menit bertahan di 120 VU, 20 detik turun ke 0 VU;
+- endurance: 40 VU selama 30 menit.
+
+Threshold penelitian untuk semua skenario:
+
+- `checks >= 95%`;
+- `api_success_rate >= 95%`;
+- `http_req_failed < 1%`;
+- `http_req_duration p95 < 3000 ms`.
+
+Threshold gagal tidak menyembunyikan hasil. Runner tetap menyimpan raw JSON, summary, log, dan endpoint metrics; jika threshold gagal, exit code akan nonzero agar kegagalan tercatat jelas.
+
+Workload rerun hanya endpoint internal read-heavy. Login tetap dilakukan di `setup()` k6 untuk memperoleh token dan bukan bagian dari beban utama. Endpoint real WinstonAI, upload file, payment, create class, create assignment, create/submit tugas, grade, dan trigger plagiarism real tidak menjadi beban utama.
+
 ### Iterasi Kedua
 
 Iterasi Kedua dilakukan setelah perbaikan atau penyesuaian berdasarkan temuan Iterasi Pertama.
@@ -389,6 +419,45 @@ k6 run --out json=results/performance/iteration-1-final/iteration-1-final-winsto
 
 Jalankan command final hanya setelah VPS siap, data uji final sudah di-reset, functional test PASS, resource BEFORE sudah dibuat, dan `TEST_USER_PASSWORD` tersedia di shell laptop tanpa dicetak.
 
+Official Iterasi Pertama Rerun VU Adjusted secara manual:
+
+```powershell
+$env:BASE_URL="http://103.55.37.96:3000"
+
+npm run thesis:results:prepare -- -Label iteration-1-rerun-vu-adjusted
+
+# Jalankan smoke terlebih dahulu. Lanjutkan skenario lain hanya jika smoke PASS.
+npm run thesis:k6:iteration1:rerun-vu-adjusted -- -Scenario smoke -BaseUrl $env:BASE_URL
+
+# Jalankan satu per satu agar output terminal dan resource VPS mudah dicapture.
+npm run thesis:k6:iteration1:rerun-vu-adjusted -- -Scenario load -BaseUrl $env:BASE_URL
+npm run thesis:k6:iteration1:rerun-vu-adjusted -- -Scenario stress -BaseUrl $env:BASE_URL
+npm run thesis:k6:iteration1:rerun-vu-adjusted -- -Scenario spike -BaseUrl $env:BASE_URL
+npm run thesis:k6:iteration1:rerun-vu-adjusted -- -Scenario endurance -BaseUrl $env:BASE_URL
+```
+
+Runner manual tersebut otomatis memakai:
+
+```text
+K6_RUN_LABEL=iteration-1-rerun-vu-adjusted
+K6_SUMMARY_DIR=results/performance/iteration-1-rerun-vu-adjusted
+WINSTON_AI_MODE=mock
+PLAGIARISM_REPORT_MODE=metadata
+ENABLE_WRITE_SCENARIO=false
+```
+
+Output per skenario:
+
+```text
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-<scenario>.json
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-<scenario>-summary.json
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-<scenario>-summary.txt
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-<scenario>.log
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-<scenario>-endpoint-metrics.csv
+```
+
+Runner menolak overwrite file hasil secara default. Jika benar-benar ingin mengganti hasil skenario yang sama, tambahkan `-Overwrite`.
+
 Official Iterasi Kedua dengan export JSON:
 
 ```powershell
@@ -413,6 +482,7 @@ Summary otomatis disimpan ke:
 results/performance/hidden-dry-run/
 results/performance/iteration-1/
 results/performance/iteration-1-final/
+results/performance/iteration-1-rerun-vu-adjusted/
 results/performance/iteration-2/
 ```
 
@@ -425,6 +495,8 @@ Folder hasil resmi dan hidden dry-run:
 ```text
 results/performance/hidden-dry-run/
 results/performance/iteration-1/
+results/performance/iteration-1-final/
+results/performance/iteration-1-rerun-vu-adjusted/
 results/performance/iteration-2/
 ```
 
@@ -434,6 +506,7 @@ Siapkan folder hasil pada Windows:
 npm run thesis:results:prepare -- -Label hidden-dry-run
 npm run thesis:results:prepare -- -Label iteration-1
 npm run thesis:results:prepare -- -Label iteration-1-final
+npm run thesis:results:prepare -- -Label iteration-1-rerun-vu-adjusted
 npm run thesis:results:prepare -- -Label iteration-2
 ```
 
@@ -443,6 +516,7 @@ Siapkan folder hasil pada Linux/VPS:
 bash scripts/monitoring/prepare-result-dir.sh --label hidden-dry-run
 bash scripts/monitoring/prepare-result-dir.sh --label iteration-1
 bash scripts/monitoring/prepare-result-dir.sh --label iteration-1-final
+bash scripts/monitoring/prepare-result-dir.sh --label iteration-1-rerun-vu-adjusted
 bash scripts/monitoring/prepare-result-dir.sh --label iteration-2
 ```
 
@@ -599,6 +673,167 @@ results/performance/iteration-1-final/iteration-1-final-resource-during-stress.t
 results/performance/iteration-1-final/iteration-1-final-resource-during-spike.txt
 results/performance/iteration-1-final/iteration-1-final-resource-during-endurance.txt
 results/performance/iteration-1-final/iteration-1-final-resource-after.txt
+```
+
+### Runbook Iterasi Pertama Rerun VU Adjusted Manual
+
+Gunakan runbook ini untuk hasil `iteration-1-rerun-vu-adjusted`. k6 dijalankan manual dari laptop agar output terminal mudah dicapture. Backend, PostgreSQL, Redis, dan queue tetap berjalan di VPS.
+
+Alur ringkas:
+
+```text
+VPS prepare -> VPS capture before -> laptop smoke -> laptop skenario satu per satu + VPS capture during -> VPS capture after
+```
+
+Prompt yang dapat dikirim ke Codex VPS untuk persiapan:
+
+```text
+Pull perubahan terbaru backend Protextify, pastikan backend testing berjalan dengan WINSTON_AI_MODE=mock dan PLAGIARISM_REPORT_MODE=metadata, jalankan health check, reset/setup data uji skripsi, lalu siapkan folder results/performance/iteration-1-rerun-vu-adjusted. Jangan jalankan k6 performance test di VPS.
+```
+
+Command VPS untuk persiapan:
+
+```bash
+git pull
+
+# Pastikan .env.testing berisi:
+# WINSTON_AI_MODE=mock
+# PLAGIARISM_REPORT_MODE=metadata
+
+docker compose --env-file .env.testing -f docker-compose.vps-testing.yml build api
+docker compose --env-file .env.testing -f docker-compose.vps-testing.yml up -d postgres redis api
+docker compose --env-file .env.testing -f docker-compose.vps-testing.yml ps
+
+curl http://localhost:3000/health
+curl http://localhost:3000/api/health-check
+curl http://localhost:3000/api/health/readiness
+
+npm run thesis:test:data:reset
+bash scripts/monitoring/prepare-result-dir.sh --label iteration-1-rerun-vu-adjusted
+
+RUN_LABEL=iteration-1-rerun-vu-adjusted RUN_PHASE=before BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+```
+
+Command laptop untuk smoke:
+
+```powershell
+$env:BASE_URL="http://103.55.37.96:3000"
+
+npm run thesis:results:prepare -- -Label iteration-1-rerun-vu-adjusted
+curl "$env:BASE_URL/health"
+curl "$env:BASE_URL/api/health-check"
+curl "$env:BASE_URL/api/health/readiness"
+
+npm run thesis:k6:iteration1:rerun-vu-adjusted -- -Scenario smoke -BaseUrl $env:BASE_URL
+```
+
+Jika smoke PASS, jalankan skenario satu per satu. Saat tiap skenario sedang berjalan, kirim command capture terkait di VPS.
+
+Prompt yang dapat dikirim ke Codex VPS saat load berjalan:
+
+```text
+Capture resource VPS untuk performance test Protextify label iteration-1-rerun-vu-adjusted fase during-load. Jangan menjalankan k6 dan jangan mengubah backend.
+```
+
+Command:
+
+```bash
+RUN_LABEL=iteration-1-rerun-vu-adjusted RUN_PHASE=during-load BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+```
+
+Laptop:
+
+```powershell
+npm run thesis:k6:iteration1:rerun-vu-adjusted -- -Scenario load -BaseUrl $env:BASE_URL
+```
+
+Prompt yang dapat dikirim ke Codex VPS saat stress berjalan:
+
+```text
+Capture resource VPS untuk performance test Protextify label iteration-1-rerun-vu-adjusted fase during-stress. Jangan menjalankan k6 dan jangan mengubah backend.
+```
+
+Command:
+
+```bash
+RUN_LABEL=iteration-1-rerun-vu-adjusted RUN_PHASE=during-stress BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+```
+
+Laptop:
+
+```powershell
+npm run thesis:k6:iteration1:rerun-vu-adjusted -- -Scenario stress -BaseUrl $env:BASE_URL
+```
+
+Prompt yang dapat dikirim ke Codex VPS saat spike berjalan:
+
+```text
+Capture resource VPS untuk performance test Protextify label iteration-1-rerun-vu-adjusted fase during-spike. Jangan menjalankan k6 dan jangan mengubah backend.
+```
+
+Command:
+
+```bash
+RUN_LABEL=iteration-1-rerun-vu-adjusted RUN_PHASE=during-spike BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+```
+
+Laptop:
+
+```powershell
+npm run thesis:k6:iteration1:rerun-vu-adjusted -- -Scenario spike -BaseUrl $env:BASE_URL
+```
+
+Prompt yang dapat dikirim ke Codex VPS saat endurance berjalan:
+
+```text
+Capture resource VPS untuk performance test Protextify label iteration-1-rerun-vu-adjusted fase during-endurance. Jangan menjalankan k6 dan jangan mengubah backend.
+```
+
+Command:
+
+```bash
+RUN_LABEL=iteration-1-rerun-vu-adjusted RUN_PHASE=during-endurance BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+```
+
+Laptop:
+
+```powershell
+npm run thesis:k6:iteration1:rerun-vu-adjusted -- -Scenario endurance -BaseUrl $env:BASE_URL
+```
+
+Prompt yang dapat dikirim ke Codex VPS setelah semua skenario selesai:
+
+```text
+Capture resource VPS untuk performance test Protextify label iteration-1-rerun-vu-adjusted fase after, lalu tampilkan daftar file hasil resource yang tersimpan. Jangan menjalankan k6.
+```
+
+Command:
+
+```bash
+RUN_LABEL=iteration-1-rerun-vu-adjusted RUN_PHASE=after BASE_URL=http://localhost:3000 \
+  bash scripts/monitoring/capture-vps-metrics.sh
+```
+
+File hasil utama yang diharapkan:
+
+```text
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-smoke.json
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-load.json
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-stress.json
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-spike.json
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-endurance.json
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-*-endpoint-metrics.csv
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-resource-before.txt
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-resource-during-load.txt
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-resource-during-stress.txt
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-resource-during-spike.txt
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-resource-during-endurance.txt
+results/performance/iteration-1-rerun-vu-adjusted/iteration-1-rerun-vu-adjusted-resource-after.txt
 ```
 
 ### Runbook Iterasi Pertama

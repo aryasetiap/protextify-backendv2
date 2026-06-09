@@ -36,6 +36,7 @@
     "thesis:k6:spike": "npm run k6:spike",
     "thesis:k6:endurance": "npm run k6:endurance",
     "thesis:k6:winstonai": "npm run k6:winstonai",
+    "thesis:k6:iteration1:rerun-vu-adjusted": "powershell -ExecutionPolicy Bypass -File scripts/performance/run-iteration-1-rerun-vu-adjusted.ps1",
     "thesis:results:prepare": "powershell -ExecutionPolicy Bypass -File scripts/monitoring/prepare-result-dir.ps1",
     "thesis:monitor:local": "powershell -ExecutionPolicy Bypass -File scripts/monitoring/capture-local-metrics.ps1",
     "thesis:monitor:vps": "bash scripts/monitoring/capture-vps-metrics.sh",

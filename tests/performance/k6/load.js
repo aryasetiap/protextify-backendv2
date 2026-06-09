@@ -2,7 +2,6 @@ import { sleep } from 'k6';
 import { config, testData } from './config.js';
 import { loginAll } from './helpers/auth.js';
 import { apiRequest } from './helpers/http.js';
-import { updateContentPayload } from './helpers/payloads.js';
 import { makeSummary } from './helpers/summary.js';
 
 export const options = {
@@ -10,10 +9,10 @@ export const options = {
   vus: config.load.vus,
   duration: config.load.duration,
   thresholds: {
-    http_req_failed: ['rate<0.05'],
-    http_req_duration: ['p(95)<1500', 'p(99)<3000'],
-    checks: ['rate>0.95'],
-    api_success_rate: ['rate>0.95'],
+    http_req_failed: ['rate<0.01'],
+    http_req_duration: ['p(95)<3000'],
+    checks: ['rate>=0.95'],
+    api_success_rate: ['rate>=0.95'],
   },
 };
 
@@ -51,17 +50,17 @@ export default function (session) {
       endpointName: 'class_history',
       token: session.instructorToken,
     }),
+    () => apiRequest('GET', '/api/submissions/history', {
+      endpointName: 'student_submission_history',
+      token: session.studentToken,
+    }),
+    () => apiRequest('GET', `/api/submissions/${testData.reportSubmissionId}/plagiarism-report`, {
+      endpointName: 'plagiarism_report_metadata',
+      token: session.instructorToken,
+    }),
   ];
 
   readRequests[(__ITER + __VU) % readRequests.length]();
-
-  if (config.enableWriteScenario && __ITER % 10 === 0) {
-    apiRequest('PATCH', `/api/submissions/${testData.submissionDraftId}/content`, {
-      endpointName: 'submission_update_content_limited',
-      token: session.studentToken,
-      body: updateContentPayload('load'),
-    });
-  }
 
   sleep(1);
 }
